@@ -1,0 +1,4 @@
+[submodule "modules/variantinterpretation"]
+	path = modules/variantinterpretation
+	url = git@github.com:cio-abcd/variantinterpretation.git
+	branch = remove_nfcore
