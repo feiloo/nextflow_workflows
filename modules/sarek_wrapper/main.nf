@@ -7,10 +7,10 @@ workflow SAREK {
     NFCORE_SAREK(args)
 }
 
-/*
 workflow {
   main:
-    def args = params
+    def args = [:]
+    for (param in params) { args[param.key] = param.value }
+
     SAREK(args)
 }
-*/
