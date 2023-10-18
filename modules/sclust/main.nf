@@ -13,7 +13,7 @@ process sclust_extract_read_ratio {
   script:
   """
   echo ${bam_n_index} ${bam_t_index}
-  Sclust bamprocess -n ${bam_n} -t ${bam_t} -part 1 -build hg19 -r "${chromosome}" -o 1
+  sclust bamprocess -n ${bam_n} -t ${bam_t} -part 1 -build hg19 -r "${chromosome}" -o 1
   """
 }
 
@@ -25,13 +25,31 @@ process sclust_merge_chromosomes {
     tuple val(sampleid), path("1_*_bamprocess_data.txt")
 
   output:
-    tuple val(sampleid), path("1_rcount.txt"), path("1_snps.txt")
+    tuple val(sampleid), path("1_rcount.txt"), path("1_snps.txt"), emit: counts
 
   script:
   """
-  Sclust bamprocess -i 1 -o 1
+  sclust bamprocess -i 1 -o 1
   """
 }
+
+
+process sclust_copy_number_analysis {
+  cpus 1
+  memory '4 GB'
+
+  input: 
+    tuple val(sampleid), path('sample_mutations.vcf'), path("1_rcount.txt"), path("1_snps.txt") 
+
+  output:
+    tuple val(sampleid)
+
+  script:
+  """
+  sclust cn -rc ${1_rcount.txt} -snp ${1_snps.txt} -vcf ${sample_mutations.vcf} -o 1
+  """
+}
+
 
 
 workflow sclust_nextflow {
@@ -41,14 +59,17 @@ workflow sclust_nextflow {
 
   main:
     def samplesheet = args.samplesheet
-    // def header = ['sample_id', 'bam_n', 'bam_n_index', 'bam_t', 'bam_t_index']
+    // def header = ['sample_id', 'vcf', 'bam_n', 'bam_n_index', 'bam_t', 'bam_t_index']
     samples = Channel.fromPath(samplesheet).splitCsv(skip: 1)
     combs = samples.combine(chromosomes)
 
     results = sclust_extract_read_ratio(combs).read_ratios
     sample_chromosomes = results.groupTuple()
     sample_chromosomes.view()
-    sclust_merge_chromosomes(sample_chromosomes)
+    counts = sclust_merge_chromosomes(sample_chromosomes).counts
+
+    sclust_copy_number_analysis(counts)
+
 
 
   //emit:
