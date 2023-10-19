@@ -3,6 +3,7 @@ testconfig_path = get_option('testconfig_path')
 
 subdir('arriba_nextflow')
 subdir('clc_nextflow')
+subdir('sequence_alignment')
 
 
 variantinterpretation = custom_target('variantinterpretation',
@@ -42,6 +43,21 @@ test('nextflow_workflow_arriba',
 	'-c', testconfig_path,
 	'--workflow_variation', 'arriba',
 	],
-	depends: [variantinterpretation, ukb_main_workflow],
+	depends: [arriba_nextflow, ukb_main_workflow],
+	timeout: 600
+	)
+
+test('nextflow_workflow_sequence_alignment',
+	nextflow_bin,
+	is_parallel : false,
+	suite : ['nextflow', 'workflow'],
+	env: ['NEXTFLOW_MODULES='+meson.current_build_dir()],
+	args : [
+	'run',
+	meson.current_build_dir()+'/ukb_main_workflow/main.nf',
+	'-c', testconfig_path,
+	'--workflow_variation', 'sequence_alignment',
+	],
+	depends: [variantinterpretation, sequence_alignment_nextflow, ukb_main_workflow],
 	timeout: 600
 	)
