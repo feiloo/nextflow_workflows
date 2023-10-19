@@ -1,9 +1,11 @@
-include {NFCORE_SAREK} from './sarek' //addParams(input_restart: null)
+include {NFCORE_SAREK} from './sarek'
 
-workflow SAREK {
+workflow SAREK_WRAPPER {
   take:
     args
   main:
+    println params.genome
+    println params.genomes['GATK.GRCh38']
     NFCORE_SAREK(args)
 }
 
@@ -11,6 +13,7 @@ workflow {
   main:
     def args = [:]
     for (param in params) { args[param.key] = param.value }
+    for (param in params.genomes[params.genome]) { args[param.key] = param.value }
 
-    SAREK(args)
+    SAREK_WRAPPER(args)
 }
