@@ -11,9 +11,9 @@ workflow {
   def args = [:]
   for (param in params) { args[param.key] = param.value }
 
-  args['input'] = '/opt/cio/samplesheet_testdata.csv'
-  args['fasta'] = '/data/reference/ncbi_grch38_wholegenomefasta_genome.fa'
-  args['vep_cache'] = '/data/reference/vep_cache/108/indexed/'
+  //args['input'] = '/opt/cio/samplesheet_testdata.csv'
+  //args['fasta'] = '/data/reference/ncbi_grch38_wholegenomefasta_genome.fa'
+  //args['vep_cache'] = '/data/reference/vep_cache/108/indexed/'
 
 
   //def workflow_name = args.workflow_name

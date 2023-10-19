@@ -7,6 +7,7 @@ process arriba {
   stageInMode 'copy'
 
   input: 
+    //tumor only fastqs
     tuple val(sampleid), path(read1), path(read2)
     path reference_data
 
@@ -86,6 +87,7 @@ workflow arriba_nextflow {
     args
 
   main:
+    // needs tumor only fastqs
     def samplesheet = args.samplesheet
     samples = Channel.fromPath(samplesheet).splitCsv(header: true)
 
