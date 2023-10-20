@@ -12,6 +12,8 @@ workflow {
   def args = [:]
   for (param in params) { args[param.key] = param.value }
 
+  println args
+
   if(args.workflow_variation == 'sequence_alignment'){
   	sequence_alignment(args)
   }
