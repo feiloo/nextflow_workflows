@@ -3,7 +3,7 @@ install_subdir('../sequence_alignment',
 	exclude_files:['meson.build'], 
 	install_tag : 'nextflow')
 
-nextflow_files = ['main.nf','nextflow.config', 'fastqc.nf']
+nextflow_files = ['main.nf','nextflow.config', 'fastqc.nf', 'fastp.nf']
 sequence_alignment_nextflow = custom_target('sequence_alignment_nextflow',
 	input : nextflow_files,
 	output : '.',
