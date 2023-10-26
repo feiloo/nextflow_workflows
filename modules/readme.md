@@ -1,22 +1,11 @@
-search for fastq in pat sequencer:
+# Modules
 
-find sequencer_output_path --maxdepth 2 -name SampleSheet.csv
-find sequencer_output_path  -maxdepth 1 -iname SampleSheet.csv -exec cat {} + | cat > index
+the module ukb_main_workflow delegates the inputs to one of the subworkflows via the --workflow_variation parameter
 
-create the csv:
-/path/input_Arriba/samplesheets/samples_DD_MM_YYYY.csv 
-with the header: sampe_id,read1,read2
+sclust only implements the first steps
 
-mkdir /path/output_Arriba/workflow_run_DD_MM_YYYY/
+sarek_wrapper is not functional yet
 
-invoke nextflow 
+arriba_nextflow allows running the arriba tool in a simple reproducable fashion
 
-nextflow run ukb_main_workflow/  \
-	-c ~/nextflow_conf_general.config \
-	-with-report /path/nextflow_report.html \
-	-with-timeline /path/timeline.html \
-	-with-trace /path/trace.txt \
-	--reference_data /path/arriba_reference/GRCh38+GENCODE38/ \
-	--samplesheet /path/input_Arriba/samplesheets/samples_DD_MM_YYYY.csv \
-	--output_dir /path/output_Arriba/workflow_run_DD_MM_YYYY/ 
-
+variantinterpretation implements a workflow for analysing variants from vcf files
