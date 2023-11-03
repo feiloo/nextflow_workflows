@@ -8,6 +8,7 @@ process fastp {
     output:
     tuple val(sample_id), path("${output_file_prefix}_fastp.html"), emit: html
     tuple val(sample_id), path("${output_file_prefix}_fastp.json"), emit: json
+    tuple val(sample_id), path("${read1.getSimpleName()}_fastp.fq.gz"), path("${read2.getSimpleName()}_fastp.fq.gz"), emit: preprocessed_reads
 
     script:
 
