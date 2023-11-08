@@ -2,6 +2,8 @@ process bwa_index_refgenome {
     conda "bioconda::bwa=0.7.17"
     container 'quay.io/biocontainers/bwa:0.7.17--hed695b0_7'
 
+    storeDir '/data2/bwa_indices'
+
     // needs 28N GB, where N is the size of the uncompressed refseq in GB
     //memory '120 GB'
 
@@ -51,6 +53,41 @@ process bwa_align {
     """
 }
 
+process sam_to_bam {
+    conda "bioconda::samtools=1.17"
+    container 'biocontainers/samtools:1.17--h00cdaf9_0'
+
+    input:
+    path(samfile)
+
+    output:
+    path("${samfile.getBaseName()}.bam")
+
+    script:
+    """
+    samtools view ${samfile} --bam --threads 12 -o ${samfile.getBaseName()}.bam
+    """
+}
+
+process publish {
+  cpus 1
+  memory '1 GB'
+  
+
+  input:
+    path(bamfile)
+    val(args)
+
+  publishDir "${args.output_dir}", mode: 'copy', overwrite: false
+
+  script:
+  println "finished workflow, outputs are in: ${args.output_dir}"
+  """
+  touch ${bamfile}
+  """
+
+}
+
 workflow bwa_tumor_only {
   take:
     args
@@ -62,6 +99,14 @@ workflow bwa_tumor_only {
 
     csv_channel = Channel.fromPath(samplesheet).splitCsv(header: header, skip: 1)
 
+    bwa_idx = bwa_index_refgenome(args.refgenome)
+    sams = bwa_align(csv_channel, args.refgenome, bwa_idx.amb, bwa_idx.ann, bwa_idx.bwt, bwa_idx.pac, bwa_idx.sa)
+    bams = sam_to_bam(sams)
+    publish(sams, args)
+}
+
+/*
+
     i1 = Channel.fromPath("${args.refgenome}.amb")
     i2 = Channel.fromPath("${args.refgenome}.ann")
     i3 = Channel.fromPath("${args.refgenome}.bwt")
@@ -70,7 +115,8 @@ workflow bwa_tumor_only {
 
     bwa_index_refgenome(args.refgenome)
     bwa_align(csv_channel, args.refgenome, i1, i2, i3, i4, i5)
-}
+
+*/
 
 workflow {
   def args = [:]
