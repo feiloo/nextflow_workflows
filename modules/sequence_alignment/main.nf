@@ -2,8 +2,10 @@ nextflow.enable.dsl=2
 
 include { fastqc } from "$NEXTFLOW_MODULES/sequence_alignment/fastqc.nf"
 include { fastp } from "$NEXTFLOW_MODULES/sequence_alignment/fastp.nf"
-include { bwamem2_index_refgenome } from "$NEXTFLOW_MODULES/sequence_alignment/bwamem2.nf"
-include { bwamem2_align } from "$NEXTFLOW_MODULES/sequence_alignment/bwamem2.nf"
+//include { bwamem2_index_refgenome; bwamem2_align } from "$NEXTFLOW_MODULES/sequence_alignment/bwamem2.nf"
+include { bwa_index_refgenome; bwa_align } from "$NEXTFLOW_MODULES/sequence_alignment/bwa.nf"
+include { sam_to_bam; sort_bam; index_bam } from "$NEXTFLOW_MODULES/sequence_alignment/samtools.nf"
+include { gatk_markduplicates } from "$NEXTFLOW_MODULES/sequence_alignment/gatk.nf"
 
 
 process stage_fastq {
@@ -17,45 +19,16 @@ process stage_fastq {
     tuple val(sample_id), path(normal_read1), path(normal_read2), path(tumor_read1), path(tumor_read2)
 
     output:
-    tuple val(sample_id), path("${sample_id}_N_1.fq.gz"), path("${sample_id}_N_2.fq.gz"), path("${sample_id}_T_1.fq.gz"), path("${sample_id}_T_2.fq.gz")
+    tuple val(sample_id), path("out/${sample_id}_N_1.fq.gz"), path("out/${sample_id}_N_2.fq.gz"), path("out/${sample_id}_T_1.fq.gz"), path("out/${sample_id}_T_2.fq.gz")
 
     script:
-    /*
     """
-    if [[ ! -f ${sample_id}_N_1.fq.gz ]]; then
-    mv ${normal_read1} ${sample_id}_N_1.fq.gz
-    fi
+    mkdir out
 
-    if [[ ! -f ${sample_id}_N_2.fq.gz ]]; then
-    mv ${normal_read2} ${sample_id}_N_2.fq.gz
-    fi
-
-    if [[ ! -f ${sample_id}_T_1.fq.gz ]]; then
-    mv ${tumor_read1} ${sample_id}_T_1.fq.gz
-    fi
-
-    if [[ ! -f ${sample_id}_T_2.fq.gz ]]; then
-    mv ${tumor_read2} ${sample_id}_T_2.fq.gz
-    fi
-    """
-    */
-
-    """
-    if [[ ! -f ${sample_id}_N_1.fq.gz ]]; then
-    ln -s ${normal_read1} ${sample_id}_N_1.fq.gz
-    fi
-
-    if [[ ! -f ${sample_id}_N_2.fq.gz ]]; then
-    ln -s ${normal_read2} ${sample_id}_N_2.fq.gz
-    fi
-
-    if [[ ! -f ${sample_id}_T_1.fq.gz ]]; then
-    ln -s ${tumor_read1} ${sample_id}_T_1.fq.gz
-    fi
-
-    if [[ ! -f ${sample_id}_T_2.fq.gz ]]; then
-    ln -s ${tumor_read2} ${sample_id}_T_2.fq.gz
-    fi
+    ln -s ../${normal_read1} out/${normal_read1}
+    ln -s ../${normal_read2} out/${normal_read2}
+    ln -s ../${tumor_read1} out/${tumor_read1}
+    ln -s ../${tumor_read2} out/${tumor_read2}
     """
 }
 
@@ -120,7 +93,7 @@ workflow sequence_alignment {
 		]
 	}
 
-    //qualities = fastqc(all_reads)
+    qualities = fastqc(all_reads)
 
     // a flat channel of [sample_id, read1, read2, file_prefix] tuples
     sample_reads_w_prefix = staged_sample_pairs.flatMap{
@@ -133,15 +106,26 @@ workflow sequence_alignment {
     // because it has to be known before starting the process as it it an output thereof
     preprocessed_reads = fastp(sample_reads_w_prefix).preprocessed_reads
 
-    bwa_idx = bwamem2_index_refgenome(args.refgenome)
+    //bwa_idx = bwamem2_index_refgenome(args.refgenome)
+    bwa_idx = bwa_index_refgenome(args.refgenome)
+
+    sams = bwa_align(csv_channel, args.refgenome, bwa_idx.amb, bwa_idx.ann, bwa_idx.bwt, bwa_idx.pac, bwa_idx.sa)
 
     // bwa_idx.f0123 was has an f prefixed so, the file ending starts with a non-numeral
     // as a convention
+    /*
     mapped_reads = bwamem2_align(
     	preprocessed_reads, args.refgenome, 
     	bwa_idx.f0123, bwa_idx.amb, 
 	bwa_idx.bwt_2bit_64, bwa_idx.ann, 
 	bwa_idx.pac)
+    */
+
+    bams = sam_to_bam(sams)
+    sorted_bams = sort_bam(bams)
+    bam_indices = index_bam(sorted_bams)
+
+    marked_bams = gatk_markduplicates(sorted_bams, args.refgenome)
 }
 
 workflow {
