@@ -33,7 +33,7 @@ process bwa_align {
     memory '56 GB'
 
     input:
-    tuple val(sample_id), path(read1), path(read2)
+    tuple path(read1), path(read2)
     path(refgenome)
     path("${refgenome}.amb")
     path("${refgenome}.ann")

@@ -19,19 +19,20 @@ process stage_fastq {
     tuple val(sample_id), path(normal_read1), path(normal_read2), path(tumor_read1), path(tumor_read2)
 
     output:
-    tuple val(sample_id), path("out/${sample_id}_N_1.fq.gz"), path("out/${sample_id}_N_2.fq.gz"), path("out/${sample_id}_T_1.fq.gz"), path("out/${sample_id}_T_2.fq.gz")
+    tuple val(sample_id), path(normal_read1), path(normal_read2), path(tumor_read1), path(tumor_read2)
 
     script:
+    assert normal_read1.exists()
+    assert normal_read2.exists()
+    assert tumor_read1.exists()
+    assert tumor_read2.exists()
     """
-    mkdir out
-
-    ln -s ../${normal_read1} out/${normal_read1}
-    ln -s ../${normal_read2} out/${normal_read2}
-    ln -s ../${tumor_read1} out/${tumor_read1}
-    ln -s ../${tumor_read2} out/${tumor_read2}
+    touch ${normal_read1}
+    touch ${normal_read2}
+    touch ${tumor_read1}
+    touch ${tumor_read2}
     """
 }
-
 
 workflow sequence_alignment {
   take:
@@ -42,7 +43,7 @@ workflow sequence_alignment {
     // therefore 1 row requires/contains both, so its easier to read the samplesheet
     header = ['sample_id', 'normal_read1', 'normal_read2', 'tumor_read1', 'tumor_read2']
 
-    csv_channel = Channel.fromPath(samplesheet).splitCsv(header: header, skip: 1)
+    csv_channel = Channel.fromPath(samplesheet, checkIfExists: true, type: 'file').splitCsv(header: header, skip: 1)
 
     // cast the types of the channel
     sample_pairs = csv_channel.map{
@@ -109,7 +110,8 @@ workflow sequence_alignment {
     //bwa_idx = bwamem2_index_refgenome(args.refgenome)
     bwa_idx = bwa_index_refgenome(args.refgenome)
 
-    sams = bwa_align(csv_channel, args.refgenome, bwa_idx.amb, bwa_idx.ann, bwa_idx.bwt, bwa_idx.pac, bwa_idx.sa)
+    preprocessed_reads_no_id = preprocessed_reads.map{it -> [it[1], it[2]]} 
+    sams = bwa_align(preprocessed_reads_no_id, args.refgenome, bwa_idx.amb, bwa_idx.ann, bwa_idx.bwt, bwa_idx.pac, bwa_idx.sa)
 
     // bwa_idx.f0123 was has an f prefixed so, the file ending starts with a non-numeral
     // as a convention

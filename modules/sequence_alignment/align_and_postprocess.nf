@@ -12,9 +12,10 @@ workflow bwa_tumor_only {
     header = ['sample_id', 'tumor_read1', 'tumor_read2']
 
     csv_channel = Channel.fromPath(samplesheet).splitCsv(header: header, skip: 1)
+    all_reads = csv_channel.map{ it -> [it[0], it[1]] }
 
     bwa_idx = bwa_index_refgenome(args.refgenome)
-    sams = bwa_align(csv_channel, args.refgenome, bwa_idx.amb, bwa_idx.ann, bwa_idx.bwt, bwa_idx.pac, bwa_idx.sa)
+    sams = bwa_align(all_reads, args.refgenome, bwa_idx.amb, bwa_idx.ann, bwa_idx.bwt, bwa_idx.pac, bwa_idx.sa)
     bams = sam_to_bam(sams)
     sorted_bams = sort_bam(bams)
     bam_indices = index_bam(sorted_bams)
@@ -28,7 +29,6 @@ workflow {
   for (param in params) { args[param.key] = param.value }
 
   bwa_tumor_only(args)
-
 }
 
 
