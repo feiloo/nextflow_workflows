@@ -10,9 +10,10 @@ process fastqc {
     tuple val(sample_id), path("${read.getSimpleName()}_fastqc.zip"), emit: zip
 
     script:
+    n_cpus = Runtime.runtime.availableProcessors()
     """
     fastqc \\
-        --threads $task.cpus \\
+        --threads $n_cpus \\
 	${read}
         
     """

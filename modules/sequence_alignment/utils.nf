@@ -1,5 +1,4 @@
 process publish {
-  cpus 1
   memory '1 GB'
   
 

@@ -48,7 +48,6 @@ process bwa_align {
     script:
     n_cpus = Runtime.runtime.availableProcessors()
     """
-    #bwa mem -t $task.cpus ${refgenome} ${read1} ${read2} -o ${read1.getSimpleName()}.sam
     bwa mem -t $n_cpus ${refgenome} ${read1} ${read2} -o ${read1.getSimpleName()}.sam
     """
 }

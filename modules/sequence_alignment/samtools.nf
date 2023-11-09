@@ -9,8 +9,9 @@ process sam_to_bam {
     path("${samfile.getBaseName()}.bam")
 
     script:
+    n_cpus = Runtime.runtime.availableProcessors()
     """
-    samtools view ${samfile} --bam --threads 12 -o ${samfile.getBaseName()}.bam
+    samtools view ${samfile} --bam --threads $n_cpus -o ${samfile.getBaseName()}.bam
     """
 }
 
@@ -25,9 +26,10 @@ process sort_bam {
     path("${bamfile}.bam")
 
     script:
+    n_cpus = Runtime.runtime.availableProcessors()
     """
     mv ${bamfile} unsorted_${bamfile}
-    samtools sort "unsorted_${bamfile}" -@ 12 -o "${bamfile}.bam"
+    samtools sort "unsorted_${bamfile}" -@ $n_cpus -o "${bamfile}.bam"
     """
 }
 
@@ -42,8 +44,9 @@ process index_bam {
     path("${bamfile}.bai")
 
     script:
+    n_cpus = Runtime.runtime.availableProcessors()
     """
-    samtools index "${bamfile}" -@ 12 -o "${bamfile}.bai"
+    samtools index "${bamfile}" -@ $n_cpus -o "${bamfile}.bai"
     """
 }
 
@@ -59,9 +62,10 @@ process bam_stats {
     path("${bamfile}.bai")
 
     script:
+    n_cpus = Runtime.runtime.availableProcessors()
     """
     samtools stats "${bamfile}" \\
     	--reference ${refgenome} \\
-	-@ 12
+	-@ $n_cpus
     """
 }

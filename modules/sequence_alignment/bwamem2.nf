@@ -44,8 +44,9 @@ process bwamem2_align {
     path("${read1.getSimpleName()}.sam")
 
     script:
+    n_cpus = Runtime.runtime.availableProcessors()
     """
-    bwa-mem2 mem -t $task.cpus ${refgenome} ${read1} ${read2} -o ${read1.getSimpleName()}.sam
+    bwa-mem2 mem -t $n_cpus ${refgenome} ${read1} ${read2} -o ${read1.getSimpleName()}.sam
     """
 }
 

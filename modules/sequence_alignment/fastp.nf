@@ -14,6 +14,7 @@ process fastp {
 
     def gz_compressionlevel = 1 // out of 1 to 9
 
+    n_cpus = Runtime.runtime.availableProcessors()
     """
 
     fastp \\
@@ -22,7 +23,7 @@ process fastp {
 	--out1  ${read1.getSimpleName()}_fastp.fq.gz \\
 	--out2  ${read2.getSimpleName()}_fastp.fq.gz \\
 	-z ${gz_compressionlevel} \\
-	--thread $task.cpus \\
+	--thread $n_cpus \\
 	--json ${output_file_prefix}_fastp.json \\
 	--html ${output_file_prefix}_fastp.html \\
 	2> ${output_file_prefix}.fastp.log
