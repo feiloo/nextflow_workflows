@@ -5,7 +5,7 @@ process gatk_markduplicates {
     container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
 
     input:
-        tuple val(sample_id), path(bam)
+        path(bam)
 	path(refgenome)
 
     output:
@@ -23,10 +23,31 @@ process gatk_markduplicates {
     """
 }
 
+process gatk_baserecalibrator {
+    conda "bioconda::gatk4=4.4.0.0"
+    container "quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0"
+
+    input:
+        path(bamfile)
+	path(refgenome)
+	path(known_sites)
+
+    output:
+        path("${bamfile.getSimpleName()}_recal_data.table")
+
+    script:
+    """
+    gatk BaseRecalibrator \\
+        --input ${bamfile} \\
+	--reference ${refgenome} \\
+	--output ${bamfile.getSimpleName()}_recal_data.table
+    """
+
+}
+
 // test
 workflow {
   filec = Channel.fromPath(params.bam)
   refg = Channel.fromPath('/data/reference/clc_refseqs/Homo_sapiens_sequence_hg38_no_alt_analysis_set.fa')
-  fc2 = filec.map{it->['sample_s1', it]}
-  gatk_markduplicates(fc2, refg)
+  gatk_markduplicates(filec, refg)
 }
