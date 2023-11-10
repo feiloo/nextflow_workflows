@@ -3,7 +3,8 @@ process bwamem2_index_refgenome {
     container 'quay.io/biocontainers/bwa-mem2:2.2.1--he513fc3_0'
 
     // needs 28N GB, where N is the size of the uncompressed refseq in GB
-    memory '120 GB'
+    //memory '120 GB'
+    storeDir "$NEXTFLOW_STOREDIR/bwamem2_indices"
 
     input:
     path(refgenome)
@@ -28,10 +29,10 @@ process bwamem2_align {
     conda "bioconda::bwa-mem2=2.2.1"
     container 'quay.io/biocontainers/bwa-mem2:2.2.1--he513fc3_0'
 
-    memory '120 GB'
+    //memory '120 GB'
 
     input:
-    tuple val(sample_id), path(read1), path(read2)
+    tuple path(read1), path(read2)
     path(refgenome)
     path("${refgenome}.0123")
     path("${refgenome}.amb")
@@ -40,7 +41,7 @@ process bwamem2_align {
     path("${refgenome}.pac")
 
 
-    //output:
+    output:
     path("${read1.getSimpleName()}.sam")
 
     script:

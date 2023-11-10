@@ -2,10 +2,10 @@ nextflow.enable.dsl=2
 
 include { fastqc } from "$NEXTFLOW_MODULES/sequence_alignment/fastqc.nf"
 include { fastp } from "$NEXTFLOW_MODULES/sequence_alignment/fastp.nf"
-//include { bwamem2_index_refgenome; bwamem2_align } from "$NEXTFLOW_MODULES/sequence_alignment/bwamem2.nf"
-include { bwa_index_refgenome; bwa_align } from "$NEXTFLOW_MODULES/sequence_alignment/bwa.nf"
-include { sam_to_bam; sort_bam; index_bam } from "$NEXTFLOW_MODULES/sequence_alignment/samtools.nf"
-include { gatk_markduplicates } from "$NEXTFLOW_MODULES/sequence_alignment/gatk.nf"
+include { bwamem2_index_refgenome; bwamem2_align } from "$NEXTFLOW_MODULES/sequence_alignment/bwamem2.nf"
+//include { bwa_index_refgenome; bwa_align } from "$NEXTFLOW_MODULES/sequence_alignment/bwa.nf"
+include { sam_to_bam; sort_bam; index_bam; index_fasta } from "$NEXTFLOW_MODULES/sequence_alignment/samtools.nf"
+include { gatk_indexfeaturefile; gatk_createsequencedictionary; gatk_markduplicates; gatk_baserecalibrator; gatk_apply_bqsr } from "$NEXTFLOW_MODULES/sequence_alignment/gatk.nf"
 
 
 process stage_fastq {
@@ -107,27 +107,32 @@ workflow sequence_alignment {
     // because it has to be known before starting the process as it it an output thereof
     preprocessed_reads = fastp(sample_reads_w_prefix).preprocessed_reads
 
-    //bwa_idx = bwamem2_index_refgenome(args.refgenome)
-    bwa_idx = bwa_index_refgenome(args.refgenome)
+    //bwa_idx = bwa_index_refgenome(args.refgenome)
+    bwa_idx = bwamem2_index_refgenome(args.refgenome)
+    refgenome_index = index_fasta(args.refgenome).fasta_index
+    refgenome_dict = gatk_createsequencedictionary(args.refgenome).refgenome_dict
 
     preprocessed_reads_no_id = preprocessed_reads.map{it -> [it[1], it[2]]} 
-    sams = bwa_align(preprocessed_reads_no_id, args.refgenome, bwa_idx.amb, bwa_idx.ann, bwa_idx.bwt, bwa_idx.pac, bwa_idx.sa)
+    //sams = bwa_align(preprocessed_reads_no_id, args.refgenome, bwa_idx.amb, bwa_idx.ann, bwa_idx.bwt, bwa_idx.pac, bwa_idx.sa)
 
     // bwa_idx.f0123 was has an f prefixed so, the file ending starts with a non-numeral
-    // as a convention
-    /*
-    mapped_reads = bwamem2_align(
-    	preprocessed_reads, args.refgenome, 
-    	bwa_idx.f0123, bwa_idx.amb, 
-	bwa_idx.bwt_2bit_64, bwa_idx.ann, 
-	bwa_idx.pac)
-    */
+    sams = bwamem2_align(preprocessed_reads_no_id, args.refgenome, bwa_idx.f0123, bwa_idx.amb, bwa_idx.ann, bwa_idx.bwt_2bit_64, bwa_idx.pac)
 
     bams = sam_to_bam(sams)
     sorted_bams = sort_bam(bams)
     bam_indices = index_bam(sorted_bams)
 
-    marked_bams = gatk_markduplicates(sorted_bams, args.refgenome)
+    marked_bams = gatk_markduplicates(sorted_bams, args.refgenome).marked_bams
+    known_sites_index = gatk_indexfeaturefile(args.known_sites).known_sites_index
+    bam_recal_data = gatk_baserecalibrator(marked_bams, args.refgenome, refgenome_index, refgenome_dict, args.known_sites, known_sites_index)
+
+    // rebuild key for matching with recal-data
+    keyed_bams = marked_bams.map{ it -> ["${it.getSimpleName()}_recal_data.table", it] }
+    keyed_recal_data = bam_recal_data.map{ it -> ["${it}", it] }
+
+    bam_w_recal_data = keyed_bams.join(keyed_recal_data).map{ it -> [it[1], it[2]] }
+
+    bam_recalibrated = gatk_apply_bqsr(bam_w_recal_data, args.refgenome)
 }
 
 workflow {

@@ -1,3 +1,22 @@
+process index_fasta {
+    conda "bioconda::samtools=1.17"
+    container 'quay.io/biocontainers/samtools:1.17--h00cdaf9_0'
+
+    storeDir "$NEXTFLOW_STOREDIR"
+
+    input:
+    path(refgenome)
+
+    output:
+    path("${refgenome}.fai"), emit: fasta_index
+
+    script:
+    n_cpus = Runtime.runtime.availableProcessors()
+    """
+    samtools faidx ${refgenome} --output ${refgenome}.fai
+    """
+}
+
 process sam_to_bam {
     conda "bioconda::samtools=1.17"
     container 'quay.io/biocontainers/samtools:1.17--h00cdaf9_0'
@@ -51,6 +70,26 @@ process index_bam {
 }
 
 process bam_stats {
+    conda "bioconda::samtools=1.17"
+    container 'quay.io/biocontainers/samtools:1.17--h00cdaf9_0'
+
+    input:
+    path(bamfile)
+    path(refgenome)
+
+    output:
+    path("${bamfile}.bai")
+
+    script:
+    n_cpus = Runtime.runtime.availableProcessors()
+    """
+    samtools stats "${bamfile}" \\
+    	--reference ${refgenome} \\
+	-@ $n_cpus
+    """
+}
+
+process bam_depth {
     conda "bioconda::samtools=1.17"
     container 'quay.io/biocontainers/samtools:1.17--h00cdaf9_0'
 

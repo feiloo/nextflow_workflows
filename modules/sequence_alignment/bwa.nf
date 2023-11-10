@@ -2,7 +2,7 @@ process bwa_index_refgenome {
     conda "bioconda::bwa=0.7.17"
     container 'quay.io/biocontainers/bwa:0.7.17--hed695b0_7'
 
-    storeDir '/data2/bwa_indices'
+    storeDir "$NEXTFLOW_STOREDIR"
 
     // needs 28N GB, where N is the size of the uncompressed refseq in GB
     //memory '120 GB'
@@ -27,10 +27,8 @@ process bwa_index_refgenome {
 }
 
 process bwa_align {
-    conda "bioconda::bwa-mem2=2.2.1"
+    conda "bioconda::bwa=0.7.17"
     container 'quay.io/biocontainers/bwa:0.7.17--hed695b0_7'
-
-    memory '56 GB'
 
     input:
     tuple path(read1), path(read2)
