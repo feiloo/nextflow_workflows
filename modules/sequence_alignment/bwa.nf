@@ -45,7 +45,10 @@ process bwa_align {
 
     script:
     n_cpus = Runtime.runtime.availableProcessors()
+    // todo: fix read groups:
+    //def read_group_info = "read group"
     """
+    #bwa mem -R ${read_group_info} -t $n_cpus ${refgenome} ${read1} ${read2} -o ${read1.getSimpleName()}.sam
     bwa mem -t $n_cpus ${refgenome} ${read1} ${read2} -o ${read1.getSimpleName()}.sam
     """
 }
