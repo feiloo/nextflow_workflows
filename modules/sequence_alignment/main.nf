@@ -5,7 +5,7 @@ include { fastp } from "$NEXTFLOW_MODULES/sequence_alignment/fastp.nf"
 include { bwamem2_index_refgenome; bwamem2_align } from "$NEXTFLOW_MODULES/sequence_alignment/bwamem2.nf"
 //include { bwa_index_refgenome; bwa_align } from "$NEXTFLOW_MODULES/sequence_alignment/bwa.nf"
 include { bam_stats; bam_depth; sam_to_bam; sort_bam; index_bam; index_fasta } from "$NEXTFLOW_MODULES/sequence_alignment/samtools.nf"
-include { gatk_indexfeaturefile; gatk_createsequencedictionary; gatk_markduplicates; gatk_baserecalibrator; gatk_apply_bqsr } from "$NEXTFLOW_MODULES/sequence_alignment/gatk.nf"
+include { gatk_indexfeaturefile; gatk_createsequencedictionary; gatk_markduplicates; gatk_set_tags; gatk_baserecalibrator; gatk_apply_bqsr } from "$NEXTFLOW_MODULES/sequence_alignment/gatk.nf"
 
 
 process stage_fastq {
@@ -56,7 +56,8 @@ workflow sequence_alignment {
 	]
     }
 
-    staged_sample_pairs = stage_fastq(sample_pairs)
+    //staged_sample_pairs = stage_fastq(sample_pairs)
+    staged_sample_pairs = sample_pairs
 
     // still check the rows for the naming scheme
     def check_row = { row ->
@@ -119,16 +120,18 @@ workflow sequence_alignment {
     sams = bwamem2_align(preprocessed_reads_no_id, args.refgenome, bwa_idx.f0123, bwa_idx.amb, bwa_idx.ann, bwa_idx.bwt_2bit_64, bwa_idx.pac)
 
     bams = sam_to_bam(sams)
-    sorted_bams = sort_bam(bams)
-    bam_indices = index_bam(sorted_bams)
+    //sorted_bams = sort_bam(bams)
+    //bam_indices = index_bam(sorted_bams)
 
-    marked_bams = gatk_markduplicates(sorted_bams, args.refgenome).marked_bams
+    marked_bams = gatk_markduplicates(bams).marked_bams
+    tagged_bams = gatk_set_tags(marked_bams, args.refgenome).tagged_bams
+
     known_sites_index = gatk_indexfeaturefile(args.known_sites).known_sites_index
-    bam_recal_data = gatk_baserecalibrator(marked_bams, args.refgenome, refgenome_index, refgenome_dict, args.known_sites, known_sites_index)
+    bam_recal_data = gatk_baserecalibrator(tagged_bams, args.refgenome, refgenome_index, refgenome_dict, args.known_sites, known_sites_index)
 
     // rebuild key for matching with recal-data
-    keyed_bams = marked_bams.map{ it -> ["${it.getSimpleName()}_recal_data.table", it] }
-    keyed_recal_data = bam_recal_data.map{ it -> ["${it}", it] }
+    keyed_bams = tagged_bams.map{ it -> ["${it.getSimpleName()}_recal_data.table", it] }
+    keyed_recal_data = bam_recal_data.map{ it -> ["${it.getSimpleName()}", it] }
 
     bam_w_recal_data = keyed_bams.join(keyed_recal_data).map{ it -> [it[1], it[2]] }
 

@@ -68,7 +68,7 @@ process bwamem2_align {
     def sample_barcode = "${read1.getSimpleName()}"
 
     def platform_unit = "${flowcell_barcode}.${flowcell_lane}.${sample_barcode}"
-    def sample_name = "pool1"
+    def sample_name = "${read1.getSimpleName()}"
     
     // one of like: ILLUMINA, SOLID, LS454, HELICOS, PACBIO
     def platform_technology = "ILLUMINA"
