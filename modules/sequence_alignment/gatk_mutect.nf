@@ -7,7 +7,8 @@ process gatk_mutect {
     container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
 
     input:
-        path(sample_bam)
+        path(tumor_bam)
+        path(normal_bam)
 	path(intervals)
 	path(panel_of_normals)
 	path(germline_resource)
@@ -19,16 +20,36 @@ process gatk_mutect {
 
     script:
     n_cpus = Runtime.runtime.availableProcessors()
+    def normal_samplename = "${normal_bam.getSimpleName()}"
     """
     gatk Mutect2 \\
     	--native-pair-hmm-threads ${n_cpus} \\
-	--INPUT ${sample_bam} \\
+	--INPUT ${tumor_bam} \\
+	--INPUT ${normal_bam} \\
+	-normal ${} \\
 	-L ${intervals} \\
 	-pon ${panel_of_normals} \\
 	-germline-resource ${germline_resource} \\
         --REFERENCE ${refgenome} \\
 	--f1r2-tar-gz "${sample_bam.getSimpleName()}_f1r2_data.tar.gz" \\
 	--OUTPUT ${sample_bam.getSimpleName()}_unfiltered.vcf}
+    """
+}
+
+process gatk_getsamplename {
+    conda "bioconda::gatk4=4.4.0.0"
+    container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
+
+    input:
+        path(sample_bam)
+
+    output:
+      val(header_samplename)
+
+    script:
+    """
+    gatk GetSampleName \\
+	--INPUT ${sample_bam}
     """
 }
 
@@ -118,21 +139,55 @@ process gatk_filter_calls {
     """
 }
 
+process create_pon_db {
+    conda "bioconda::gatk4=4.4.0.0"
+    container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
 
-workflow sequence_alignment {
+    input:
+    	path(pon_vcfs)
+    	path(refgenome)
+    	path(intervals)
+
+    output:
+        path("pon_genomics_db")
+
+    script:
+    """
+    gatk GenomicsDBImport \\
+        -R ${refgenome} \\
+        --genomicsdb-workspace-path pon_genomics_db \\
+}
+
+
+
+
+workflow variant_call {
   take:
+    sample_bam
+    intervals
+    panel_of_normals
+    germline_resource
+    refgenome
     args
+
   main:
-    mut = gatk_mutect(sample_bam, intervals, panel_of_normals, germline_resourse, args.refgenome)
+    mut = gatk_mutect(sample_bam, intervals, panel_of_normals, germline_resource, refgenome)
     om = gatk_learn_readorientationmodel(mut.f1r2_data).orientation_model
 
     # for tumors and for normals
-    pileups = gatk_getpileupsummaries(sample_bam, mut.vcf, genomic_intervals, variant_frequency_vcf)
+    tumor_pileups = gatk_getpileupsummaries(sample_bam, mut.vcf, genomic_intervals, variant_frequency_vcf)
 
     matched_pileups = tumor_pileups.cross(normal_pileups)
     contamination = gatk_calculate_contamination(matched_pileups, segments_table)
     filtered_vcf = gatk_filter_calls(mut.vcf, segments_table, contamination, om)
 
   emit:
+    vcf = filtered_vcf
+}
+
+workflow create_pon {
+  take:
+    args
+  main:
     vcf = filtered_vcf
 }

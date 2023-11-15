@@ -45,8 +45,31 @@ process gatk_indexfeaturefile {
 
 
 process gatk_markduplicates {
-    // note, this process requires already sorted bams
+    conda "bioconda::gatk4=4.4.0.0"
+    container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
 
+    input:
+        path(bam)
+
+    output:
+      path("out/${bam}"), emit: marked_bams
+      //path("${bam.getSimpleName()}_metrics.txt"), emit: metrics
+
+    script:
+    // write to output directory to avoid filename collision but keeping the filename in the channels the same
+    n_cpus = Runtime.runtime.availableProcessors()
+    //--METRICS_FILE ${bam.getSimpleName()}_metrics.txt
+
+    """
+    mkdir out
+    gatk MarkDuplicatesSpark \\
+        --input ${bam} \\
+    	--spark-master local[$n_cpus] \\
+	--output out/${bam}
+    """
+}
+
+process gatk_set_tags {
     conda "bioconda::gatk4=4.4.0.0"
     container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
 
@@ -55,17 +78,14 @@ process gatk_markduplicates {
 	path(refgenome)
 
     output:
-      path("out/${bam}"), emit: marked_bams
-      path("${bam.getSimpleName()}_metrics.txt"), emit: metrics
+      path("out/${bam}"), emit: tagged_bams
 
-    script:
-    // write to output directory to avoid filename collision but keeping the filename in the channels the same
     """
     mkdir out
-    gatk MarkDuplicates \\
-        --INPUT ${bam} \\
-	--OUTPUT out/${bam} \\
-	--METRICS_FILE ${bam.getSimpleName()}_metrics.txt
+    gatk SetNmMdAndUqTags \\
+    	--INPUT ${bam} \\
+	--REFERENCE_SEQUENCE ${refgenome} \\
+	--OUTPUT out/${bam}
     """
 }
 
