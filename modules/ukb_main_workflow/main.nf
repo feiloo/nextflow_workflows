@@ -6,13 +6,48 @@ include { CIOABCD_VARIANTINTERPRETATION } from "$NEXTFLOW_MODULES/variantinterpr
 include { sequence_alignment } from "$NEXTFLOW_MODULES/sequence_alignment"
 //include { SAREK } from "$NEXTFLOW_MODULES/sarek_wrapper"
 
+process rename_chromosomes_vcf {
+    conda "bioconda::bcftools=1.17"
+    container "quay.io/biocontainers/bcftools:1.17--haef29d1_0"
+
+    fair true
+
+    input:
+    tuple val(id), path(vcf)
+
+    output:
+    tuple val(id), path("out/${vcf}"), emit: vcf
+
+    script:
+    def chr_map = (1..23).collect{"${it} chr${it}"}
+    chr_map += ["X chr23", "Y chr24"]
+    chr_map = chr_map.join('\n')
+    """
+    echo "${chr_map}" > chr_map.txt
+    mkdir out
+    bcftools annotate --rename-chrs chr_map.txt --output out/${vcf} ${vcf}
+    """
+}
+
+process write_samplesheet {
+    input:
+    val(samplesheet_rows)
+
+    output:
+    path("fixed_samplesheet.csv"), emit: samplesheet
+
+    script:
+    def samplesheet_text = samplesheet_rows.join('\n')
+    """
+    echo "${samplesheet_text}" > fixed_samplesheet.csv
+    """
+}
+
 
 workflow {
   //def args = params
   def args = [:]
   for (param in params) { args[param.key] = param.value }
-
-  println args
 
   if(args.workflow_variation == 'sequence_alignment'){
   	sequence_alignment(args)
@@ -27,7 +62,15 @@ workflow {
   	SAREK(args)
   }
   else if(args.workflow_variation == 'variantinterpretation'){
-  	CIOABCD_VARIANTINTERPRETATION(args)
+	samplesheet = args.samplesheet
+	header = ['sample', 'vcf']
+    	csv_channel = Channel.fromPath(samplesheet, checkIfExists: true, type: 'file').splitCsv(header: header, skip: 1)
+	fixed_vcfs = rename_chromosomes_vcf(csv_channel).vcf
+	new_rows = Channel.of("sample,vcf").concat((fixed_vcfs.map{it -> "${it[0]},${it[1]}"})).collect()
+	//.collectFile(name: "fixed_samplesheet.csv", newLine: true)
+	new_samplesheet = write_samplesheet(new_rows).samplesheet
+
+  	CIOABCD_VARIANTINTERPRETATION(args, new_samplesheet)
   }
   else {
     println "invalid value for parameter workflow_variation " + args.workflow_variation
