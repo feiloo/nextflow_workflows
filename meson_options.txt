@@ -1,0 +1,2 @@
+option('testconfig_path', type: 'string')
+option('test_samplesheet', type: 'string')
