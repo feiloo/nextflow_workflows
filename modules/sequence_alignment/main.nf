@@ -27,10 +27,11 @@ process stage_fastq {
     assert tumor_read1.exists()
     assert tumor_read2.exists()
     """
-    touch ${normal_read1}
-    touch ${normal_read2}
-    touch ${tumor_read1}
-    touch ${tumor_read2}
+    echo hello
+    #touch ${normal_read1}
+    #touch ${normal_read2}
+    #touch ${tumor_read1}
+    #touch ${tumor_read2}
     """
 }
 
@@ -56,8 +57,7 @@ workflow sequence_alignment {
 	]
     }
 
-    //staged_sample_pairs = stage_fastq(sample_pairs)
-    staged_sample_pairs = sample_pairs
+    staged_sample_pairs = stage_fastq(sample_pairs)
 
     // still check the rows for the naming scheme
     def check_row = { row ->
@@ -130,7 +130,7 @@ workflow sequence_alignment {
     bam_recal_data = gatk_baserecalibrator(tagged_bams, args.refgenome, refgenome_index, refgenome_dict, args.known_sites, known_sites_index)
 
     // rebuild key for matching with recal-data
-    keyed_bams = tagged_bams.map{ it -> ["${it.getSimpleName()}_recal_data.table", it] }
+    keyed_bams = tagged_bams.map{ it -> ["${it.getSimpleName()}_recal_data", it] }
     keyed_recal_data = bam_recal_data.map{ it -> ["${it.getSimpleName()}", it] }
 
     bam_w_recal_data = keyed_bams.join(keyed_recal_data).map{ it -> [it[1], it[2]] }
