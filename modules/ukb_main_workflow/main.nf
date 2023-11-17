@@ -4,6 +4,8 @@ include { arriba_nextflow } from "$NEXTFLOW_MODULES/arriba_nextflow"
 include { clc_nextflow } from "$NEXTFLOW_MODULES/clc_nextflow"
 include { CIOABCD_VARIANTINTERPRETATION } from "$NEXTFLOW_MODULES/variantinterpretation"
 include { sequence_alignment } from "$NEXTFLOW_MODULES/sequence_alignment"
+include { msi_annotate } from "$NEXTFLOW_MODULES/biomarker"
+include { gatk_collect_hs_metrics } from "$NEXTFLOW_MODULES/sequence_alignment/gatk.nf"
 //include { SAREK } from "$NEXTFLOW_MODULES/sarek_wrapper"
 
 process rename_clcad_to_ad {
@@ -120,6 +122,15 @@ workflow {
   }
   else if(args.workflow_variation == 'sarek'){
   	SAREK(args)
+  }
+  else if(args.workflow_variation == 'msisensorpro'){
+	samplesheet = args.samplesheet
+	header = ['sample', 'tumor_bam', 'tumor_sha256sum', 'normal_bam', 'normal_sha256sum']
+    	rows = Channel.fromPath(samplesheet, checkIfExists: true, type: 'file').splitCsv(header: header, skip: 1)
+	rows.view()
+	bams = rows.map{it -> [it.tumor_bam, it.normal_bam]}
+	msi_annotate(bams, args.refgenome)
+	//gatk_collect_hs_metrics(tumor_bam, args.refgenome, target_intervals)
   }
   else if(args.workflow_variation == 'variantinterpretation'){
 	samplesheet = args.samplesheet
