@@ -47,8 +47,8 @@ process sort_bam {
     script:
     n_cpus = Runtime.runtime.availableProcessors()
     """
-    mv ${bamfile} unsorted_${bamfile}
-    samtools sort "unsorted_${bamfile}" -@ $n_cpus -o "${bamfile}.bam"
+    mkdir out
+    samtools sort "${bamfile}" -@ $n_cpus -o "out/${bamfile}"
     """
 }
 
