@@ -78,6 +78,31 @@ process write_samplesheet {
     """
 }
 
+process get_sha256sum {
+    input:
+    tuple val(sample), path(vcf), val(samplesheet_sha256sum)
+
+    output:
+    tuple val(sample), path(vcf), val(samplesheet_sha256sum), stdout
+    
+    script:
+    """
+    sha256sum "${vcf}" | cut -d ' ' -f 1
+    """
+
+}
+
+process save_samplesheet {
+    publishDir "${args.output_dir}", mode: 'copy', overwrite: false
+
+    input:
+      path(samplesheet)
+    output:
+      path(samplesheet)
+    script:
+      println "saved samplesheet to output_dir: ${args.output_dir}"
+}
+
 
 workflow {
   //def args = params
@@ -98,9 +123,25 @@ workflow {
   }
   else if(args.workflow_variation == 'variantinterpretation'){
 	samplesheet = args.samplesheet
-	header = ['sample', 'vcf']
-    	csv_channel = Channel.fromPath(samplesheet, checkIfExists: true, type: 'file').splitCsv(header: header, skip: 1)
-	chr_fixed_vcf = rename_chromosomes_vcf(csv_channel).vcf
+	header = ['sample', 'vcf', 'vcf_sha256sum']
+    	rows = Channel.fromPath(samplesheet, checkIfExists: true, type: 'file').splitCsv(header: header, skip: 1)
+
+	rows_w_shasums = get_sha256sum(rows)
+
+	save_samplesheet(samplesheet)
+
+	correct_rows = rows_w_shasums.map{it -> 
+		if("${it[2]}".trim() != "${it[3]}".trim()) {
+		  throw new Exception("samplesheet hash doesnt match actual filehash ${it}")
+		  }
+		else {
+		  [it[0], it[1]]
+		  }
+		}
+
+	//alternatively add a .filter op here, if we wanna fail late
+
+	chr_fixed_vcf = rename_chromosomes_vcf(correct_rows).vcf
 	fixed_vcfs = rename_clcad_to_ad(chr_fixed_vcf).vcf
 	new_rows = Channel.of("sample,vcf").concat((fixed_vcfs.map{it -> "${it[0]},${it[1]}"})).collect()
 	//.collectFile(name: "fixed_samplesheet.csv", newLine: true)
