@@ -136,9 +136,12 @@ workflow sequence_alignment {
 
     bam_w_recal_data = keyed_bams.join(keyed_recal_data).map{ it -> [it[1], it[2]] }
 
-    bam_recalibrated = gatk_apply_bqsr(bam_w_recal_data, args.refgenome)
+    bam_recalibrated = gatk_apply_bqsr(bam_w_recal_data, args.refgenome, refgenome_index, refgenome_dict)
     bam_w_depth = bam_depth(bam_recalibrated, args.refgenome)
-    bams_w_stats = bam_stats(bam_w_depth, args.refgenome)
+    bams_w_stats = bam_stats(bam_recalibrated, args.refgenome)
+
+  emit:
+    bam = bam_recalibrated
 }
 
 workflow {

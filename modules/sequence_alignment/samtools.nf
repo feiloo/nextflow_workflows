@@ -78,14 +78,15 @@ process bam_stats {
     path(refgenome)
 
     output:
-    path("${bamfile}.bai")
+    path("${bamfile.getSimpleName()}_samstats")
 
     script:
     n_cpus = Runtime.runtime.availableProcessors()
     """
     samtools stats "${bamfile}" \\
     	--reference ${refgenome} \\
-	-@ $n_cpus
+	-@ $n_cpus \\
+	> "${bamfile.getSimpleName()}_samstats"
     """
 }
 
@@ -98,13 +99,12 @@ process bam_depth {
     path(refgenome)
 
     output:
-    path("${bamfile}.bai")
+    path("${bamfile.getSimpleName()}_depth")
 
     script:
     n_cpus = Runtime.runtime.availableProcessors()
     """
-    samtools stats "${bamfile}" \\
-    	--reference ${refgenome} \\
-	-@ $n_cpus
+    samtools depth "${bamfile}" > "${bamfile.getSimpleName()}_depth"
+
     """
 }

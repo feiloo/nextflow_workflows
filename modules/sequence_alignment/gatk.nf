@@ -122,6 +122,8 @@ process gatk_apply_bqsr {
     input:
         tuple path(bamfile), path(bam_recal_data)
 	path(refgenome)
+	path(refgenome_index)
+	path(refgenome_dict)
 
     output:
         path("${bamfile.getSimpleName()}_recalibrated.bam")
