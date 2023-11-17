@@ -137,6 +137,30 @@ process gatk_apply_bqsr {
 
 }
 
+
+process gatk_collect_hs_metrics {
+    conda "bioconda::gatk4=4.4.0.0"
+    container "quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0"
+
+    input:
+        tuple path(tumor_bam)
+	path(refgenome)
+	path(target_intervals)
+
+    output:
+        path("${bamfile.getSimpleName()}_recalibrated.bam")
+
+    script:
+    """
+    gatk CollectHsMetrics \\
+        --INPUT ${tumor_bam} \\
+	--OUTPUT "${tumor_bam.getSimpleName()}.csv" \\
+	--reference "${refgenome}"
+    """
+
+}
+
+
 // test
 workflow {
   filec = Channel.fromPath(params.bam)
