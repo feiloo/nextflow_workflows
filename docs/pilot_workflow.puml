@@ -1,0 +1,59 @@
+@startuml
+floating note right
+  nodes in this graph are operator/processes
+    edges represent the data
+    end note
+
+    start
+    :Fastq input (Nas);
+    -> fastq;
+    :Qiagen CLC Workflow;
+
+    split
+    -> bam;
+
+    :Nextflow wes pilot workflow?;
+    -> recalibrated bam;
+    split
+    : Nextflow Sequenza;
+    -> ploidy and cnv, csv;
+    split again
+    : Nextflow msisensor;
+    -> msisensor txt;
+    end split
+
+    : preformat csv table;
+    split again
+    -> vcf;
+
+    split
+    :Qiagen QCI;
+    -> annotated vcf, tsv, csv, txt with ACMG classes (class 3,4,5);
+    :Qiagen CLC Workbench Filter and Manual Analysis;
+    -> txt, transcriptlist with quality;
+    :python script to filter on genelist, transcript and quality;
+    -> xlsx table;
+    :manual excel annotation and analysis;
+    label lab1
+    -> xlsx table with annotations, bed file;
+
+    :python xlsx coordinate transform/liftover;
+    -> csv, somatic variants;
+
+
+    split again
+    :Nextflow wes pilot workflow;
+    -> vcf samplesheet;
+    : Nextflow Cio Variantinterpretation;
+    -> tmb reports;
+    :preformat reports to csv;
+
+    end split
+
+    end split
+    :format reports;
+    :Upload, encrypt, EGA;
+    end
+
+
+    @enduml
