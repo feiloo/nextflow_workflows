@@ -37,18 +37,19 @@ process sam_to_bam {
 process sort_bam {
     conda "bioconda::samtools=1.17"
     container 'quay.io/biocontainers/samtools:1.17--h00cdaf9_0'
+    memory "60G"
 
     input:
     path(bamfile)
 
     output:
-    path("${bamfile}.bam")
+    path("${bamfile.getSimpleName()}.bam")
 
     script:
     n_cpus = Runtime.runtime.availableProcessors()
     """
     mkdir out
-    samtools sort "${bamfile}" -@ $n_cpus -o "out/${bamfile}"
+    samtools sort "${bamfile}" -@ $n_cpus -o "out/${bamfile.getSimpleName()}"
     """
 }
 

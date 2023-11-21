@@ -26,7 +26,7 @@ process eval_msi {
 
     // sorted and indexed bams
     input:
-    tuple path(tumor_bam), path(normal_bam)
+    tuple path(normal_bam), path(normal_bam_bai), path(tumor_bam), path(tumor_bam_bai)
     path(refgenome_microsatellites)
 
     output:
@@ -54,11 +54,18 @@ workflow msi_annotate {
     matched_bams.flatten().view()
     all_bams = matched_bams.flatten()
     sorted = sort_bam(all_bams)
+    indices = index_bam(sorted)
     // add filename based key, group and remove key
-    sorted_w_key = sorted.map{it -> [it.getSimpleName().split('_')[0], it]}
-    sorted_w_key.view()
-    //preproc_bams = index_bam(sorted).groupTuple().map{it -> it[1]}
-    //eval_msi(preproc_bams, sites)
+    preproc_bams = sorted.mix(indices).map{it -> [it.getSimpleName().split('_')[0], it]}
+    matched_preproc_bams = preproc_bams.groupTuple().map{it -> it[1].sort()}
+    // assert that the pattern order and names match:
+    // _normal.bam, _normal.bam.bai, _tumor.bam, _tumor.bam.bai
+    matched_preproc_bams.subscribe{ it -> 
+    	assert it.join(",") ==~ /.*_normal\.bam.*_normal\.bam\.bai.*_tumor\.bam.*_tumor\.bam\.bai/
+	}
+    p//reproc_bams.view()
+    //matched_preproc_bams.view()
+    eval_msi(matched_preproc_bams, sites)
 }
 
 workflow {
