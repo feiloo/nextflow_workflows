@@ -48,6 +48,8 @@ process gatk_markduplicates {
     conda "bioconda::gatk4=4.4.0.0"
     container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
 
+    memory "80 GB"
+
     input:
         path(bam)
 
@@ -73,6 +75,8 @@ process gatk_set_tags {
     conda "bioconda::gatk4=4.4.0.0"
     container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
 
+    memory "46 GB"
+
     input:
         path(bam)
 	path(refgenome)
@@ -92,6 +96,8 @@ process gatk_set_tags {
 process gatk_baserecalibrator {
     conda "bioconda::gatk4=4.4.0.0"
     container "quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0"
+
+    memory "46 GB"
 
     input:
         path(bamfile)
@@ -118,6 +124,8 @@ process gatk_baserecalibrator {
 process gatk_apply_bqsr {
     conda "bioconda::gatk4=4.4.0.0"
     container "quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0"
+
+    memory "46 GB"
 
     input:
         tuple path(bamfile), path(bam_recal_data)

@@ -2,6 +2,8 @@ process fastqc {
     conda "bioconda::fastqc=0.11.9"
     container 'quay.io/biocontainers/fastqc:0.11.9--0'
 
+    memory "36 GB"
+
     input:
     tuple val(sample_id), path(read)
 

@@ -14,6 +14,7 @@ process stage_fastq {
     // it also allows copying, in case the datasource is on a slow network drive
 
     // stageInMode 'copy'
+    stageInMode 'link'
 
     input:
     tuple val(sample_id), path(normal_read1), path(normal_read2), path(tumor_read1), path(tumor_read2)

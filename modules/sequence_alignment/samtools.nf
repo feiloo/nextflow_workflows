@@ -21,6 +21,8 @@ process sam_to_bam {
     conda "bioconda::samtools=1.17"
     container 'quay.io/biocontainers/samtools:1.17--h00cdaf9_0'
 
+    memory "10 GB"
+
     input:
     path(samfile)
 
@@ -73,6 +75,8 @@ process bam_stats {
     conda "bioconda::samtools=1.17"
     container 'quay.io/biocontainers/samtools:1.17--h00cdaf9_0'
 
+    memory "4 GB"
+
     input:
     path(bamfile)
     path(refgenome)
@@ -94,6 +98,7 @@ process bam_depth {
     conda "bioconda::samtools=1.17"
     container 'quay.io/biocontainers/samtools:1.17--h00cdaf9_0'
 
+    memory "32 GB"
     input:
     path(bamfile)
     path(refgenome)

@@ -2,6 +2,8 @@ process fastp {
     conda "bioconda::fastp=0.23.4"
     container 'quay.io/biocontainers/fastp:0.23.4--h5f740d0_0'
 
+    memory "6 GB"
+
     input:
     tuple val(sample_id), path(read1), path(read2), val(output_file_prefix)
 
