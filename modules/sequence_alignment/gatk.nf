@@ -137,25 +137,45 @@ process gatk_apply_bqsr {
 
 }
 
+process gatk_bed_to_intervallist {
+    conda "bioconda::gatk4=4.4.0.0"
+    container "quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0"
+
+    input:
+        path(targets_bed)
+	path(refgenome_dict)
+
+    output:
+        path("${targets_bed.getSimpleName()}.targets_list"), emit: targets_list
+
+    script:
+    """
+    gatk BedToIntervalList \\
+        --INPUT ${targets_bed} \\
+	--OUTPUT "${targets_bed.getSimpleName()}.targets_list" \\
+	--SEQUENCE_DICTIONARY "${refgenome_dict}"
+    """
+
+}
 
 process gatk_collect_hs_metrics {
     conda "bioconda::gatk4=4.4.0.0"
     container "quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0"
 
     input:
-        tuple path(tumor_bam)
-	path(refgenome)
+        path(tumor_bam)
 	path(target_intervals)
 
     output:
-        path("${bamfile.getSimpleName()}_recalibrated.bam")
+        path("${tumor_bam.getSimpleName()}.csv")
 
     script:
     """
     gatk CollectHsMetrics \\
         --INPUT ${tumor_bam} \\
 	--OUTPUT "${tumor_bam.getSimpleName()}.csv" \\
-	--reference "${refgenome}"
+	-TARGET_INTERVALS "${target_intervals}" \\
+	-BAIT_INTERVALS "${target_intervals}"
     """
 
 }

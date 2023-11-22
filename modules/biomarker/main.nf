@@ -51,7 +51,6 @@ workflow msi_annotate {
   main:
     sites = scan(refgenome).refgenome_microsatellites
 
-    matched_bams.flatten().view()
     all_bams = matched_bams.flatten()
     sorted = sort_bam(all_bams)
     indices = index_bam(sorted)
@@ -63,7 +62,7 @@ workflow msi_annotate {
     matched_preproc_bams.subscribe{ it -> 
     	assert it.join(",") ==~ /.*_normal\.bam.*_normal\.bam\.bai.*_tumor\.bam.*_tumor\.bam\.bai/
 	}
-    p//reproc_bams.view()
+    //preproc_bams.view()
     //matched_preproc_bams.view()
     eval_msi(matched_preproc_bams, sites)
 }
