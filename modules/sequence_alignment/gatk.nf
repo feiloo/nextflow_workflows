@@ -143,6 +143,7 @@ process gatk_bed_to_intervallist {
 
     input:
         path(targets_bed)
+	path(refgenome)
 	path(refgenome_dict)
 
     output:
@@ -153,6 +154,7 @@ process gatk_bed_to_intervallist {
     gatk BedToIntervalList \\
         --INPUT ${targets_bed} \\
 	--OUTPUT "${targets_bed.getSimpleName()}.targets_list" \\
+	--REFERENCE_SEQUENCE ${refgenome} \\
 	--SEQUENCE_DICTIONARY "${refgenome_dict}"
     """
 
@@ -165,6 +167,7 @@ process gatk_collect_hs_metrics {
     input:
         path(tumor_bam)
 	path(target_intervals)
+	path(refgenome)
 
     output:
         path("${tumor_bam.getSimpleName()}.csv")
@@ -175,6 +178,7 @@ process gatk_collect_hs_metrics {
         --INPUT ${tumor_bam} \\
 	--OUTPUT "${tumor_bam.getSimpleName()}.csv" \\
 	-TARGET_INTERVALS "${target_intervals}" \\
+	--REFERENCE_SEQUENCE ${refgenome} \\
 	-BAIT_INTERVALS "${target_intervals}"
     """
 

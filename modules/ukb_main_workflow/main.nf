@@ -131,8 +131,8 @@ workflow {
 	msi_annotate(bams, args.refgenome)
 	tumor_bams = bams.map{it -> [it[0]]}
 	refgenome_dict = gatk_createsequencedictionary(args.refgenome).refgenome_dict
-	targets_list = gatk_bed_to_intervallist(args.targets_bed, refgenome_dict).targets_list
-	gatk_collect_hs_metrics(tumor_bams, targets_list)
+	targets_list = gatk_bed_to_intervallist(args.targets_bed, args.refgenome, refgenome_dict).targets_list
+	gatk_collect_hs_metrics(tumor_bams, targets_list, args.refgenome)
   }
   else if(args.workflow_variation == 'variantinterpretation'){
 	samplesheet = args.samplesheet
