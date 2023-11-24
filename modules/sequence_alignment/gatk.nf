@@ -4,7 +4,7 @@ process gatk_createsequencedictionary {
     conda "bioconda::gatk4=4.4.0.0"
     container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
 
-    storeDir "$NEXTFLOW_STOREDIR"
+    storeDir "$NEXTFLOW_STOREDIR/gatk"
 
     input:
 	path(refgenome)
@@ -26,7 +26,7 @@ process gatk_indexfeaturefile {
     conda "bioconda::gatk4=4.4.0.0"
     container "quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0"
 
-    storeDir "$NEXTFLOW_STOREDIR"
+    storeDir "$NEXTFLOW_STOREDIR/gatk"
 
     input:
         path(known_sites)
@@ -141,6 +141,8 @@ process gatk_bed_to_intervallist {
     conda "bioconda::gatk4=4.4.0.0"
     container "quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0"
 
+    storeDir "$NEXTFLOW_STOREDIR/gatk"
+
     input:
         path(targets_bed)
 	path(refgenome)
@@ -155,6 +157,7 @@ process gatk_bed_to_intervallist {
         --INPUT ${targets_bed} \\
 	--OUTPUT "${targets_bed.getSimpleName()}.targets_list" \\
 	--REFERENCE_SEQUENCE ${refgenome} \\
+	--SORT true \\
 	--SEQUENCE_DICTIONARY "${refgenome_dict}"
     """
 
@@ -168,6 +171,7 @@ process gatk_collect_hs_metrics {
         path(tumor_bam)
 	path(target_intervals)
 	path(refgenome)
+	path(refgenome_index)
 
     output:
         path("${tumor_bam.getSimpleName()}.csv")

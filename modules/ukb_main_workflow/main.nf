@@ -6,6 +6,7 @@ include { CIOABCD_VARIANTINTERPRETATION } from "$NEXTFLOW_MODULES/variantinterpr
 include { sequence_alignment } from "$NEXTFLOW_MODULES/sequence_alignment"
 include { msi_annotate } from "$NEXTFLOW_MODULES/biomarker"
 include { gatk_collect_hs_metrics; gatk_bed_to_intervallist; gatk_createsequencedictionary } from "$NEXTFLOW_MODULES/sequence_alignment/gatk.nf"
+include { index_fasta } from "$NEXTFLOW_MODULES/sequence_alignment/samtools.nf"
 //include { SAREK } from "$NEXTFLOW_MODULES/sarek_wrapper"
 
 process rename_clcad_to_ad {
@@ -129,10 +130,15 @@ workflow {
     	rows = Channel.fromPath(samplesheet, checkIfExists: true, type: 'file').splitCsv(header: header, skip: 1)
 	bams = rows.map{it -> [it.tumor_bam, it.normal_bam]}
 	msi_annotate(bams, args.refgenome)
+
 	tumor_bams = bams.map{it -> [it[0]]}
+
 	refgenome_dict = gatk_createsequencedictionary(args.refgenome).refgenome_dict
+	refgenome_index = index_fasta(args.refgenome).fasta_index
+
 	targets_list = gatk_bed_to_intervallist(args.targets_bed, args.refgenome, refgenome_dict).targets_list
-	gatk_collect_hs_metrics(tumor_bams, targets_list, args.refgenome)
+	gatk_collect_hs_metrics(tumor_bams, targets_list, args.refgenome, refgenome_index)
+
   }
   else if(args.workflow_variation == 'variantinterpretation'){
 	samplesheet = args.samplesheet
