@@ -1,0 +1,12 @@
+FROM "docker.io/opensuse/leap:15"
+
+RUN zypper install -y samtools python311 python311-pip
+
+WORKDIR /root
+COPY samfix.py /usr/local/lib/samfix.py
+
+RUN zypper install -y clang libstdc++-devel binutils gcc
+RUN pip install nuitka
+RUN zypper install -y python311-devel
+RUN CC=clang nuitka3 /usr/local/lib/samfix.py
+RUN mv samfix.bin /usr/local/bin/samfix
