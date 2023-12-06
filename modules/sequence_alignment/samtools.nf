@@ -21,8 +21,11 @@ process sam_to_bam {
     conda "bioconda::samtools=1.17"
     container 'quay.io/biocontainers/samtools:1.17--h00cdaf9_0'
 
+    memory "10 GB"
+
     input:
     path(samfile)
+    val(args)
 
     output:
     path("${samfile.getBaseName()}.bam")
@@ -31,6 +34,10 @@ process sam_to_bam {
     n_cpus = Runtime.runtime.availableProcessors()
     """
     samtools view ${samfile} --bam --threads $n_cpus -o ${samfile.getBaseName()}.bam
+
+    if [[ "${args.cleanup_intermediate_files}" == 'true' ]]; then
+      rm ${samfile}
+    fi
     """
 }
 
@@ -73,19 +80,22 @@ process bam_stats {
     conda "bioconda::samtools=1.17"
     container 'quay.io/biocontainers/samtools:1.17--h00cdaf9_0'
 
+    memory "4 GB"
+
     input:
     path(bamfile)
     path(refgenome)
 
     output:
-    path("${bamfile}.bai")
+    path("${bamfile.getSimpleName()}_samstats")
 
     script:
     n_cpus = Runtime.runtime.availableProcessors()
     """
     samtools stats "${bamfile}" \\
     	--reference ${refgenome} \\
-	-@ $n_cpus
+	-@ $n_cpus \\
+	> "${bamfile.getSimpleName()}_samstats"
     """
 }
 
@@ -93,18 +103,18 @@ process bam_depth {
     conda "bioconda::samtools=1.17"
     container 'quay.io/biocontainers/samtools:1.17--h00cdaf9_0'
 
+    memory "32 GB"
     input:
     path(bamfile)
     path(refgenome)
 
     output:
-    path("${bamfile}.bai")
+    path("${bamfile.getSimpleName()}_depth")
 
     script:
     n_cpus = Runtime.runtime.availableProcessors()
     """
-    samtools stats "${bamfile}" \\
-    	--reference ${refgenome} \\
-	-@ $n_cpus
+    samtools depth "${bamfile}" > "${bamfile.getSimpleName()}_depth"
+
     """
 }

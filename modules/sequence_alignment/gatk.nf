@@ -48,8 +48,11 @@ process gatk_markduplicates {
     conda "bioconda::gatk4=4.4.0.0"
     container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
 
+    memory "80 GB"
+
     input:
         path(bam)
+	val(args)
 
     output:
       path("out/${bam}"), emit: marked_bams
@@ -66,6 +69,7 @@ process gatk_markduplicates {
         --input ${bam} \\
     	--spark-master local[$n_cpus] \\
 	--output out/${bam}
+
     """
 }
 
@@ -73,25 +77,35 @@ process gatk_set_tags {
     conda "bioconda::gatk4=4.4.0.0"
     container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
 
+    memory "46 GB"
+
     input:
         path(bam)
 	path(refgenome)
+	val(args)
 
     output:
       path("out/${bam}"), emit: tagged_bams
 
+    script:
     """
     mkdir out
     gatk SetNmMdAndUqTags \\
     	--INPUT ${bam} \\
 	--REFERENCE_SEQUENCE ${refgenome} \\
 	--OUTPUT out/${bam}
+
+    if [[ "${args.cleanup_intermediate_files}" == 'true' ]]; then
+      rm ${bam}
+    fi
     """
 }
 
 process gatk_baserecalibrator {
     conda "bioconda::gatk4=4.4.0.0"
     container "quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0"
+
+    memory "46 GB"
 
     input:
         path(bamfile)
@@ -119,9 +133,13 @@ process gatk_apply_bqsr {
     conda "bioconda::gatk4=4.4.0.0"
     container "quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0"
 
+    memory "46 GB"
+
     input:
         tuple path(bamfile), path(bam_recal_data)
 	path(refgenome)
+	path(refgenome_index)
+	path(refgenome_dict)
 
     output:
         path("${bamfile.getSimpleName()}_recalibrated.bam")

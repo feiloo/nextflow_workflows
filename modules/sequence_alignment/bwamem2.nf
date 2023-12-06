@@ -3,7 +3,7 @@ process bwamem2_index_refgenome {
     container 'quay.io/biocontainers/bwa-mem2:2.2.1--he513fc3_0'
 
     // needs 28N GB, where N is the size of the uncompressed refseq in GB
-    //memory '120 GB'
+    memory '120 GB'
     storeDir "$NEXTFLOW_STOREDIR/bwamem2_indices"
 
     input:
@@ -29,7 +29,7 @@ process bwamem2_align {
     conda "bioconda::bwa-mem2=2.2.1"
     container 'quay.io/biocontainers/bwa-mem2:2.2.1--he513fc3_0'
 
-    //memory '120 GB'
+    memory "250 GB"
 
     input:
     tuple path(read1), path(read2)
@@ -39,6 +39,7 @@ process bwamem2_align {
     path("${refgenome}.ann")
     path("${refgenome}.bwt.2bit.64")
     path("${refgenome}.pac")
+    val(args)
 
 
     output:
@@ -78,8 +79,11 @@ process bwamem2_align {
     def read_group_info = "@RG\\tID:${read_group_identifier}\\tPL:${platform_technology}\\tLB:${library_prep_identifier}\\tPU:${platform_unit}\\tSM:${sample_name}"
 
     """
-
     bwa-mem2 mem -R "${read_group_info}" -t $n_cpus ${refgenome} ${read1} ${read2} -o ${read1.getSimpleName()}.sam
+
+    if [[ "${args.cleanup_intermediate_files}" == 'true' ]]; then
+      rm ${read1} && rm ${read2}
+    fi
     """
 }
 

@@ -14,6 +14,7 @@ process stage_fastq {
     // it also allows copying, in case the datasource is on a slow network drive
 
     // stageInMode 'copy'
+    stageInMode 'link'
 
     input:
     tuple val(sample_id), path(normal_read1), path(normal_read2), path(tumor_read1), path(tumor_read2)
@@ -39,6 +40,12 @@ workflow sequence_alignment {
   take:
     args
   main:
+    // set default to cleanup process inputs
+    // this breaks resuming the workflow, but saves alot of storage
+    if(!args.containsKey('cleanup_intermediate_files')){
+    	args['cleanup_intermediate_files'] = true
+	}
+
     samplesheet = args.samplesheet
     // we require both samples to run the analysis
     // therefore 1 row requires/contains both, so its easier to read the samplesheet
@@ -57,6 +64,7 @@ workflow sequence_alignment {
 	]
     }
 
+    // explicitely stage inputs
     staged_sample_pairs = stage_fastq(sample_pairs)
 
     // still check the rows for the naming scheme
@@ -95,6 +103,7 @@ workflow sequence_alignment {
 		]
 	}
 
+
     qualities = fastqc(all_reads)
 
     // a flat channel of [sample_id, read1, read2, file_prefix] tuples
@@ -103,6 +112,7 @@ workflow sequence_alignment {
 		[row[0], row[3], row[4], "${row[0]}_T"]
 		]
 	}
+    
 
     // output_file_prefix has to be calculated here, 
     // because it has to be known before starting the process as it it an output thereof
@@ -117,14 +127,14 @@ workflow sequence_alignment {
     //sams = bwa_align(preprocessed_reads_no_id, args.refgenome, bwa_idx.amb, bwa_idx.ann, bwa_idx.bwt, bwa_idx.pac, bwa_idx.sa)
 
     // bwa_idx.f0123 was has an f prefixed so, the file ending starts with a non-numeral
-    sams = bwamem2_align(preprocessed_reads_no_id, args.refgenome, bwa_idx.f0123, bwa_idx.amb, bwa_idx.ann, bwa_idx.bwt_2bit_64, bwa_idx.pac)
+    sams = bwamem2_align(preprocessed_reads_no_id, args.refgenome, bwa_idx.f0123, bwa_idx.amb, bwa_idx.ann, bwa_idx.bwt_2bit_64, bwa_idx.pac, args)
 
-    bams = sam_to_bam(sams)
+    bams = sam_to_bam(sams,args)
     //sorted_bams = sort_bam(bams)
     //bam_indices = index_bam(sorted_bams)
 
-    marked_bams = gatk_markduplicates(bams).marked_bams
-    tagged_bams = gatk_set_tags(marked_bams, args.refgenome).tagged_bams
+    marked_bams = gatk_markduplicates(bams, args).marked_bams
+    tagged_bams = gatk_set_tags(marked_bams, args.refgenome, args).tagged_bams
 
     known_sites_index = gatk_indexfeaturefile(args.known_sites).known_sites_index
     bam_recal_data = gatk_baserecalibrator(tagged_bams, args.refgenome, refgenome_index, refgenome_dict, args.known_sites, known_sites_index)
@@ -135,9 +145,12 @@ workflow sequence_alignment {
 
     bam_w_recal_data = keyed_bams.join(keyed_recal_data).map{ it -> [it[1], it[2]] }
 
-    bam_recalibrated = gatk_apply_bqsr(bam_w_recal_data, args.refgenome)
+    bam_recalibrated = gatk_apply_bqsr(bam_w_recal_data, args.refgenome, refgenome_index, refgenome_dict)
     bam_w_depth = bam_depth(bam_recalibrated, args.refgenome)
-    bams_w_stats = bam_stats(bam_w_depth, args.refgenome)
+    bams_w_stats = bam_stats(bam_recalibrated, args.refgenome)
+
+  emit:
+    bam = bam_recalibrated
 }
 
 workflow {

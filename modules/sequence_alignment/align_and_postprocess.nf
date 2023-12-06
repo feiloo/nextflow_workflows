@@ -20,7 +20,7 @@ workflow bwa_tumor_only {
     sorted_bams = sort_bam(bams)
     bam_indices = index_bam(sorted_bams)
     output_files = bam_indices.mix(sorted_bams)
-    publish(output_files, args)
+    //publish(output_files, args)
 }
 
 
