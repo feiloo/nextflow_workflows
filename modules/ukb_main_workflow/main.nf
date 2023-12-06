@@ -130,8 +130,10 @@ workflow {
 	header = ['sample', 'tumor_bam', 'tumor_sha256sum', 'normal_bam', 'normal_sha256sum']
     	rows = Channel.fromPath(samplesheet, checkIfExists: true, type: 'file').splitCsv(header: header, skip: 1)
 	bams = rows.map{it -> [it.tumor_bam, it.normal_bam]}
-	msi_annotate(bams, args.refgenome)
+	preproc_bams = msi_annotate(bams, args.refgenome).matched_preproc_bams
 		
+
+	/*
 	tumor_bams = bams.map{it -> [it[0]]}
 	sorted = sort_bam(tumor_bams)
 	sorted_idx = index_bam(sorted)
@@ -141,6 +143,10 @@ workflow {
 
 	matched = sorted_w_key.join(idx_w_key).map{it -> [it[1], it[2]]}
 	fixed_tumor_bams = samfix(matched).bam
+	*/
+
+	tumor_bams_w_indices = preproc_bams.map{it -> [it[2], it[3]]}
+	fixed_tumor_bams = samfix(tumor_bams_w_indices).bam
 
 	refgenome_dict = gatk_createsequencedictionary(args.refgenome).refgenome_dict
 	refgenome_index = index_fasta(args.refgenome).fasta_index

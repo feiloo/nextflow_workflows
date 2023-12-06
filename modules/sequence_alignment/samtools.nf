@@ -37,7 +37,7 @@ process sam_to_bam {
 process sort_bam {
     conda "bioconda::samtools=1.17"
     container 'quay.io/biocontainers/samtools:1.17--h00cdaf9_0'
-    memory "60G"
+    memory "${48 + 1*Runtime.runtime.availableProcessors()} GB"
 
     input:
     path(bamfile)

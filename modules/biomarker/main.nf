@@ -5,6 +5,7 @@ include { index_bam; sort_bam } from "$NEXTFLOW_MODULES/sequence_alignment/samto
 process scan {
     container 'quay.io/biocontainers/msisensor-pro:1.2.0--hfc31af2_0'
     conda 'bioconda::msisensor-pro=1.2.0'
+    memory "150 GB"
 
     storeDir "$NEXTFLOW_STOREDIR/msisensorpro_scan"
 
@@ -25,6 +26,7 @@ process scan {
 process eval_msi {
     container 'quay.io/biocontainers/msisensor-pro:1.2.0--hfc31af2_0'
     conda 'bioconda::msisensor-pro=1.2.0'
+    memory "10 GB"
 
     // sorted and indexed bams
     input:
@@ -58,17 +60,18 @@ workflow msi_annotate {
     indices = index_bam(sorted)
     // add filename based key, group and remove key
     preproc_bams = sorted.mix(indices).map{it -> [it.getSimpleName().split('_')[0], it]}
-    matched_preproc_bams = preproc_bams.groupTuple().map{it -> it[1].sort()}
+    // group and sort by filename 
+    matched_preproc_bams = preproc_bams.groupTuple(size: 4).map{it -> it[1].sort{ e1, e2 -> e1.getName() <=> e2.getName() }}
+
     // assert that the pattern order and names match:
     // _normal.bam, _normal.bam.bai, _tumor.bam, _tumor.bam.bai
-    /*
     matched_preproc_bams.subscribe{ it -> 
     	assert it.join(",") ==~ /.*_normal\.bam.*_normal\.bam\.bai.*_tumor\.bam.*_tumor\.bam\.bai/
 	}
-    */
-    //preproc_bams.view()
-    //matched_preproc_bams.view()
+
     eval_msi(matched_preproc_bams, sites)
+    emit:
+      matched_preproc_bams
 }
 
 workflow {
