@@ -8,6 +8,7 @@ include { msi_annotate } from "$NEXTFLOW_MODULES/biomarker"
 include { gatk_collect_hs_metrics; gatk_bed_to_intervallist; gatk_createsequencedictionary } from "$NEXTFLOW_MODULES/sequence_alignment/gatk.nf"
 include { sort_bam; index_bam; index_fasta } from "$NEXTFLOW_MODULES/sequence_alignment/samtools.nf"
 include { samfix } from "$NEXTFLOW_MODULES/samfix/"
+
 //include { SAREK } from "$NEXTFLOW_MODULES/sarek_wrapper"
 
 process rename_clcad_to_ad {
@@ -132,19 +133,6 @@ workflow {
 	bams = rows.map{it -> [it.tumor_bam, it.normal_bam]}
 	preproc_bams = msi_annotate(bams, args.refgenome).matched_preproc_bams
 		
-
-	/*
-	tumor_bams = bams.map{it -> [it[0]]}
-	sorted = sort_bam(tumor_bams)
-	sorted_idx = index_bam(sorted)
-
-	sorted_w_key = sorted.map{it -> [it.getSimpleName(), it]}
-	idx_w_key = sorted_idx.map{it -> [it.getSimpleName(), it]}
-
-	matched = sorted_w_key.join(idx_w_key).map{it -> [it[1], it[2]]}
-	fixed_tumor_bams = samfix(matched).bam
-	*/
-
 	tumor_bams_w_indices = preproc_bams.map{it -> [it[2], it[3]]}
 	fixed_tumor_bams = samfix(tumor_bams_w_indices).bam
 
