@@ -174,7 +174,7 @@ process gatk_collect_hs_metrics {
 	path(refgenome_index)
 
     output:
-        path("${tumor_bam.getSimpleName()}.csv")
+        path("${tumor_bam.getSimpleName()}.csv"), emit: metrics
 
     script:
     """

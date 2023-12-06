@@ -9,6 +9,8 @@ include { gatk_collect_hs_metrics; gatk_bed_to_intervallist; gatk_createsequence
 include { sort_bam; index_bam; index_fasta } from "$NEXTFLOW_MODULES/sequence_alignment/samtools.nf"
 include { samfix } from "$NEXTFLOW_MODULES/samfix/"
 
+include { publish } from "$NEXTFLOW_MODULES/sequence_alignment/utils.nf"
+
 //include { SAREK } from "$NEXTFLOW_MODULES/sarek_wrapper"
 
 process rename_clcad_to_ad {
@@ -106,32 +108,24 @@ process save_samplesheet {
       path(samplesheet)
     script:
       println "saved samplesheet to output_dir: ${args.output_dir}"
+      """
+      echo "saved samplesheet to output_dir: ${args.output_dir}"
+      """
 }
 
-
-workflow {
-  //def args = params
-  def args = [:]
-  for (param in params) { args[param.key] = param.value }
-
-  if(args.workflow_variation == 'sequence_alignment'){
-  	sequence_alignment(args)
-  }
-  else if(args.workflow_variation == 'arriba'){
-  	arriba_nextflow(args)
-  }
-  else if(args.workflow_variation == 'clc'){
-  	clc_nextflow(args)
-  }
-  else if(args.workflow_variation == 'sarek'){
-  	SAREK(args)
-  }
-  else if(args.workflow_variation == 'msisensorpro'){
-	samplesheet = args.samplesheet
+workflow msisensorpro {
+    take:
+      samplesheet
+      args
+    main:
 	header = ['sample', 'tumor_bam', 'tumor_sha256sum', 'normal_bam', 'normal_sha256sum']
     	rows = Channel.fromPath(samplesheet, checkIfExists: true, type: 'file').splitCsv(header: header, skip: 1)
 	bams = rows.map{it -> [it.tumor_bam, it.normal_bam]}
-	preproc_bams = msi_annotate(bams, args.refgenome).matched_preproc_bams
+	msi = msi_annotate(bams, args.refgenome)
+	msi_csv = msi.msi_csv
+
+	preproc_bams = msi.matched_preproc_bams
+
 		
 	tumor_bams_w_indices = preproc_bams.map{it -> [it[2], it[3]]}
 	fixed_tumor_bams = samfix(tumor_bams_w_indices).bam
@@ -140,11 +134,17 @@ workflow {
 	refgenome_index = index_fasta(args.refgenome).fasta_index
 
 	targets_list = gatk_bed_to_intervallist(args.targets_bed, args.refgenome, refgenome_dict).targets_list
-	gatk_collect_hs_metrics(fixed_tumor_bams, targets_list, args.refgenome, refgenome_index)
+	qc_metrics = gatk_collect_hs_metrics(fixed_tumor_bams, targets_list, args.refgenome, refgenome_index).metrics
+    emit:
+    	msi_csv
+	qc_metrics
+}
 
-  }
-  else if(args.workflow_variation == 'variantinterpretation'){
-	samplesheet = args.samplesheet
+workflow variantinterpretation {
+  take:
+    samplesheet
+    args
+  main:
 	header = ['sample', 'vcf', 'vcf_sha256sum']
     	rows = Channel.fromPath(samplesheet, checkIfExists: true, type: 'file').splitCsv(header: header, skip: 1)
 
@@ -171,9 +171,58 @@ workflow {
 	fasta = rename_chromosomes_refgenome(args.refgenome)
 
   	CIOABCD_VARIANTINTERPRETATION(args, new_samplesheet, fasta)
+
+}
+
+workflow wes_pilot {
+  take:
+    args
+  main:
+    results = Channel.empty()
+
+    bam_samplesheet = args.bam_samplesheet
+    vcf_samplesheet = args.vcf_samplesheet
+
+    data = msisensorpro(bam_samplesheet, args)
+    results.mix(data.msi_csv)
+    results.mix(data.qc_metrics)
+
+    variantinterpretation(vcf_samplesheet, args)
+
+    publish(results, args)
+}
+
+
+workflow {
+  //def args = params
+  def args = [:]
+  for (param in params) { args[param.key] = param.value }
+
+  if(args.workflow_variation == 'sequence_alignment'){
+  	sequence_alignment(args)
+  }
+  else if(args.workflow_variation == 'arriba'){
+  	arriba_nextflow(args)
+  }
+  else if(args.workflow_variation == 'clc'){
+  	clc_nextflow(args)
+  }
+  else if(args.workflow_variation == 'sarek'){
+  	SAREK(args)
+  }
+  else if(args.workflow_variation == 'msisensorpro'){
+	msisensorpro(args.samplesheet, args)
+  }
+  else if(args.workflow_variation == 'variantinterpretation'){
+	variantinterpretation(args.samplesheet, args)
+  }
+  else if(args.workflow_variation == 'wes_pilot'){
+	wes_pilot(args)
   }
   else {
     println "invalid value for parameter workflow_variation " + args.workflow_variation
     System.exit(1)
   }
+
+
 }

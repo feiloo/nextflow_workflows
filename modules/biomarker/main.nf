@@ -34,7 +34,10 @@ process eval_msi {
     path(refgenome_microsatellites)
 
     output:
-    path("${normal_bam.getSimpleName()}_msi.csv")
+    path("${normal_bam.getSimpleName()}_msi.csv"), emit: csv
+    path("${normal_bam.getSimpleName()}_msi.csv_dis")
+    path("${normal_bam.getSimpleName()}_msi.csv_germline")
+    path("${normal_bam.getSimpleName()}_msi.csv_somatic")
     
 
     script:
@@ -69,9 +72,11 @@ workflow msi_annotate {
     	assert it.join(",") ==~ /.*_normal\.bam.*_normal\.bam\.bai.*_tumor\.bam.*_tumor\.bam\.bai/
 	}
 
-    eval_msi(matched_preproc_bams, sites)
+    msi_csv = eval_msi(matched_preproc_bams, sites).csv
     emit:
       matched_preproc_bams
+      msi_csv
+
 }
 
 workflow {
