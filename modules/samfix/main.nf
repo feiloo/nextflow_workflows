@@ -1,8 +1,7 @@
 process samfix {
     conda "bioconda::samtools=1.17"
     //container 'quay.io/biocontainers/samtools:1.17--h00cdaf9_0'
-    //container 'localhost/samfix'
-    container 'localhost/samfix-nuitka'
+    container "localhost:5000/biocontainer/samfix"
 
     input:
     tuple path(bamfile), path(bamfile_index)

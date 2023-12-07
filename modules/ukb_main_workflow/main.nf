@@ -140,6 +140,40 @@ workflow msisensorpro {
 	qc_metrics = qc_metrics
 }
 
+process rename_bed_chr{
+    conda "conda-forge::python=3.8.3 conda-forge::pandas=2.0.3"
+
+    publishDir "${args.output_dir}", mode: 'copy', overwrite: false
+
+    input:
+      path(old_bed)
+    output:
+      path('Qia.bed'), emit: new_bed
+    script:
+"""
+#!/usr/bin/python
+import pandas as pd
+
+table = pd.read_table('Qia.bed')
+
+di = ['chr'+str(x) for x in range(1,23)] + ['X','Y']
+
+
+md = dict([(str(k), str(v)) for k,v in zip(range(1,25), di)])
+
+md['X'] = 'chrX'
+md['Y'] = 'chrY'
+def mf(x):
+    return md[str(x)]
+
+
+table['1'] = table['1'].map(mf)
+
+table.to_csv('Qia.bed', sep='\t', index=False, header=False)
+"""
+
+}
+
 workflow variantinterpretation {
   take:
     samplesheet
@@ -151,6 +185,9 @@ workflow variantinterpretation {
 	rows_w_shasums = get_sha256sum(rows)
 
 	save_samplesheet(samplesheet)
+	args['calculate_tmb'] = true
+	//new_bed = rename_bed_chr(args.targets_bed).new_bed
+	args['bedfile'] = args.targets_bed_chr_renamed
 
 	correct_rows = rows_w_shasums.map{it -> 
 		if("${it[2]}".trim() != "${it[3]}".trim()) {
