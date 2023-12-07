@@ -8,14 +8,15 @@ process publish {
     val(args)
   output:
     path("out/${resultfile}")
+    val(args)
 
-  publishDir "${args.output_dir}", mode: 'copy', overwrite: false
+  publishDir "${args.output_dir}", mode: 'copy', overwrite: false, enabled: true
 
   script:
-  println "finished workflow, outputs are in: ${args.output_dir}"
+  log.info "output file ${resultfile} published to output dir: ${args.output_dir}"
   """
   mkdir out
-  ln -s "out/${resultsfile}" ${resultsfile}
+  ln -s ../"${resultfile}" "out/${resultfile}"
   """
 }
 

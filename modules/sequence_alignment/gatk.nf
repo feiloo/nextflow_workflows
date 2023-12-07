@@ -174,13 +174,13 @@ process gatk_collect_hs_metrics {
 	path(refgenome_index)
 
     output:
-        path("${tumor_bam.getSimpleName()}.csv"), emit: metrics
+        path("${tumor_bam.getSimpleName()}_hs_metrics.csv"), emit: metrics
 
     script:
     """
     gatk CollectHsMetrics \\
         --INPUT ${tumor_bam} \\
-	--OUTPUT "${tumor_bam.getSimpleName()}.csv" \\
+	--OUTPUT "${tumor_bam.getSimpleName()}_hs_metrics.csv" \\
 	-TARGET_INTERVALS "${target_intervals}" \\
 	--REFERENCE_SEQUENCE ${refgenome} \\
 	-BAIT_INTERVALS "${target_intervals}"

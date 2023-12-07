@@ -136,8 +136,8 @@ workflow msisensorpro {
 	targets_list = gatk_bed_to_intervallist(args.targets_bed, args.refgenome, refgenome_dict).targets_list
 	qc_metrics = gatk_collect_hs_metrics(fixed_tumor_bams, targets_list, args.refgenome, refgenome_index).metrics
     emit:
-    	msi_csv
-	qc_metrics
+    	msi_csv = msi_csv
+	qc_metrics = qc_metrics
 }
 
 workflow variantinterpretation {
@@ -178,18 +178,19 @@ workflow wes_pilot {
   take:
     args
   main:
+    println(args.output_dir)
     results = Channel.empty()
 
     bam_samplesheet = args.bam_samplesheet
     vcf_samplesheet = args.vcf_samplesheet
 
     data = msisensorpro(bam_samplesheet, args)
-    results.mix(data.msi_csv)
-    results.mix(data.qc_metrics)
+    results = results.mix(data.msi_csv)
+    results = results.mix(data.qc_metrics)
 
     variantinterpretation(vcf_samplesheet, args)
 
-    publish(results, args)
+    publish(results, Channel.value(args))
 }
 
 
