@@ -127,14 +127,14 @@ workflow msisensorpro {
 	preproc_bams = msi.matched_preproc_bams
 
 		
-	tumor_bams_w_indices = preproc_bams.map{it -> [it[2], it[3]]}
-	fixed_tumor_bams = samfix(tumor_bams_w_indices).bam
+	bams_w_indices = preproc_bams.flatMap{it -> [[it[0], it[1]], [it[2], it[3]]]}
+	fixed_bams = samfix(bams_w_indices).bam
 
 	refgenome_dict = gatk_createsequencedictionary(args.refgenome).refgenome_dict
 	refgenome_index = index_fasta(args.refgenome).fasta_index
 
 	targets_list = gatk_bed_to_intervallist(args.targets_bed, args.refgenome, refgenome_dict).targets_list
-	qc_metrics = gatk_collect_hs_metrics(fixed_tumor_bams, targets_list, args.refgenome, refgenome_index).metrics
+	qc_metrics = gatk_collect_hs_metrics(fixed_bams, targets_list, args.refgenome, refgenome_index).metrics
     emit:
     	msi_csv = msi_csv
 	qc_metrics = qc_metrics
