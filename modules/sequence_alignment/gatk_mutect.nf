@@ -1,22 +1,27 @@
 // implement best-practice somatic variant calling
 // reference: https://gatk.broadinstitute.org/hc/en-us/articles/360035531132--How-to-Call-somatic-mutations-using-GATK4-Mutect2
 
+include { index_fasta } from "$NEXTFLOW_MODULES/sequence_alignment/samtools.nf"
+include { gatk_indexfeaturefile; gatk_createsequencedictionary } from "$NEXTFLOW_MODULES/sequence_alignment/gatk.nf"
 
 process gatk_mutect {
     conda "bioconda::gatk4=4.4.0.0"
     container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
 
     input:
-        path(tumor_bam)
-        path(normal_bam)
+        tuple path(tumor_bam), path(normal_bam)
 	path(intervals)
 	path(panel_of_normals)
+	path(panel_of_normals_index)
 	path(germline_resource)
+	path(germline_resource_index)
 	path(refgenome)
+	path(refgenome_index)
+	path(refgenome_dict)
 
     output:
-      path("${sample_bam.getSimpleName()}_unfiltered.vcf"), emit: vcf
-      path("${sample_bam.getSimpleName()}_f1r2_data.tar.gz"), emit: f1r2_data
+      path("${tumor_bam.getSimpleName()}_unfiltered.vcf"), emit: vcf
+      path("${tumor_bam.getSimpleName()}_f1r2_data.tar.gz"), emit: f1r2_data
 
     script:
     n_cpus = Runtime.runtime.availableProcessors()
@@ -24,15 +29,15 @@ process gatk_mutect {
     """
     gatk Mutect2 \\
     	--native-pair-hmm-threads ${n_cpus} \\
-	--INPUT ${tumor_bam} \\
-	--INPUT ${normal_bam} \\
-	-normal ${} \\
+	--input ${tumor_bam} \\
+	--input ${normal_bam} \\
+	-normal ${normal_bam.getSimpleName()} \\
 	-L ${intervals} \\
 	-pon ${panel_of_normals} \\
 	-germline-resource ${germline_resource} \\
-        --REFERENCE ${refgenome} \\
-	--f1r2-tar-gz "${sample_bam.getSimpleName()}_f1r2_data.tar.gz" \\
-	--OUTPUT ${sample_bam.getSimpleName()}_unfiltered.vcf}
+        --reference ${refgenome} \\
+	--f1r2-tar-gz "${tumor_bam.getSimpleName()}_f1r2_data.tar.gz" \\
+	--output "${tumor_bam.getSimpleName()}_unfiltered.vcf"
     """
 }
 
@@ -89,7 +94,7 @@ process gatk_getpileupsummaries {
     script:
     """
     gatk GetPileupSummaries \\
-	--INPUT ${f1r2_data} \\
+	-I ${sample_bam} \\
 	-L ${genomic_intervals} \\
 	-V ${variant_frequency_vcf} \\
 	--OUTPUT "${sample_vcf.getSimpleName()}_pileup.table"
@@ -156,6 +161,7 @@ process create_pon_db {
     gatk GenomicsDBImport \\
         -R ${refgenome} \\
         --genomicsdb-workspace-path pon_genomics_db \\
+    """
 }
 
 
@@ -163,7 +169,7 @@ process create_pon_db {
 
 workflow variant_call {
   take:
-    sample_bam
+    sample_bams
     intervals
     panel_of_normals
     germline_resource
@@ -171,15 +177,43 @@ workflow variant_call {
     args
 
   main:
-    mut = gatk_mutect(sample_bam, intervals, panel_of_normals, germline_resource, refgenome)
+
+    // best practices from https://gatk.broadinstitute.org/hc/en-us/articles/360035531132
+    // How to Call somatic mutations using GATK4 Mutect2
+
+    sample_bams_w_key = sample_bams.map{ it -> ["${it.getSimpleName()[0..-4]}", it]}
+    bam_pairs = sample_bams_w_key.groupTuple(size: 2, sort: true).map{it -> it[1]}
+    bam_pairs.view()
+
+    refgenome_index = index_fasta(args.refgenome).fasta_index
+    refgenome_dict = gatk_createsequencedictionary(args.refgenome).refgenome_dict
+
+    indices = Channel.of(germline_resource, panel_of_normals)
+    indices_mid = gatk_indexfeaturefile(indices).known_sites_index
+    indices.view()
+    indices_mid.map{it -> it.getSimpleName() }.view()
+    println "${file(panel_of_normals).getSimpleName()}"
+
+
+    // panel_of_normals_index = gatk_indexfeaturefile(panel_of_normals).known_sites_index
+    panel_of_normals_index = indices_mid.first{ it -> "${file(it).getSimpleName()}" == "${file(panel_of_normals).getSimpleName()}" }
+    germline_resource_index = indices_mid.first{ it -> "${file(it).getSimpleName()}" == "${file(germline_resource).getSimpleName()}" }
+
+    mut = gatk_mutect(bam_pairs, intervals, 
+	    panel_of_normals, panel_of_normals_index,
+	    germline_resource,  germline_resource_index,  
+	    refgenome, refgenome_index, refgenome_dict)
     om = gatk_learn_readorientationmodel(mut.f1r2_data).orientation_model
 
-    # for tumors and for normals
-    tumor_pileups = gatk_getpileupsummaries(sample_bam, mut.vcf, genomic_intervals, variant_frequency_vcf)
+    // for tumors and for normals
+    // todo, check that ew can use the same germline resource for pileup here
+    all_pileups = gatk_getpileupsummaries(sample_bams, mut.vcf, intervals, germline_resource)
 
-    matched_pileups = tumor_pileups.cross(normal_pileups)
-    contamination = gatk_calculate_contamination(matched_pileups, segments_table)
-    filtered_vcf = gatk_filter_calls(mut.vcf, segments_table, contamination, om)
+    //matched_pileups = all_pileups.groupTuple(size: 2, sort: true)
+
+    //contamination = gatk_calculate_contamination(matched_pileups, segments_table)
+    //filtered_vcf = gatk_filter_calls(mut.vcf, segments_table, contamination, om)
+    filtered_vcf = []
 
   emit:
     vcf = filtered_vcf

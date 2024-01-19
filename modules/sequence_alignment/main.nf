@@ -2,11 +2,14 @@ nextflow.enable.dsl=2
 
 include { fastqc } from "$NEXTFLOW_MODULES/sequence_alignment/fastqc.nf"
 include { fastp } from "$NEXTFLOW_MODULES/sequence_alignment/fastp.nf"
+
 include { bwamem2_index_refgenome; bwamem2_align } from "$NEXTFLOW_MODULES/sequence_alignment/bwamem2.nf"
-//include { bwa_index_refgenome; bwa_align } from "$NEXTFLOW_MODULES/sequence_alignment/bwa.nf"
+include { bwa_index_refgenome; bwa_align } from "$NEXTFLOW_MODULES/sequence_alignment/bwa.nf"
+
 include { bam_stats; bam_depth; sam_to_bam; sort_bam; index_bam; index_fasta } from "$NEXTFLOW_MODULES/sequence_alignment/samtools.nf"
 include { gatk_indexfeaturefile; gatk_createsequencedictionary; gatk_markduplicates; gatk_set_tags; gatk_baserecalibrator; gatk_apply_bqsr } from "$NEXTFLOW_MODULES/sequence_alignment/gatk.nf"
 
+include { variant_call } from "$NEXTFLOW_MODULES/sequence_alignment/gatk_mutect.nf"
 
 process stage_fastq {
     // stage fastq files
@@ -43,7 +46,7 @@ workflow sequence_alignment {
     // set default to cleanup process inputs
     // this breaks resuming the workflow, but saves alot of storage
     if(!args.containsKey('cleanup_intermediate_files')){
-    	args['cleanup_intermediate_files'] = true
+    	args['cleanup_intermediate_files'] = false
 	}
 
     samplesheet = args.samplesheet
@@ -118,16 +121,18 @@ workflow sequence_alignment {
     // because it has to be known before starting the process as it it an output thereof
     preprocessed_reads = fastp(sample_reads_w_prefix).preprocessed_reads
 
-    //bwa_idx = bwa_index_refgenome(args.refgenome)
-    bwa_idx = bwamem2_index_refgenome(args.refgenome)
+
+    bwa_idx = bwa_index_refgenome(args.refgenome)
+    //bwa_idx = bwamem2_index_refgenome(args.refgenome)
+
     refgenome_index = index_fasta(args.refgenome).fasta_index
     refgenome_dict = gatk_createsequencedictionary(args.refgenome).refgenome_dict
 
     preprocessed_reads_no_id = preprocessed_reads.map{it -> [it[1], it[2]]} 
-    //sams = bwa_align(preprocessed_reads_no_id, args.refgenome, bwa_idx.amb, bwa_idx.ann, bwa_idx.bwt, bwa_idx.pac, bwa_idx.sa)
+    sams = bwa_align(preprocessed_reads_no_id, args.refgenome, bwa_idx.amb, bwa_idx.ann, bwa_idx.bwt, bwa_idx.pac, bwa_idx.sa)
 
     // bwa_idx.f0123 was has an f prefixed so, the file ending starts with a non-numeral
-    sams = bwamem2_align(preprocessed_reads_no_id, args.refgenome, bwa_idx.f0123, bwa_idx.amb, bwa_idx.ann, bwa_idx.bwt_2bit_64, bwa_idx.pac, args)
+    //sams = bwamem2_align(preprocessed_reads_no_id, args.refgenome, bwa_idx.f0123, bwa_idx.amb, bwa_idx.ann, bwa_idx.bwt_2bit_64, bwa_idx.pac, args)
 
     bams = sam_to_bam(sams,args)
     //sorted_bams = sort_bam(bams)
@@ -148,6 +153,18 @@ workflow sequence_alignment {
     bam_recalibrated = gatk_apply_bqsr(bam_w_recal_data, args.refgenome, refgenome_index, refgenome_dict)
     bam_w_depth = bam_depth(bam_recalibrated, args.refgenome)
     bams_w_stats = bam_stats(bam_recalibrated, args.refgenome)
+
+    //bam_recalibrated.view()
+
+    
+    variant_call(
+	    bam_recalibrated,
+	    args.intervals,
+	    args.panel_of_normals,
+	    args.germline_resource,
+	    args.refgenome,
+	    args,
+	    )
 
   emit:
     bam = bam_recalibrated

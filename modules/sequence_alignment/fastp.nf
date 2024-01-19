@@ -10,7 +10,7 @@ process fastp {
     output:
     tuple val(sample_id), path("${output_file_prefix}_fastp.html"), emit: html
     tuple val(sample_id), path("${output_file_prefix}_fastp.json"), emit: json
-    tuple val(sample_id), path("${read1.getSimpleName()}_fastp.fq.gz"), path("${read2.getSimpleName()}_fastp.fq.gz"), emit: preprocessed_reads
+    tuple val(sample_id), path("out/${read1.getSimpleName()}.fq.gz"), path("out/${read2.getSimpleName()}.fq.gz"), emit: preprocessed_reads
 
     script:
 
@@ -18,12 +18,13 @@ process fastp {
 
     n_cpus = Runtime.runtime.availableProcessors()
     """
+    mkdir out
 
     fastp \\
 	--in1 ${read1} \\
 	--in2 ${read2} \\
-	--out1  ${read1.getSimpleName()}_fastp.fq.gz \\
-	--out2  ${read2.getSimpleName()}_fastp.fq.gz \\
+	--out1  out/${read1.getSimpleName()}.fq.gz \\
+	--out2  out/${read2.getSimpleName()}.fq.gz \\
 	-z ${gz_compressionlevel} \\
 	--thread $n_cpus \\
 	--json ${output_file_prefix}_fastp.json \\

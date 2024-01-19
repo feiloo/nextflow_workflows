@@ -33,11 +33,7 @@ process sam_to_bam {
     script:
     n_cpus = Runtime.runtime.availableProcessors()
     """
-    samtools view ${samfile} --bam --threads $n_cpus -o ${samfile.getBaseName()}.bam
-
-    if [[ "${args.cleanup_intermediate_files}" == 'true' ]]; then
-      rm ${samfile}
-    fi
+    samtools view "${samfile}" --bam --threads $n_cpus -o "${samfile.getBaseName()}.bam"
     """
 }
 

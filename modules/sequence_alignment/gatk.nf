@@ -48,7 +48,7 @@ process gatk_markduplicates {
     conda "bioconda::gatk4=4.4.0.0"
     container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
 
-    memory "80 GB"
+    memory "60 GB"
 
     input:
         path(bam)
@@ -142,15 +142,16 @@ process gatk_apply_bqsr {
 	path(refgenome_dict)
 
     output:
-        path("${bamfile.getSimpleName()}_recalibrated.bam")
+        path("out/${bamfile.getSimpleName()}.bam")
 
     script:
     """
+    mkdir out
     gatk ApplyBQSR \\
         --input ${bamfile} \\
 	--reference ${refgenome} \\
 	--bqsr-recal-file ${bam_recal_data} \\
-	--output ${bamfile.getSimpleName()}_recalibrated.bam
+	--output out/${bamfile.getSimpleName()}.bam
     """
 
 }
