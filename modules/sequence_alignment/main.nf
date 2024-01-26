@@ -134,7 +134,7 @@ workflow sequence_alignment {
     // bwa_idx.f0123 was has an f prefixed so, the file ending starts with a non-numeral
     //sams = bwamem2_align(preprocessed_reads_no_id, args.refgenome, bwa_idx.f0123, bwa_idx.amb, bwa_idx.ann, bwa_idx.bwt_2bit_64, bwa_idx.pac, args)
 
-    bams = sam_to_bam(sams,args)
+    bams = sam_to_bam(sams)
     //sorted_bams = sort_bam(bams)
     //bam_indices = index_bam(sorted_bams)
 

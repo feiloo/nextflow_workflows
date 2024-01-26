@@ -25,7 +25,6 @@ process sam_to_bam {
 
     input:
     path(samfile)
-    val(args)
 
     output:
     path("${samfile.getBaseName()}.bam")

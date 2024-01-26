@@ -70,9 +70,9 @@ process gatk_learn_readorientationmodel {
 
     script:
     """
-    gatk LearnReadOriantationModel \\
-	--INPUT ${f1r2_data} \\
-	--OUTPUT "${f1r2_data.getSimpleName()}_model.tar.gz"
+    gatk LearnReadOrientationModel \\
+	--input "${f1r2_data}" \\
+	--output "${f1r2_data.getSimpleName()}_model.tar.gz"
     """
 }
 
@@ -87,6 +87,7 @@ process gatk_getpileupsummaries {
         path(genomic_intervals)
 	// prepared from like gnomAD with pop-freqs in the info field
         path(variant_frequency_vcf)
+        path(variant_frequency_vcf_index)
 
     output:
       path("${sample_vcf.getSimpleName()}_pileup.table"), emit: vcf
@@ -97,7 +98,7 @@ process gatk_getpileupsummaries {
 	-I ${sample_bam} \\
 	-L ${genomic_intervals} \\
 	-V ${variant_frequency_vcf} \\
-	--OUTPUT "${sample_vcf.getSimpleName()}_pileup.table"
+	-O "${sample_vcf.getSimpleName()}_pileup.table"
     """
 }
 
@@ -207,7 +208,7 @@ workflow variant_call {
 
     // for tumors and for normals
     // todo, check that ew can use the same germline resource for pileup here
-    all_pileups = gatk_getpileupsummaries(sample_bams, mut.vcf, intervals, germline_resource)
+    all_pileups = gatk_getpileupsummaries(sample_bams, mut.vcf, intervals, germline_resource, germline_resource_index)
 
     //matched_pileups = all_pileups.groupTuple(size: 2, sort: true)
 
