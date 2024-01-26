@@ -110,6 +110,5 @@ process bam_depth {
     n_cpus = Runtime.runtime.availableProcessors()
     """
     samtools depth "${bamfile}" > "${bamfile.getSimpleName()}_depth"
-
     """
 }

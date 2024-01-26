@@ -52,7 +52,6 @@ process gatk_markduplicates {
 
     input:
         path(bam)
-	val(args)
 
     output:
       path("out/${bam}"), emit: marked_bams
@@ -82,7 +81,6 @@ process gatk_set_tags {
     input:
         path(bam)
 	path(refgenome)
-	val(args)
 
     output:
       path("out/${bam}"), emit: tagged_bams
@@ -94,10 +92,6 @@ process gatk_set_tags {
     	--INPUT ${bam} \\
 	--REFERENCE_SEQUENCE ${refgenome} \\
 	--OUTPUT out/${bam}
-
-    if [[ "${args.cleanup_intermediate_files}" == 'true' ]]; then
-      rm ${bam}
-    fi
     """
 }
 

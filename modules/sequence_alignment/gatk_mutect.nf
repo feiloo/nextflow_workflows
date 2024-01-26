@@ -20,7 +20,7 @@ process gatk_mutect {
 	path(refgenome_dict)
 
     output:
-      path("${tumor_bam.getSimpleName()}_unfiltered.vcf"), emit: vcf
+      tuple path("${tumor_bam.getSimpleName()}_unfiltered.vcf"), path("${tumor_bam.getSimpleName()}_unfiltered.vcf.stats"), emit: vcf
       path("${tumor_bam.getSimpleName()}_f1r2_data.tar.gz"), emit: f1r2_data
 
     script:
@@ -82,15 +82,14 @@ process gatk_getpileupsummaries {
     container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
 
     input:
-        path(sample_bam)
-        path(sample_vcf)
+        tuple path(sample_vcf), path(sample_bam)
         path(genomic_intervals)
 	// prepared from like gnomAD with pop-freqs in the info field
         path(variant_frequency_vcf)
         path(variant_frequency_vcf_index)
 
     output:
-      path("${sample_vcf.getSimpleName()}_pileup.table"), emit: vcf
+      path("${sample_bam.getSimpleName()}_pileup.table"), emit: vcf
 
     script:
     """
@@ -98,7 +97,7 @@ process gatk_getpileupsummaries {
 	-I ${sample_bam} \\
 	-L ${genomic_intervals} \\
 	-V ${variant_frequency_vcf} \\
-	-O "${sample_vcf.getSimpleName()}_pileup.table"
+	-O "${sample_bam.getSimpleName()}_pileup.table"
     """
 }
 
@@ -107,8 +106,7 @@ process gatk_calculate_contamination {
     container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
 
     input:
-        tuple path(tumor_pileups), path(normal_pileups)
-        path(segments_table)
+        tuple path(normal_pileups), path(tumor_pileups)
 
     output:
       path("${tumor_pileups.getSimpleName()}_contamination.table"), emit: contamination_table
@@ -116,9 +114,9 @@ process gatk_calculate_contamination {
     script:
     """
     gatk CalculateContamination \\
-	--INPUT ${tumor_pileups} \\
+	--input ${tumor_pileups} \\
 	-matched ${normal_pileups} \\
-	--OUTPUT "${tumor_pileups.getSimpleName()}_contamination.table"
+	--output "${tumor_pileups.getSimpleName()}_contamination.table"
     """
 }
 
@@ -127,10 +125,12 @@ process gatk_filter_calls {
     container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
 
     input:
-        path(sample_vcf)
-        path(segments_table)
+        tuple path(sample_vcf), path(sample_vcf_stats)
         path(contamination_table)
 	path(orientation_model)
+	path(refgenome)
+	path(refgenome_index)
+	path(refgenome_dict)
 
     output:
       path("${sample_vcf.getSimpleName()}_filtered.vcf"), emit: vcf
@@ -139,9 +139,9 @@ process gatk_filter_calls {
     """
     gatk FilterMutectCalls \\
 	--variant ${sample_vcf} \\
-	--tumor-segmentation ${segments_table} \\
 	--ob-priors ${orientation_model} \\
-	--OUTPUT "${sample_vcf.getSimpleName()}_filtered.vcf"
+	--output "${sample_vcf.getSimpleName()}_filtered.vcf" \\
+	-R "${refgenome}"
     """
 }
 
@@ -182,18 +182,19 @@ workflow variant_call {
     // best practices from https://gatk.broadinstitute.org/hc/en-us/articles/360035531132
     // How to Call somatic mutations using GATK4 Mutect2
 
-    sample_bams_w_key = sample_bams.map{ it -> ["${it.getSimpleName()[0..-4]}", it]}
-    bam_pairs = sample_bams_w_key.groupTuple(size: 2, sort: true).map{it -> it[1]}
-    bam_pairs.view()
+    sample_bams_w_key = sample_bams.map{ it -> ["${it.getSimpleName()[0..-5]}", it]}
+    bam_pairs_w_key = sample_bams_w_key.groupTuple(size: 2, sort: true)
+    bam_pairs = bam_pairs_w_key.map{it -> it[1]}
+    //bam_pairs.view()
 
     refgenome_index = index_fasta(args.refgenome).fasta_index
     refgenome_dict = gatk_createsequencedictionary(args.refgenome).refgenome_dict
 
     indices = Channel.of(germline_resource, panel_of_normals)
     indices_mid = gatk_indexfeaturefile(indices).known_sites_index
-    indices.view()
-    indices_mid.map{it -> it.getSimpleName() }.view()
-    println "${file(panel_of_normals).getSimpleName()}"
+
+    // indices_mid.map{it -> it.getSimpleName() }.view()
+    // println "${file(panel_of_normals).getSimpleName()}"
 
 
     // panel_of_normals_index = gatk_indexfeaturefile(panel_of_normals).known_sites_index
@@ -208,13 +209,15 @@ workflow variant_call {
 
     // for tumors and for normals
     // todo, check that ew can use the same germline resource for pileup here
-    all_pileups = gatk_getpileupsummaries(sample_bams, mut.vcf, intervals, germline_resource, germline_resource_index)
 
-    //matched_pileups = all_pileups.groupTuple(size: 2, sort: true)
+    bams_and_vcf = mut.vcf.map{it -> ["${it[0].getSimpleName()[0..-16]}",it]}.combine(sample_bams_w_key, by: 0).map{it -> it[1..2]}
 
-    //contamination = gatk_calculate_contamination(matched_pileups, segments_table)
-    //filtered_vcf = gatk_filter_calls(mut.vcf, segments_table, contamination, om)
-    filtered_vcf = []
+    all_pileups = gatk_getpileupsummaries(bams_and_vcf, intervals, germline_resource, germline_resource_index)
+
+    matched_pileups = all_pileups.map{it -> ["${it.getSimpleName()[0..-12]}", it]}.groupTuple(size: 2, sort: true).map{it -> it[1]}
+
+    contamination = gatk_calculate_contamination(matched_pileups)
+    filtered_vcf = gatk_filter_calls(mut.vcf, contamination, om, args.refgenome, refgenome_index, refgenome_dict)
 
   emit:
     vcf = filtered_vcf
