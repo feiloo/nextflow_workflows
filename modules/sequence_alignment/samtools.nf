@@ -25,6 +25,7 @@ process sam_to_bam {
 
     input:
     path(samfile)
+    val(cleanup_intermediate_files)
 
     output:
     path("${samfile.getBaseName()}.bam")
@@ -33,6 +34,9 @@ process sam_to_bam {
     n_cpus = Runtime.runtime.availableProcessors()
     """
     samtools view "${samfile}" --bam --threads $n_cpus -o "${samfile.getBaseName()}.bam"
+    if [[ "${cleanup_intermediate_files}" == 'true' ]]; then
+          rm ${samfile}
+    fi
     """
 }
 

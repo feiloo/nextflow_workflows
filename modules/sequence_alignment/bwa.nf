@@ -5,7 +5,7 @@ process bwa_index_refgenome {
     storeDir "$NEXTFLOW_STOREDIR"
 
     // needs 28N GB, where N is the size of the uncompressed refseq in GB
-    //memory '120 GB'
+    memory '120 GB'
 
     input:
     path(refgenome)
@@ -40,6 +40,7 @@ process bwa_align {
     path("${refgenome}.bwt")
     path("${refgenome}.pac")
     path("${refgenome}.sa")
+    val(cleanup_intermediate_files)
 
 
     output:
@@ -86,6 +87,9 @@ process bwa_align {
     // bwa mem -t $n_cpus ${refgenome} ${read1} ${read2} -o ${read1.getSimpleName()}.sam
     """
     bwa mem -R "${read_group_info}" -t $n_cpus ${refgenome} ${read1} ${read2} -o ${read1.getSimpleName()}.sam
+    if [[ "${args.cleanup_intermediate_files}" == 'true' ]]; then
+      rm ${read1} && rm ${read2}
+    fi
     """
 }
 

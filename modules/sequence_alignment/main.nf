@@ -45,8 +45,12 @@ workflow sequence_alignment {
   main:
     // set default to cleanup process inputs
     // this breaks resuming the workflow, but saves alot of storage
-    if(!args.containsKey('cleanup_intermediate_files')){
+    if(!args.containsKey('cleanup_intermediate_files') || !args['cleanup_intermediate_files']){
     	args['cleanup_intermediate_files'] = false
+	}
+
+    if(!args.containsKey('bwa_tool') || !args['bwa_tool']){
+    	args['bwa_tool'] = 'bwa2'
 	}
 
     samplesheet = args.samplesheet
@@ -121,20 +125,33 @@ workflow sequence_alignment {
     // because it has to be known before starting the process as it it an output thereof
     preprocessed_reads = fastp(sample_reads_w_prefix).preprocessed_reads
 
+    // low_mem uses more memory efficient tools
+    // for example bwa-mem instead of bwamem2
+    // this trades memory for performance here
 
-    bwa_idx = bwa_index_refgenome(args.refgenome)
-    //bwa_idx = bwamem2_index_refgenome(args.refgenome)
+    if(args.bwa_tool == 'bwa'){
+    	bwa_idx = bwa_index_refgenome(args.refgenome)
+    } else if(args.bwa_tool == 'bwa2'){
+	bwa_idx = bwamem2_index_refgenome(args.refgenome)
+    } else {
+	throw new Exception("unknown bwa_tool ${args.bwa_tool}")
+    }
 
     refgenome_index = index_fasta(args.refgenome).fasta_index
     refgenome_dict = gatk_createsequencedictionary(args.refgenome).refgenome_dict
 
     preprocessed_reads_no_id = preprocessed_reads.map{it -> [it[1], it[2]]} 
-    sams = bwa_align(preprocessed_reads_no_id, args.refgenome, bwa_idx.amb, bwa_idx.ann, bwa_idx.bwt, bwa_idx.pac, bwa_idx.sa)
 
-    // bwa_idx.f0123 was has an f prefixed so, the file ending starts with a non-numeral
-    //sams = bwamem2_align(preprocessed_reads_no_id, args.refgenome, bwa_idx.f0123, bwa_idx.amb, bwa_idx.ann, bwa_idx.bwt_2bit_64, bwa_idx.pac, args)
+    if(args.bwa_tool == 'bwa'){
+    	sams = bwa_align(preprocessed_reads_no_id, args.refgenome, bwa_idx.amb, bwa_idx.ann, bwa_idx.bwt, bwa_idx.pac, bwa_idx.sa, args.cleanup_intermediate_files)
+    } else if(args.bwa_tool == 'bwa2'){
+        // bwa_idx.f0123 was has an f prefixed so, the file ending starts with a non-numeral
+        sams = bwamem2_align(preprocessed_reads_no_id, args.refgenome, bwa_idx.f0123, bwa_idx.amb, bwa_idx.ann, bwa_idx.bwt_2bit_64, bwa_idx.pac, args.cleanup_intermediate_files)
+    } else {
+	throw new Exception("unknown bwa_tool ${args.bwa_tool}")
+    }
 
-    bams = sam_to_bam(sams)
+    bams = sam_to_bam(sams, args.cleanup_intermediate_files)
     //sorted_bams = sort_bam(bams)
     //bam_indices = index_bam(sorted_bams)
 
