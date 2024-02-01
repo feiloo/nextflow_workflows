@@ -2,14 +2,18 @@ nextflow.enable.dsl=2
 
 
 process clc_workflow_batch {
+  // imports the files into clc from an import/exportdir
   secret 'CLC_HOST'
   secret 'CLC_USER'
   secret 'CLC_PSW'
 
-  container 'clcclient:latest'
+  container 'clc_client:latest'
   input:
     val files 
-    val args
+    val(clc_import_dir)
+    val(clc_export_dir)
+    val(clc_destdir)
+    val(workflow_name)
 
   output:
     stdout emit: output
@@ -19,14 +23,14 @@ process clc_workflow_batch {
   def arg_pref = "--workflow-input--5--select-files"
   def args2 = []
   files.each{f -> 
-        args2 << "${arg_pref} \"clc://serverfile/${args.clc_import_dir}/${f[1].name}\"" 
+        args2 << "${arg_pref} \"clc://serverfile/${clc_import_dir}/${f[1].name}\"" 
 	}
 
   def argstring = args2.join(" ")
-  def destdir = args.clc_destdir
-  def workflow_name = args.workflow_name
+  def destdir = clc_destdir
+  def workflow_name = workflow_name
 
-  def outdir = args.clc_export_dir
+  def outdir = clc_export_dir
   def vcf_output = []
 
   files.each{f -> 
@@ -34,42 +38,81 @@ process clc_workflow_batch {
 	}
 
   """
-  echo bla
+  #echo bla
   # clcserver -S \$CLC_HOST -U \$CLC_USER -W \$CLC_PSW -A ${workflow_name} --workflow-input--5--import-command ngs_import_illumina -d ${destdir} ${argstring}
+  # echo "-S \$CLC_HOST -U \$CLC_USER -W \$CLC_PSW -A ${workflow_name} --workflow-input--5--import-command ngs_import_illumina -d ${destdir} ${argstring}""
   """
 
-  stub:
-  def prefix = args.nas_import_dir
-
-  vcf_output = []
-  files.each{f -> 
-        vcf_output << "${prefix}/${f[1].name}.vcf"
-	}
-
-  """
-  echo bla
-  """
 }
 
+process clc_workflow_single {
+  // imports the files into clc from an import/exportdir
+  secret 'CLC_HOST'
+  secret 'CLC_USER'
+  secret 'CLC_PSW'
+
+  container 'clc_client:latest'
+  input:
+    tuple val(dna_read1), val(dna_read2), val(rna_read1), val(rna_read2) 
+    val(clc_import_dir)
+    val(clc_export_dir)
+    val(clc_destdir)
+    val(workflow_name)
+
+  output:
+    stdout emit: output
+    val vcf_output, emit: vcf_output
+
+    script:
+
+    def destdir = clc_destdir
+    def n1 = file(dna_read1).name
+    def n2 = file(dna_read2).name
+    def n3 = file(rna_read1).name
+    def n4 = file(rna_read2).name
+
+    """
+    clcserver -S \$CLC_HOST -U \$CLC_USER -W \$CLC_PSW -A mkdir -t "${destdir}" -n "${n1[0..7]}"
+    clcserver -S \$CLC_HOST -U \$CLC_USER -W \$CLC_PSW -A ${workflow_name} \\
+        --dna-reads-import-command ngs_import_illumina \\
+        --dna-reads-select-files \"clc://serverfile/${clc_import_dir}/${n1}\"  \\
+        --dna-reads-select-files \"clc://serverfile/${clc_import_dir}/${n2}\"  \\
+        --rna-reads-import-algo-id ngs_import_illumina \\
+        --rna-reads-select-files \"clc://serverfile/${clc_import_dir}/${n3}\"  \\
+        --rna-reads-select-files \"clc://serverfile/${clc_import_dir}/${n4}\"  \\
+        -d "${destdir}/${n1[0..7]}"
+    """
+
+    stub:
+    """
+    echo "${destdir}"
+    echo "${n1}"
+    echo "${n2}"
+    echo "${n3}"
+    echo "${n4}"
+    echo "${destdir}/${n1}"
+    """
+}
 
 process copyfiles {
+  // copies files into an clc import/exportdir
   input:
-    tuple val(sid), val(read)
-    val args
+    val(read)
+    val(nas_import_dir)
   output:
-    tuple val(sid), val(ouf)
+    val(ouf)
 
   script:
-  def prefix = args.nas_import_dir
+  def prefix = nas_import_dir
   def filen = file(read).getName()
   ouf = file(prefix)/filen
 
   """
-  cp "${read}" "${ouf}"
+  cp -n "${read}" "${ouf}"
   """
 
   stub:
-  def prefix = args.nas_import_dir
+  def prefix = nas_import_dir
   def filen = file(read).getName()
   ouf = file(prefix)/filen
 
@@ -88,7 +131,7 @@ process copyback {
 
   filen = file(vcfin).name
   """
-  cp "${vcfin}" "${filen}"
+  cp -r "${vcfin}" "${filen}"
   """
   stub:
   filen = file(vcfin).name
@@ -122,17 +165,29 @@ workflow clc_nextflow {
 
   main:
     def samplesheet = args.samplesheet
-    samples = Channel.fromPath(samplesheet).splitCsv(header: true)
+    samples = Channel.fromPath(samplesheet, checkIfExists: true, type: 'file').splitCsv(header: true)
 
-    samples.multiMap{ row ->
-          sampleid: "${row.sampleid}"
-          reads1: ["${row.sampleid}", "${row.read1}"]
-          reads2: ["${row.sampleid}", "${row.read2}"]
-          }.set{samplechannels}
+    sample_names = samples.map{ it -> [
+    	"${it.dna_read1}", "${it.dna_read2}", 
+	    "${it.rna_read1}", "${it.rna_read2}"]
+	}
 
-    reads = samplechannels.reads1.mix(samplechannels.reads2)
-    reads.view()
-    files = copyfiles(reads, args)
+    sample_files = samples.flatMap{ it -> [
+    	"${it.dna_read1}", "${it.dna_read2}", 
+	    "${it.rna_read1}", "${it.rna_read2}"]
+	}
+
+    //reads = samplechannels.reads1.mix(samplechannels.reads2)
+    //reads.view()
+    files = copyfiles(sample_files, args.nas_import_dir)
+    staged_reads = files.map{it -> ["${file(it).name[0..4]}", it]}.groupTuple(by: 0, size: 4, sort: true).map{it -> it[1]}
+
+    out = clc_workflow_single(staged_reads, 
+    	args.clc_import_dir, args.clc_export_dir,
+    	args.clc_destdir, args.workflow_name)
+
+    /*
+
     //samples = files.groupTuple(size:2).buffer(size: 2)
 
     //samples.view()
@@ -144,10 +199,12 @@ workflow clc_nextflow {
     emit:
       vcfs
       sheet
+    */
 }
 
 
 workflow {
-  def args = params
+  def args = [:]
+  for (param in params) { args[param.key] = param.value }
   clc_nextflow(args)
 }
