@@ -1,5 +1,8 @@
 nextflow.enable.dsl=2
 
+def samplename_of { filename ->
+    filename.split('-')[0..1].join('-')
+}
 
 process clc_workflow_batch {
   // imports the files into clc from an import/exportdir
@@ -70,9 +73,10 @@ process clc_workflow_single {
     def n2 = file(dna_read2).name
     def n3 = file(rna_read1).name
     def n4 = file(rna_read2).name
+    def samplename = samplename_of(n1)
 
     """
-    clcserver -S \$CLC_HOST -U \$CLC_USER -W \$CLC_PSW -A mkdir -t "${destdir}" -n "${n1[0..7]}"
+    clcserver -S \$CLC_HOST -U \$CLC_USER -W \$CLC_PSW -A mkdir -t "${destdir}" -n "${samplename}"
     clcserver -S \$CLC_HOST -U \$CLC_USER -W \$CLC_PSW -A ${workflow_name} \\
         --dna-reads-import-command ngs_import_illumina \\
         --dna-reads-select-files \"clc://serverfile/${clc_import_dir}/${n1}\"  \\
@@ -80,17 +84,26 @@ process clc_workflow_single {
         --rna-reads-import-algo-id ngs_import_illumina \\
         --rna-reads-select-files \"clc://serverfile/${clc_import_dir}/${n3}\"  \\
         --rna-reads-select-files \"clc://serverfile/${clc_import_dir}/${n4}\"  \\
-        -d "${destdir}/${n1[0..7]}"
+        -d "${destdir}/${samplename}"
     """
 
     stub:
+
+    def destdir = clc_destdir
+    def n1 = file(dna_read1).name
+    def n2 = file(dna_read2).name
+    def n3 = file(rna_read1).name
+    def n4 = file(rna_read2).name
+    def samplename = samplename_of(n1)
+
     """
     echo "${destdir}"
+    echo "${samplename}"
     echo "${n1}"
     echo "${n2}"
     echo "${n3}"
     echo "${n4}"
-    echo "${destdir}/${n1}"
+    echo "${destdir}/${samplename}"
     """
 }
 
@@ -178,9 +191,9 @@ workflow clc_nextflow {
 	}
 
     //reads = samplechannels.reads1.mix(samplechannels.reads2)
-    //reads.view()
+
     files = copyfiles(sample_files, args.nas_import_dir)
-    staged_reads = files.map{it -> ["${file(it).name[0..4]}", it]}.groupTuple(by: 0, size: 4, sort: true).map{it -> it[1]}
+    staged_reads = files.map{it -> ["${samplename_of(file(it).name)}", it]}.groupTuple(by: 0, size: 4, sort: true).map{it -> it[1]}
 
     out = clc_workflow_single(staged_reads, 
     	args.clc_import_dir, args.clc_export_dir,
