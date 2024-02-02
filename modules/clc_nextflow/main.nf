@@ -62,7 +62,9 @@ process clc_workflow_single {
   secret 'CLC_USER'
   secret 'CLC_PSW'
 
-  container 'clc_client:latest'
+  // use local container only for now
+  container 'docker://localhost/clc_client:latest'
+
   input:
     tuple val(dna_read1), val(dna_read2), val(rna_read1), val(rna_read2) 
     val(clc_import_dir)
@@ -190,10 +192,14 @@ def row_to_dict = { row ->
 
 workflow clc_nextflow {
   take:
-    args
+    samplesheet
+    clc_import_dir
+    clc_export_dir
+    clc_destdir
+    clc_workflow_name
+    nas_import_dir
 
   main:
-    def samplesheet = args.samplesheet
     samples = Channel.fromPath(samplesheet, checkIfExists: true, type: 'file').splitCsv(header: true)
 
     // check that samplenames match and are in the
@@ -231,14 +237,14 @@ workflow clc_nextflow {
 
 
     // use the files tuple for synchronizing the staging
-    files = copyfiles(sample_files, args.nas_import_dir)
+    files = copyfiles(sample_files, nas_import_dir)
     staged_reads = files.map{it -> ["${samplename_from_path(it)}", it]}.groupTuple(by: 0, size: 4, sort: true).map{it -> it[1]}
 
     staged_reads.subscribe{ row -> check_row(row_to_dict(row)) }
 
     out = clc_workflow_single(staged_reads, 
-    	args.clc_import_dir, args.clc_export_dir,
-    	args.clc_destdir, args.workflow_name)
+    	clc_import_dir, clc_export_dir,
+    	clc_destdir, clc_workflow_name)
 
     //reads = samplechannels.reads1.mix(samplechannels.reads2)
     //samples = files.groupTuple(size:2).buffer(size: 2)
@@ -258,5 +264,12 @@ workflow clc_nextflow {
 workflow {
   def args = [:]
   for (param in params) { args[param.key] = param.value }
-  clc_nextflow(args)
+
+  clc_nextflow(args.samplesheet, 
+  	args.clc_import_dir, 
+	args.clc_export_dir,
+	args.clc_destdir,
+	args.workflow_name,
+	args.nas_import_dir
+	)
 }

@@ -91,7 +91,15 @@ workflow {
   	arriba_nextflow(args)
   }
   else if(args.workflow_variation == 'clc'){
-  	clc_nextflow(args)
+  	//clc_nextflow(args)
+
+	  clc_nextflow(args.samplesheet, 
+		args.clc_import_dir, 
+		args.clc_export_dir,
+		args.clc_destdir,
+		args.workflow_name,
+		args.nas_import_dir
+		)
   }
   else if(args.workflow_variation == 'sarek'){
   	SAREK(args)
