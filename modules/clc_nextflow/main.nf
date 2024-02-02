@@ -5,7 +5,7 @@ def samplename_from_filename = { filename ->
 }
 
 def samplename_from_path = { path ->
-    samplename_from_filename(path.split('.')[0])
+    samplename_from_filename(path.name)
 }
 
 def year_from_path = { path ->
@@ -82,7 +82,6 @@ process clc_workflow_single {
     def n4 = file(rna_read2).name
     def samplename = samplename_from_filename(n1)
 
-    /*
     """
     clcserver -S \$CLC_HOST -U \$CLC_USER -W \$CLC_PSW -A mkdir -t "${destdir}" -n "${samplename}"
     clcserver -S \$CLC_HOST -U \$CLC_USER -W \$CLC_PSW -A ${workflow_name} \\
@@ -94,7 +93,6 @@ process clc_workflow_single {
         --rna-reads-select-files \"clc://serverfile/${clc_import_dir}/${n4}\"  \\
         -d "${destdir}/${samplename}"
     """
-    */
 
     stub:
 
@@ -180,6 +178,15 @@ process writesamplesheet {
   }
 }
 
+def row_to_dict = { row ->
+    [
+    dna_read1: row[0],
+    dna_read2: row[1],
+    rna_read1: row[2],
+    rna_read2: row[3]
+    ]
+}
+
 
 workflow clc_nextflow {
   take:
@@ -189,18 +196,17 @@ workflow clc_nextflow {
     def samplesheet = args.samplesheet
     samples = Channel.fromPath(samplesheet, checkIfExists: true, type: 'file').splitCsv(header: true)
 
+    // check that samplenames match and are in the
     def check_row = { row -> 
-        def sid = row.sample_name
+        def sid = file(row.dna_read1).name.split('-')[0]
 	def year = year_from_path(file(row.dna_read1).name)
 	def expected_row = [
-		"${sid}",
 		"${sid}-${year}-DNA_1.fq.gz",
 		"${sid}-${year}-DNA_2.fq.gz",
 		"${sid}-${year}-RNA_1.fq.gz",
 		"${sid}-${year}-RNA_2.fq.gz",
 	]
 	def actual_row = [
-		"${sid}",
 		file(row.dna_read1).name,
 		file(row.dna_read2).name,
 		file(row.rna_read1).name,
@@ -211,7 +217,6 @@ workflow clc_nextflow {
 	}
     }
 
-    samples.view()
     samples.subscribe{ row -> check_row(row) }
 
     sample_names = samples.map{ it -> [
@@ -229,17 +234,14 @@ workflow clc_nextflow {
     files = copyfiles(sample_files, args.nas_import_dir)
     staged_reads = files.map{it -> ["${samplename_from_path(it)}", it]}.groupTuple(by: 0, size: 4, sort: true).map{it -> it[1]}
 
-    staged_reads.subscribe{ row -> check_row(row) }
+    staged_reads.subscribe{ row -> check_row(row_to_dict(row)) }
 
     out = clc_workflow_single(staged_reads, 
     	args.clc_import_dir, args.clc_export_dir,
     	args.clc_destdir, args.workflow_name)
 
     //reads = samplechannels.reads1.mix(samplechannels.reads2)
-
     //samples = files.groupTuple(size:2).buffer(size: 2)
-
-    //samples.view()
     /*
     out = clc_workflow_batch(files.buffer(size: 2), args)
     vcfs = copyback(out.vcf_output.flatten().unique())
