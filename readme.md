@@ -46,8 +46,15 @@ meson compile
 
 #### run tests with meson
 
+configure the tests:
 ```
 cd /path_to_builddir
+meson configure -Dtest_samplesheets=/path_to_test_samplesheet_dir -Dtest_configs=/path_to_test_configs_dir
+```
+within those folders create a test_main.config and a samplesheet for each workflow_variation, e.q. test_clc_samplesheet.csv
+
+run tests
+```
 meson test
 ```
 
