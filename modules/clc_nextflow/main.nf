@@ -62,11 +62,13 @@ process clc_workflow_single {
   secret 'CLC_USER'
   secret 'CLC_PSW'
 
+  time '30h'
+
   // use local container only for now
   container 'docker://localhost/clc_client:latest'
 
   input:
-    tuple val(dna_read1), val(dna_read2), val(rna_read1), val(rna_read2) 
+    tuple val(dna_read1), val(dna_read2), val(rna_read1), val(rna_read2)
     val(clc_import_dir)
     val(clc_export_dir)
     val(clc_destdir)
@@ -93,6 +95,17 @@ process clc_workflow_single {
         --rna-reads-import-algo-id ngs_import_illumina \\
         --rna-reads-select-files \"clc://serverfile/${clc_import_dir}/${n3}\"  \\
         --rna-reads-select-files \"clc://serverfile/${clc_import_dir}/${n4}\"  \\
+	--export-json-reports-export-destination \"clc://serverfile/${clc_export_dir}/${samplename}\" \\
+	--export-json-reports--2--export-destination \"clc://serverfile/${clc_export_dir}/${samplename}\" \\
+	--export-json-reports--3--export-destination \"clc://serverfile/${clc_export_dir}/${samplename}\" \\
+	--export-json-reports--4--export-destination \"clc://serverfile/${clc_export_dir}/${samplename}\" \\
+	--export-json-reports--5--export-destination \"clc://serverfile/${clc_export_dir}/${samplename}\" \\
+	--export-json-reports--6--export-destination \"clc://serverfile/${clc_export_dir}/${samplename}\" \\
+	--export-table-csv-export-destination \"clc://serverfile/${clc_export_dir}/${samplename}\" \\
+	--export-table-csv--2--export-destination \"clc://serverfile/${clc_export_dir}/${samplename}\" \\
+	--export-table-csv--3--export-destination \"clc://serverfile/${clc_export_dir}/${samplename}\" \\
+	--export-table-csv--4--export-destination \"clc://serverfile/${clc_export_dir}/${samplename}\" \\
+	--export-vcf-export-destination \"clc://serverfile/${clc_export_dir}/${samplename}\" \\
         -d "${destdir}/${samplename}"
     """
 
@@ -117,6 +130,8 @@ process clc_workflow_single {
 }
 
 process copyfiles {
+  cache false
+
   // copies files into an clc import/exportdir
   input:
     val(read)
@@ -140,6 +155,24 @@ process copyfiles {
 
   """
   touch "${ouf}"
+  """
+}
+
+process mk_exportdir {
+  // copies files into an clc import/exportdir
+  input:
+    tuple val(dna_read1), val(dna_read2), val(rna_read1), val(rna_read2) 
+    val(nas_export_dir)
+  output:
+    tuple val(dna_read1), val(dna_read2), val(rna_read1), val(rna_read2) 
+
+  script:
+  def n1 = file(dna_read1).name
+  def samplename = samplename_from_filename(n1)
+  def sample_exportdir = "${nas_export_dir}/${samplename}"
+
+  """
+  mkdir -p "${sample_exportdir}"
   """
 }
 
@@ -198,6 +231,7 @@ workflow clc_nextflow {
     clc_destdir
     clc_workflow_name
     nas_import_dir
+    nas_export_dir
 
   main:
     samples = Channel.fromPath(samplesheet, checkIfExists: true, type: 'file').splitCsv(header: true)
@@ -241,8 +275,9 @@ workflow clc_nextflow {
     staged_reads = files.map{it -> ["${samplename_from_path(it)}", it]}.groupTuple(by: 0, size: 4, sort: true).map{it -> it[1]}
 
     staged_reads.subscribe{ row -> check_row(row_to_dict(row)) }
+    staged_reads_w_export_dir = mk_exportdir(staged_reads, nas_export_dir)
 
-    out = clc_workflow_single(staged_reads, 
+    out = clc_workflow_single(staged_reads_w_export_dir, 
     	clc_import_dir, clc_export_dir,
     	clc_destdir, clc_workflow_name)
 
@@ -270,6 +305,7 @@ workflow {
 	args.clc_export_dir,
 	args.clc_destdir,
 	args.workflow_name,
-	args.nas_import_dir
+	args.nas_import_dir,
+	args.nas_export_dir
 	)
 }
