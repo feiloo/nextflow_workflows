@@ -80,7 +80,7 @@ process bwamem2_align {
     """
     bwa-mem2 mem -R "${read_group_info}" -t $n_cpus ${refgenome} ${read1} ${read2} -o ${read1.getSimpleName()}.sam
 
-    if [[ "${args.cleanup_intermediate_files}" == 'true' ]]; then
+    if [[ "${cleanup_intermediate_files}" == 'true' ]]; then
       rm ${read1} && rm ${read2}
     fi
     """

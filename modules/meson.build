@@ -1,6 +1,6 @@
 nextflow_libdir = '/usr/local/lib/nextflow'
-testconfig_path = get_option('testconfig_path')
-test_samplesheet = get_option('test_samplesheet')
+test_configs = get_option('test_configs')
+test_samplesheets = get_option('test_samplesheets')
 
 subdir('arriba_nextflow')
 subdir('clc_nextflow')
@@ -26,8 +26,9 @@ test('nextflow_workflow_variantinterpretation',
 	args : [
 	'run',
 	meson.current_build_dir()+'/ukb_main_workflow/main.nf',
-	'-c', testconfig_path,
+	'-c', test_configs/'test_main.config',
 	'--workflow_variation', 'variantinterpretation',
+	'--samplesheet', test_samplesheets + '/variantinterpretation.csv',
 	],
 	depends: [variantinterpretation, ukb_main_workflow],
 	timeout: 6000
@@ -41,7 +42,7 @@ test('nextflow_workflow_arriba',
 	args : [
 	'run',
 	meson.current_build_dir()+'/ukb_main_workflow/main.nf',
-	'-c', testconfig_path,
+	'-c', test_configs/'test_main.config',
 	'--workflow_variation', 'arriba',
 	],
 	depends: [arriba_nextflow, ukb_main_workflow],
@@ -56,10 +57,29 @@ test('nextflow_workflow_sequence_alignment',
 	args : [
 	'run',
 	meson.current_build_dir()+'/ukb_main_workflow/main.nf',
-	'-c', testconfig_path,
+	'-c', test_configs/'test_main.config',
 	'--workflow_variation', 'sequence_alignment',
-	'--samplesheet', test_samplesheet,
+	'--samplesheet', test_samplesheets/'test_sequence_alignment_samplesheet.csv',
 	],
 	depends: [variantinterpretation, sequence_alignment_nextflow, ukb_main_workflow],
 	timeout: 3600
 	)
+
+
+test('nextflow_workflow_clc',
+	nextflow_bin,
+	is_parallel : false,
+	suite : ['nextflow', 'workflow'],
+	env: ['NEXTFLOW_MODULES='+meson.current_build_dir()],
+	args : [
+	'run',
+	meson.current_build_dir()+'/ukb_main_workflow/main.nf',
+	'-c', test_configs/'test_main.config',
+	'--workflow_variation', 'clc',
+	'--samplesheet', test_samplesheets/'test_clc_samplesheet.csv',
+	'-stub'
+	],
+	depends: [clc_nextflow, ukb_main_workflow],
+	timeout: 6000
+	)
+

@@ -152,11 +152,12 @@ workflow sequence_alignment {
     }
 
     bams = sam_to_bam(sams, args.cleanup_intermediate_files)
+
     //sorted_bams = sort_bam(bams)
     //bam_indices = index_bam(sorted_bams)
 
     marked_bams = gatk_markduplicates(bams).marked_bams
-    tagged_bams = gatk_set_tags(marked_bams, args.refgenome).tagged_bams
+    tagged_bams = gatk_set_tags(marked_bams, args.refgenome, args.cleanup_intermediate_files).tagged_bams
 
     known_sites_index = gatk_indexfeaturefile(args.known_sites).known_sites_index
     bam_recal_data = gatk_baserecalibrator(tagged_bams, args.refgenome, refgenome_index, refgenome_dict, args.known_sites, known_sites_index)

@@ -46,8 +46,15 @@ meson compile
 
 #### run tests with meson
 
+configure the tests:
 ```
 cd /path_to_builddir
+meson configure -Dtest_samplesheets=/path_to_test_samplesheet_dir -Dtest_configs=/path_to_test_configs_dir
+```
+within those folders create a test_main.config and a samplesheet for each workflow_variation, e.q. test_clc_samplesheet.csv
+
+run tests
+```
 meson test
 ```
 
@@ -87,6 +94,3 @@ each tool process runs the tool with the tools parallelism option
 with the current filesize to count ratio: 1GB to 5 GB per file and about 5-50 files per workflow on ~100 cores this works pretty well
 
 and most importantly it is quite simple to reason about
-
-
-

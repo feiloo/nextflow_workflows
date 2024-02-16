@@ -3,7 +3,12 @@ install_subdir('../sequence_alignment',
 	exclude_files:['meson.build'], 
 	install_tag : 'nextflow')
 
-nextflow_files = ['main.nf','nextflow.config', 'fastqc.nf', 'fastp.nf', 'bwamem2.nf']
+nextflow_files = [
+	'main.nf','nextflow.config', 'fastqc.nf', 
+	'fastp.nf', 'bwamem2.nf', 'bwa.nf', 
+	'align_and_postprocess.nf','gatk_mutect.nf',
+	'gatk.nf','samtools.nf', 'utils.nf']
+
 sequence_alignment_nextflow = custom_target('sequence_alignment_nextflow',
 	input : nextflow_files,
 	output : '.',
