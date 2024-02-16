@@ -8,6 +8,8 @@ process gatk_mutect {
     conda "bioconda::gatk4=4.4.0.0"
     container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
 
+    memory '60 GB'
+
     input:
         tuple path(tumor_bam), path(normal_bam)
 	path(intervals)
@@ -28,6 +30,7 @@ process gatk_mutect {
     def normal_samplename = "${normal_bam.getSimpleName()}"
     """
     gatk Mutect2 \\
+	--java-options "-Djava.io.tmpdir=tmp -Xms50G -Xmx50G" \\
     	--native-pair-hmm-threads ${n_cpus} \\
 	--input ${tumor_bam} \\
 	--input ${normal_bam} \\
@@ -62,6 +65,9 @@ process gatk_learn_readorientationmodel {
     conda "bioconda::gatk4=4.4.0.0"
     container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
 
+    time '60h'
+    memory '60 GB'
+
     input:
         path(f1r2_data)
 
@@ -71,6 +77,7 @@ process gatk_learn_readorientationmodel {
     script:
     """
     gatk LearnReadOrientationModel \\
+	--java-options "-Djava.io.tmpdir=tmp -Xms50G -Xmx50G" \\
 	--input "${f1r2_data}" \\
 	--output "${f1r2_data.getSimpleName()}_model.tar.gz"
     """
@@ -80,6 +87,9 @@ process gatk_learn_readorientationmodel {
 process gatk_getpileupsummaries {
     conda "bioconda::gatk4=4.4.0.0"
     container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
+
+    time '60h'
+    memory '60 GB'
 
     input:
         tuple path(sample_vcf), path(sample_bam)
@@ -94,6 +104,7 @@ process gatk_getpileupsummaries {
     script:
     """
     gatk GetPileupSummaries \\
+	--java-options "-Djava.io.tmpdir=tmp -Xms50G -Xmx50G" \\
 	-I ${sample_bam} \\
 	-L ${genomic_intervals} \\
 	-V ${variant_frequency_vcf} \\
@@ -105,6 +116,9 @@ process gatk_calculate_contamination {
     conda "bioconda::gatk4=4.4.0.0"
     container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
 
+    time '60h'
+    memory '60 GB'
+
     input:
         tuple path(normal_pileups), path(tumor_pileups)
 
@@ -114,6 +128,7 @@ process gatk_calculate_contamination {
     script:
     """
     gatk CalculateContamination \\
+	--java-options "-Djava.io.tmpdir=tmp -Xms50G -Xmx50G" \\
 	--input ${tumor_pileups} \\
 	-matched ${normal_pileups} \\
 	--output "${tumor_pileups.getSimpleName()}_contamination.table"
@@ -123,6 +138,8 @@ process gatk_calculate_contamination {
 process gatk_filter_calls {
     conda "bioconda::gatk4=4.4.0.0"
     container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
+    time '60h'
+    memory '60 GB'
 
     input:
         tuple path(sample_vcf), path(sample_vcf_stats)
@@ -138,6 +155,7 @@ process gatk_filter_calls {
     script:
     """
     gatk FilterMutectCalls \\
+	--java-options "-Djava.io.tmpdir=tmp -Xms50G -Xmx50G" \\
 	--variant ${sample_vcf} \\
 	--ob-priors ${orientation_model} \\
 	--output "${sample_vcf.getSimpleName()}_filtered.vcf" \\
@@ -148,6 +166,8 @@ process gatk_filter_calls {
 process create_pon_db {
     conda "bioconda::gatk4=4.4.0.0"
     container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
+
+    time '60h'
 
     input:
     	path(pon_vcfs)

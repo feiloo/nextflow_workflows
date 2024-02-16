@@ -1,11 +1,13 @@
 process bwa_index_refgenome {
     conda "bioconda::bwa=0.7.17"
-    container 'quay.io/biocontainers/bwa:0.7.17--hed695b0_7'
+    //container 'quay.io/biocontainers/bwa:0.7.17--hed695b0_7'
+    container 'quay.io/biocontainers/mulled-v2-fe8faa35dbf6dc65a0f7f5d4ea12e31a79f73e40:219b6c272b25e7e642ae3ff0bf0c5c81a5135ab4-0'
 
     storeDir "$NEXTFLOW_STOREDIR"
 
     // needs 28N GB, where N is the size of the uncompressed refseq in GB
     memory '120 GB'
+    time '50h'
 
     input:
     path(refgenome)
@@ -28,9 +30,13 @@ process bwa_index_refgenome {
 
 process bwa_align {
     conda "bioconda::bwa=0.7.17"
-    container 'quay.io/biocontainers/bwa:0.7.17--hed695b0_7'
+    //container 'quay.io/biocontainers/bwa:0.7.17--hed695b0_7'
+    container 'quay.io/biocontainers/mulled-v2-fe8faa35dbf6dc65a0f7f5d4ea12e31a79f73e40:219b6c272b25e7e642ae3ff0bf0c5c81a5135ab4-0'
+
+    publishDir '/PAT-Sequenzer/NEB_FFPE_WGS_30-01-2024/nextflow_outputs/other_bams', mode: 'copy', overwrite: true
 
     memory '60 GB'
+    time '50h'
 
     input:
     tuple path(read1), path(read2)
@@ -44,7 +50,7 @@ process bwa_align {
 
 
     output:
-    path("${read1.getSimpleName()}.sam")
+    path("${read1.getSimpleName()}.bam")
 
     script:
     n_cpus = Runtime.runtime.availableProcessors()
@@ -86,7 +92,7 @@ process bwa_align {
 
     // bwa mem -t $n_cpus ${refgenome} ${read1} ${read2} -o ${read1.getSimpleName()}.sam
     """
-    bwa mem -R "${read_group_info}" -t $n_cpus ${refgenome} ${read1} ${read2} -o ${read1.getSimpleName()}.sam
+    bwa mem -R "${read_group_info}" -t $n_cpus ${refgenome} ${read1} ${read2} | samtools view --bam --threads $n_cpus -o ${read1.getSimpleName()}.bam
     if [[ "${args.cleanup_intermediate_files}" == 'true' ]]; then
       rm ${read1} && rm ${read2}
     fi

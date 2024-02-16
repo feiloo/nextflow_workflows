@@ -16,7 +16,7 @@ process stage_fastq {
     // it renames them to the required naming scheme if necessary
     // it also allows copying, in case the datasource is on a slow network drive
 
-    // stageInMode 'copy'
+    //stageInMode 'copy'
     stageInMode 'link'
 
     input:
@@ -111,7 +111,7 @@ workflow sequence_alignment {
 	}
 
 
-    qualities = fastqc(all_reads)
+    //qualities = fastqc(all_reads)
 
     // a flat channel of [sample_id, read1, read2, file_prefix] tuples
     sample_reads_w_prefix = staged_sample_pairs.flatMap{
@@ -132,6 +132,7 @@ workflow sequence_alignment {
     if(args.bwa_tool == 'bwa'){
     	bwa_idx = bwa_index_refgenome(args.refgenome)
     } else if(args.bwa_tool == 'bwa2'){
+    	assert 1 == 0
 	bwa_idx = bwamem2_index_refgenome(args.refgenome)
     } else {
 	throw new Exception("unknown bwa_tool ${args.bwa_tool}")
@@ -143,18 +144,19 @@ workflow sequence_alignment {
     preprocessed_reads_no_id = preprocessed_reads.map{it -> [it[1], it[2]]} 
 
     if(args.bwa_tool == 'bwa'){
-    	sams = bwa_align(preprocessed_reads_no_id, args.refgenome, bwa_idx.amb, bwa_idx.ann, bwa_idx.bwt, bwa_idx.pac, bwa_idx.sa, args.cleanup_intermediate_files)
+    	bams = bwa_align(preprocessed_reads_no_id, args.refgenome, bwa_idx.amb, bwa_idx.ann, bwa_idx.bwt, bwa_idx.pac, bwa_idx.sa, args.cleanup_intermediate_files)
     } else if(args.bwa_tool == 'bwa2'){
         // bwa_idx.f0123 was has an f prefixed so, the file ending starts with a non-numeral
         sams = bwamem2_align(preprocessed_reads_no_id, args.refgenome, bwa_idx.f0123, bwa_idx.amb, bwa_idx.ann, bwa_idx.bwt_2bit_64, bwa_idx.pac, args.cleanup_intermediate_files)
+    	bams = sam_to_bam(sams, args.cleanup_intermediate_files)
     } else {
 	throw new Exception("unknown bwa_tool ${args.bwa_tool}")
     }
 
-    bams = sam_to_bam(sams, args.cleanup_intermediate_files)
     //sorted_bams = sort_bam(bams)
     //bam_indices = index_bam(sorted_bams)
 
+    /*
     marked_bams = gatk_markduplicates(bams).marked_bams
     tagged_bams = gatk_set_tags(marked_bams, args.refgenome).tagged_bams
 
@@ -185,6 +187,7 @@ workflow sequence_alignment {
 
   emit:
     bam = bam_recalibrated
+  */
 }
 
 workflow {

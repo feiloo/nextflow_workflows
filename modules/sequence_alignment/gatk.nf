@@ -6,6 +6,8 @@ process gatk_createsequencedictionary {
 
     storeDir "$NEXTFLOW_STOREDIR"
 
+    time '60h'
+
     input:
 	path(refgenome)
 
@@ -26,6 +28,7 @@ process gatk_indexfeaturefile {
     conda "bioconda::gatk4=4.4.0.0"
     container "quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0"
 
+    time '60h'
     storeDir "$NEXTFLOW_STOREDIR"
 
     input:
@@ -45,8 +48,9 @@ process gatk_indexfeaturefile {
 
 
 process gatk_markduplicates {
-    conda "bioconda::gatk4=4.4.0.0"
+    conda "bioconda::gatk4=4.5.0.0"
     container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
+    time '60h'
 
     memory "60 GB"
 
@@ -64,8 +68,12 @@ process gatk_markduplicates {
 
     """
     mkdir out
+    mkdir tmp
     gatk MarkDuplicatesSpark \\
         --input ${bam} \\
+	--java-options "-Djava.io.tmpdir=tmp -Xms50G -Xmx50G" \\
+	--conf 'spark.local.dir=tmp spark.executor.memory 7g spark.driver.memory=4' \\
+	--tmp-dir tmp \\
     	--spark-master local[$n_cpus] \\
 	--output out/${bam}
 
@@ -76,7 +84,9 @@ process gatk_set_tags {
     conda "bioconda::gatk4=4.4.0.0"
     container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
 
-    memory "46 GB"
+    time '60h'
+
+    memory "60 GB"
 
     input:
         path(bam)
@@ -88,7 +98,9 @@ process gatk_set_tags {
     script:
     """
     mkdir out
+    mkdir tmp
     gatk SetNmMdAndUqTags \\
+	--java-options "-Djava.io.tmpdir=tmp -Xms50G -Xmx50G"
     	--INPUT ${bam} \\
 	--REFERENCE_SEQUENCE ${refgenome} \\
 	--OUTPUT out/${bam}
@@ -99,7 +111,8 @@ process gatk_baserecalibrator {
     conda "bioconda::gatk4=4.4.0.0"
     container "quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0"
 
-    memory "46 GB"
+    time '60h'
+    memory "60 GB"
 
     input:
         path(bamfile)
@@ -114,7 +127,9 @@ process gatk_baserecalibrator {
 
     script:
     """
+    mkdir tmp
     gatk BaseRecalibrator \\
+	--java-options "-Djava.io.tmpdir=tmp -Xms4G -Xmx4G -XX:ParallelGCThreads=2" \\
         --input ${bamfile} \\
 	--reference ${refgenome} \\
 	--known-sites ${known_sites} \\
@@ -127,6 +142,7 @@ process gatk_apply_bqsr {
     conda "bioconda::gatk4=4.4.0.0"
     container "quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0"
 
+    time '60h'
     memory "46 GB"
 
     input:
@@ -141,7 +157,9 @@ process gatk_apply_bqsr {
     script:
     """
     mkdir out
+    mkdir tmp
     gatk ApplyBQSR \\
+        --java-options "-Djava.io.tmpdir=tmp -Xms2G -Xmx2G -XX:ParallelGCThreads=2" \\
         --input ${bamfile} \\
 	--reference ${refgenome} \\
 	--bqsr-recal-file ${bam_recal_data} \\
