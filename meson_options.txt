@@ -1,2 +1,2 @@
-option('testconfig_path', type: 'string')
-option('test_samplesheet', type: 'string')
+option('testconfig_dir', type: 'string')
+option('test_samplesheets', type: 'string')
