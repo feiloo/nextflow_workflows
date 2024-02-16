@@ -17,6 +17,7 @@ process clc_workflow_batch {
   secret 'CLC_HOST'
   secret 'CLC_USER'
   secret 'CLC_PSW'
+  time '80h'
 
   container 'clc_client:latest'
   input:
@@ -62,7 +63,7 @@ process clc_workflow_single {
   secret 'CLC_USER'
   secret 'CLC_PSW'
 
-  time '30h'
+  time '80h'
 
   // use local container only for now
   container 'docker://localhost/clc_client:latest'
