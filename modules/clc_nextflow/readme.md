@@ -1,11 +1,12 @@
 # clc nextflow wrapper module
 
+at this time, this wrapper only calls a peculiar one of our internal clc workflows.
+
 this module calls a clc workflow from within a nextflow workflow.
 therefore it allows combining clc workflows with nextflow ones.
 
 to use this, you need a clcserver setup and clc workflows
 
-at this time, this wrapper only calls a peculiar one of our internal clc workflows.
 
 to add more clc workflows, one can simply add nextflow process definitions for each one, like a library.
 

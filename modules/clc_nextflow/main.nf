@@ -12,51 +12,6 @@ def year_from_path = { path ->
 	file(path).name.split('-')[1]
 }
 
-process clc_workflow_batch {
-  // imports the files into clc from an import/exportdir
-  secret 'CLC_HOST'
-  secret 'CLC_USER'
-  secret 'CLC_PSW'
-  time '80h'
-
-  container 'clc_client:latest'
-  input:
-    val files 
-    val(clc_import_dir)
-    val(clc_export_dir)
-    val(clc_destdir)
-    val(workflow_name)
-
-  output:
-    stdout emit: output
-    val vcf_output, emit: vcf_output
-
-  script:
-  def arg_pref = "--workflow-input--5--select-files"
-  def args2 = []
-  files.each{f -> 
-        args2 << "${arg_pref} \"clc://serverfile/${clc_import_dir}/${f[1].name}\"" 
-	}
-
-  def argstring = args2.join(" ")
-  def destdir = clc_destdir
-  def workflow_name = workflow_name
-
-  def outdir = clc_export_dir
-  def vcf_output = []
-
-  files.each{f -> 
-  	vcf_output << outdir + f[1].getSimpleName()[0..-8] + ' (paired) Unfiltered Variants-2.vcf.gz'
-	}
-
-  """
-  #echo bla
-  # clcserver -S \$CLC_HOST -U \$CLC_USER -W \$CLC_PSW -A ${workflow_name} --workflow-input--5--import-command ngs_import_illumina -d ${destdir} ${argstring}
-  # echo "-S \$CLC_HOST -U \$CLC_USER -W \$CLC_PSW -A ${workflow_name} --workflow-input--5--import-command ngs_import_illumina -d ${destdir} ${argstring}""
-  """
-
-}
-
 process clc_workflow_single {
   // imports the files into clc from an import/exportdir
   secret 'CLC_HOST'
@@ -281,19 +236,6 @@ workflow clc_nextflow {
     out = clc_workflow_single(staged_reads_w_export_dir, 
     	clc_import_dir, clc_export_dir,
     	clc_destdir, clc_workflow_name)
-
-    //reads = samplechannels.reads1.mix(samplechannels.reads2)
-    //samples = files.groupTuple(size:2).buffer(size: 2)
-    /*
-    out = clc_workflow_batch(files.buffer(size: 2), args)
-    vcfs = copyback(out.vcf_output.flatten().unique())
-    sheet = writesamplesheet(vcfs.collect())
-    sheet.view()
-
-    emit:
-      vcfs
-      sheet
-    */
 }
 
 
