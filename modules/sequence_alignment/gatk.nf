@@ -6,7 +6,12 @@ process gatk_createsequencedictionary {
 
     storeDir "$NEXTFLOW_STOREDIR"
 
+    cpus { Math.max(1, Math.round(Runtime.runtime.availableProcessors() * (1 - ((1/4)*(task.attempt-1))))) }
+    errorStrategy 'retry'
+    maxRetries 4
+
     time '60h'
+    memory "60 GB"
 
     input:
 	path(refgenome)
@@ -31,6 +36,10 @@ process gatk_indexfeaturefile {
     time '60h'
     storeDir "$NEXTFLOW_STOREDIR"
 
+    cpus { Math.max(1, Math.round(Runtime.runtime.availableProcessors() * (1 - ((1/4)*(task.attempt-1))))) }
+    errorStrategy 'retry'
+    maxRetries 4
+
     input:
         path(known_sites)
 
@@ -54,6 +63,10 @@ process gatk_markduplicates {
 
     memory "60 GB"
 
+    cpus { Math.max(1, Math.round(Runtime.runtime.availableProcessors() * (1 - ((1/4)*(task.attempt-1))))) }
+    errorStrategy 'retry'
+    maxRetries 4
+
     input:
         path(bam)
 
@@ -63,7 +76,6 @@ process gatk_markduplicates {
 
     script:
     // write to output directory to avoid filename collision but keeping the filename in the channels the same
-    n_cpus = Runtime.runtime.availableProcessors()
     //--METRICS_FILE ${bam.getSimpleName()}_metrics.txt
 
     """
@@ -74,7 +86,7 @@ process gatk_markduplicates {
 	--java-options "-Djava.io.tmpdir=tmp -Xms50G -Xmx50G" \\
 	--conf 'spark.local.dir=tmp spark.executor.memory 7g spark.driver.memory=4' \\
 	--tmp-dir tmp \\
-    	--spark-master local[$n_cpus] \\
+    	--spark-master local[${task.cpus}] \\
 	--output out/${bam}
 
     """
@@ -85,6 +97,10 @@ process gatk_set_tags {
     container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
 
     time '60h'
+
+    cpus { Math.max(1, Math.round(Runtime.runtime.availableProcessors() * (1 - ((1/4)*(task.attempt-1))))) }
+    errorStrategy 'retry'
+    maxRetries 4
 
     memory "60 GB"
 
@@ -110,6 +126,10 @@ process gatk_set_tags {
 process gatk_baserecalibrator {
     conda "bioconda::gatk4=4.4.0.0"
     container "quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0"
+
+    cpus { Math.max(1, Math.round(Runtime.runtime.availableProcessors() * (1 - ((1/4)*(task.attempt-1))))) }
+    errorStrategy 'retry'
+    maxRetries 4
 
     time '60h'
     memory "60 GB"
@@ -143,7 +163,12 @@ process gatk_apply_bqsr {
     container "quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0"
 
     time '60h'
-    memory "46 GB"
+    memory "60 GB"
+
+    cpus { Math.max(1, Math.round(Runtime.runtime.availableProcessors() * (1 - ((1/4)*(task.attempt-1))))) }
+    errorStrategy 'retry'
+    maxRetries 4
+
 
     input:
         tuple path(bamfile), path(bam_recal_data)

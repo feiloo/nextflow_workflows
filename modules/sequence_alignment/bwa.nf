@@ -38,6 +38,10 @@ process bwa_align {
     memory '60 GB'
     time '50h'
 
+    cpus { Math.max(1, Math.round(Runtime.runtime.availableProcessors() * (1 - ((1/4)*(task.attempt-1))))) }
+    errorStrategy 'retry'
+    maxRetries 4
+
     input:
     tuple path(read1), path(read2)
     path(refgenome)
@@ -92,7 +96,7 @@ process bwa_align {
 
     // bwa mem -t $n_cpus ${refgenome} ${read1} ${read2} -o ${read1.getSimpleName()}.sam
     """
-    bwa mem -R "${read_group_info}" -t $n_cpus ${refgenome} ${read1} ${read2} | samtools view --bam --threads $n_cpus -o ${read1.getSimpleName()}.bam
+    bwa mem -R "${read_group_info}" -t ${task.cpus} ${refgenome} ${read1} ${read2} | samtools view --bam --threads ${task.cpus} -o ${read1.getSimpleName()}.bam
     if [[ "${args.cleanup_intermediate_files}" == 'true' ]]; then
       rm ${read1} && rm ${read2}
     fi
