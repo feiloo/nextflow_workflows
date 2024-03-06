@@ -57,7 +57,7 @@ process gatk_indexfeaturefile {
 
 
 process gatk_markduplicates {
-    conda "bioconda::gatk4=4.5.0.0"
+    conda "bioconda::gatk4=4.4.0.0"
     container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
     time '60h'
 
@@ -65,7 +65,7 @@ process gatk_markduplicates {
 
     cpus { Math.max(1, Math.round(Runtime.runtime.availableProcessors() * (1 - ((1/4)*(task.attempt-1))))) }
     errorStrategy 'retry'
-    maxRetries 4
+    maxRetries 1
 
     input:
         path(bam)
@@ -83,8 +83,11 @@ process gatk_markduplicates {
     mkdir tmp
     gatk MarkDuplicatesSpark \\
         --input ${bam} \\
-	--java-options "-Djava.io.tmpdir=tmp -Xms50G -Xmx50G" \\
-	--conf 'spark.local.dir=tmp spark.executor.memory 7g spark.driver.memory=4' \\
+	--java-options "-Djava.io.tmpdir=tmp -Xms24G -Xmx24G" \\
+	--conf 'spark.local.dir=tmp' \\
+	--conf 'spark.executor.cores=${task.cpus}' \\
+	--conf 'spark.executor.memory=24g' \\
+	--conf 'spark.driver.memory=2g' \\
 	--tmp-dir tmp \\
     	--spark-master local[${task.cpus}] \\
 	--output out/${bam}
@@ -116,7 +119,7 @@ process gatk_set_tags {
     mkdir out
     mkdir tmp
     gatk SetNmMdAndUqTags \\
-	--java-options "-Djava.io.tmpdir=tmp -Xms50G -Xmx50G"
+	--java-options "-Djava.io.tmpdir=tmp -Xms50G -Xmx50G" \\
     	--INPUT ${bam} \\
 	--REFERENCE_SEQUENCE ${refgenome} \\
 	--OUTPUT out/${bam}
@@ -149,7 +152,7 @@ process gatk_baserecalibrator {
     """
     mkdir tmp
     gatk BaseRecalibrator \\
-	--java-options "-Djava.io.tmpdir=tmp -Xms4G -Xmx4G -XX:ParallelGCThreads=2" \\
+	--java-options "-Djava.io.tmpdir=tmp -Xms24G -Xmx24G -XX:ParallelGCThreads=2" \\
         --input ${bamfile} \\
 	--reference ${refgenome} \\
 	--known-sites ${known_sites} \\
@@ -184,7 +187,7 @@ process gatk_apply_bqsr {
     mkdir out
     mkdir tmp
     gatk ApplyBQSR \\
-        --java-options "-Djava.io.tmpdir=tmp -Xms2G -Xmx2G -XX:ParallelGCThreads=2" \\
+        --java-options "-Djava.io.tmpdir=tmp -Xms24G -Xmx24G -XX:ParallelGCThreads=2" \\
         --input ${bamfile} \\
 	--reference ${refgenome} \\
 	--bqsr-recal-file ${bam_recal_data} \\

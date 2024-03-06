@@ -8,7 +8,8 @@ process gatk_mutect {
     conda "bioconda::gatk4=4.4.0.0"
     container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
 
-    memory '60 GB'
+    time '38h'
+    memory '56 GB'
 
     input:
         tuple path(tumor_bam), path(normal_bam)
@@ -29,9 +30,11 @@ process gatk_mutect {
     n_cpus = Runtime.runtime.availableProcessors()
     def normal_samplename = "${normal_bam.getSimpleName()}"
     """
+    mkdir -p tmp
     gatk Mutect2 \\
 	--java-options "-Djava.io.tmpdir=tmp -Xms50G -Xmx50G" \\
-    	--native-pair-hmm-threads ${n_cpus} \\
+    	--native-pair-hmm-threads ${2*n_cpus} \\
+	--tmp-dir tmp \\
 	--input ${tumor_bam} \\
 	--input ${normal_bam} \\
 	-normal ${normal_bam.getSimpleName()} \\
@@ -66,7 +69,7 @@ process gatk_learn_readorientationmodel {
     container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
 
     time '60h'
-    memory '60 GB'
+    memory '56 GB'
 
     input:
         path(f1r2_data)
@@ -89,7 +92,7 @@ process gatk_getpileupsummaries {
     container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
 
     time '60h'
-    memory '60 GB'
+    memory '56 GB'
 
     input:
         tuple path(sample_vcf), path(sample_bam)
@@ -117,7 +120,7 @@ process gatk_calculate_contamination {
     container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
 
     time '60h'
-    memory '60 GB'
+    memory '56 GB'
 
     input:
         tuple path(normal_pileups), path(tumor_pileups)
@@ -139,7 +142,7 @@ process gatk_filter_calls {
     conda "bioconda::gatk4=4.4.0.0"
     container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
     time '60h'
-    memory '60 GB'
+    memory '56 GB'
 
     input:
         tuple path(sample_vcf), path(sample_vcf_stats)

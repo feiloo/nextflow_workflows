@@ -26,8 +26,8 @@ process bwamem2_index_refgenome {
 }
 
 process bwamem2_align {
-    conda "bioconda::bwa-mem2=2.2.1"
-    container 'quay.io/biocontainers/bwa-mem2:2.2.1--he513fc3_0'
+    conda "bioconda::bwa-mem2=2.2.1 samtools=1.16.1"
+    container 'quay.io/biocontainers/mulled-v2-e5d375990341c5aef3c9aff74f96f66f65375ef6:2cdf6bf1e92acbeb9b2834b1c58754167173a410-0'
 
     memory "250 GB"
 
@@ -42,7 +42,7 @@ process bwamem2_align {
     val(cleanup_intermediate_files)
 
     output:
-    path("${read1.getSimpleName()}.sam")
+    path("${read1.getSimpleName()}.bam")
 
     script:
     n_cpus = Runtime.runtime.availableProcessors()
@@ -78,8 +78,7 @@ process bwamem2_align {
     def read_group_info = "@RG\\tID:${read_group_identifier}\\tPL:${platform_technology}\\tLB:${library_prep_identifier}\\tPU:${platform_unit}\\tSM:${sample_name}"
 
     """
-    bwa-mem2 mem -R "${read_group_info}" -t $n_cpus ${refgenome} ${read1} ${read2} -o ${read1.getSimpleName()}.sam
-
+    bwa-mem2 mem -R "${read_group_info}" -t $n_cpus ${refgenome} ${read1} ${read2} | samtools view --bam --threads ${task.cpus} -o ${read1.getSimpleName()}.bam
     if [[ "${args.cleanup_intermediate_files}" == 'true' ]]; then
       rm ${read1} && rm ${read2}
     fi

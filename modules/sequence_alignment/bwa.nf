@@ -29,7 +29,7 @@ process bwa_index_refgenome {
 }
 
 process bwa_align {
-    conda "bioconda::bwa=0.7.17"
+    conda "bioconda::bwa=0.7.17 samtools=1.16.1"
     //container 'quay.io/biocontainers/bwa:0.7.17--hed695b0_7'
     container 'quay.io/biocontainers/mulled-v2-fe8faa35dbf6dc65a0f7f5d4ea12e31a79f73e40:219b6c272b25e7e642ae3ff0bf0c5c81a5135ab4-0'
 
