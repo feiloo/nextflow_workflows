@@ -35,7 +35,6 @@ process bwa_align {
 
     publishDir '/PAT-Sequenzer/NEB_FFPE_WGS_30-01-2024/nextflow_outputs/other_bams', mode: 'copy', overwrite: true
 
-    memory '60 GB'
     time '50h'
 
     cpus { Math.max(1, Math.round(Runtime.runtime.availableProcessors() * (1 - ((1/4)*(task.attempt-1))))) }

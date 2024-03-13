@@ -83,7 +83,7 @@ process bam_stats {
     conda "bioconda::samtools=1.17"
     container 'quay.io/biocontainers/samtools:1.17--h00cdaf9_0'
 
-    memory "4 GB"
+    memory "1 GB"
     time '60h'
 
     input:
@@ -108,7 +108,7 @@ process bam_depth {
     container 'quay.io/biocontainers/samtools:1.17--h00cdaf9_0'
 
     time '60h'
-    memory "32 GB"
+    memory "1 GB"
     input:
     path(bamfile)
     path(refgenome)

@@ -11,7 +11,7 @@ process gatk_createsequencedictionary {
     maxRetries 4
 
     time '60h'
-    memory "60 GB"
+    memory "56 GB"
 
     input:
 	path(refgenome)
@@ -61,11 +61,11 @@ process gatk_markduplicates {
     container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
     time '60h'
 
-    memory "60 GB"
-
     cpus { Math.max(1, Math.round(Runtime.runtime.availableProcessors() * (1 - ((1/4)*(task.attempt-1))))) }
     errorStrategy 'retry'
-    maxRetries 1
+    maxRetries 4
+
+    memory {Math.min(56, 30+(14 * (task.attempt-1))).GB}
 
     input:
         path(bam)
@@ -105,7 +105,7 @@ process gatk_set_tags {
     errorStrategy 'retry'
     maxRetries 4
 
-    memory "60 GB"
+    memory {Math.min(56, 35+(14 * (task.attempt-1))).GB}
 
     input:
         path(bam)
@@ -135,7 +135,9 @@ process gatk_baserecalibrator {
     maxRetries 4
 
     time '60h'
-    memory "60 GB"
+
+    memory {Math.min(56, 20+(14 * (task.attempt-1))).GB}
+
 
     input:
         path(bamfile)
@@ -166,7 +168,7 @@ process gatk_apply_bqsr {
     container "quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0"
 
     time '60h'
-    memory "60 GB"
+    memory {Math.min(56, 20+(14 * (task.attempt-1))).GB}
 
     cpus { Math.max(1, Math.round(Runtime.runtime.availableProcessors() * (1 - ((1/4)*(task.attempt-1))))) }
     errorStrategy 'retry'

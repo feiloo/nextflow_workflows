@@ -18,6 +18,7 @@ process stage_fastq {
 
     stageInMode 'copy'
     //stageInMode 'link'
+    cache 'lenient'
 
     input:
     tuple val(sample_id), path(normal_read1), path(normal_read2), path(tumor_read1), path(tumor_read2)
