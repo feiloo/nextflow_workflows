@@ -3,7 +3,6 @@ process fastqc {
     container 'quay.io/biocontainers/fastqc:0.11.9--0'
 
     memory "60 GB"
-    time "30h"
 
     cpus { Math.max(1, Math.round(Runtime.runtime.availableProcessors() * (1 - ((1/4)*(task.attempt-1))))) }
     errorStrategy 'retry'

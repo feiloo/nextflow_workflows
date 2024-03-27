@@ -74,7 +74,6 @@ workflow sequence_alignment {
 
     // explicitely stage inputs
     staged_sample_pairs = stage_fastq(sample_pairs)
-    //staged_sample_pairs = sample_pairs
 
     // still check the rows for the naming scheme
     def check_row = { row ->

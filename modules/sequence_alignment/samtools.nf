@@ -4,7 +4,6 @@ process index_fasta {
 
     storeDir "$NEXTFLOW_STOREDIR"
 
-    time '60h'
     input:
     path(refgenome)
 
@@ -22,7 +21,6 @@ process sam_to_bam {
     conda "bioconda::samtools=1.17"
     container 'quay.io/biocontainers/samtools:1.17--h00cdaf9_0'
 
-    time '60h'
     memory "10 GB"
 
     input:
@@ -45,7 +43,6 @@ process sam_to_bam {
 process sort_bam {
     conda "bioconda::samtools=1.17"
     container 'quay.io/biocontainers/samtools:1.17--h00cdaf9_0'
-    time '60h'
 
     input:
     path(bamfile)
@@ -65,7 +62,6 @@ process index_bam {
     conda "bioconda::samtools=1.17"
     container 'quay.io/biocontainers/samtools:1.17--h00cdaf9_0'
 
-    time '60h'
     input:
     path(bamfile)
 
@@ -84,7 +80,6 @@ process bam_stats {
     container 'quay.io/biocontainers/samtools:1.17--h00cdaf9_0'
 
     memory "1 GB"
-    time '60h'
 
     input:
     path(bamfile)
@@ -107,7 +102,6 @@ process bam_depth {
     conda "bioconda::samtools=1.17"
     container 'quay.io/biocontainers/samtools:1.17--h00cdaf9_0'
 
-    time '60h'
     memory "1 GB"
     input:
     path(bamfile)

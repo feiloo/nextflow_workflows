@@ -28,3 +28,11 @@ cd $NEXTFLOW_CALLDIR && nextflow run $NEXTFLOW_MODULES/ukb_main_workflow \
 	--workflow_variation sequence_alignment \
 	--samplesheet $PRIVATE_TESTDATA_DIR/samplesheets/samplesheet_wes_ukb_main_workflow.csv \
 	-resume
+
+### reference data:
+refseq:
+
+# storedir data:
+
+
+

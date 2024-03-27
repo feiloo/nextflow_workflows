@@ -4,7 +4,6 @@ process fastp {
 
     //memory "56 GB"
     cache 'lenient'
-    time "30h"
 
     cpus { Math.max(1, Math.round(Runtime.runtime.availableProcessors() * (1 - ((1/4)*(task.attempt-1))))) }
     errorStrategy 'retry'

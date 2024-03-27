@@ -1,18 +1,17 @@
 // implement best-practice somatic variant calling
 // reference: https://gatk.broadinstitute.org/hc/en-us/articles/360035531132--How-to-Call-somatic-mutations-using-GATK4-Mutect2
 
-include { index_fasta } from "$NEXTFLOW_MODULES/sequence_alignment/samtools.nf"
+include { index_bam; index_fasta } from "$NEXTFLOW_MODULES/sequence_alignment/samtools.nf"
 include { gatk_indexfeaturefile; gatk_createsequencedictionary } from "$NEXTFLOW_MODULES/sequence_alignment/gatk.nf"
 
 process gatk_mutect {
     conda "bioconda::gatk4=4.4.0.0"
     container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
 
-    time '38h'
     memory '56 GB'
 
     input:
-        tuple path(tumor_bam), path(normal_bam)
+        tuple path(normal_bam), path(normal_bam_index), path(tumor_bam), path(tumor_bam_index)
 	path(intervals)
 	path(panel_of_normals)
 	path(panel_of_normals_index)
@@ -68,7 +67,6 @@ process gatk_learn_readorientationmodel {
     conda "bioconda::gatk4=4.4.0.0"
     container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
 
-    time '60h'
     memory '56 GB'
 
     input:
@@ -91,7 +89,6 @@ process gatk_getpileupsummaries {
     conda "bioconda::gatk4=4.4.0.0"
     container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
 
-    time '60h'
     memory '56 GB'
 
     input:
@@ -119,7 +116,6 @@ process gatk_calculate_contamination {
     conda "bioconda::gatk4=4.4.0.0"
     container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
 
-    time '60h'
     memory '56 GB'
 
     input:
@@ -141,7 +137,6 @@ process gatk_calculate_contamination {
 process gatk_filter_calls {
     conda "bioconda::gatk4=4.4.0.0"
     container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
-    time '60h'
     memory '56 GB'
 
     input:
@@ -170,7 +165,6 @@ process create_pon_db {
     conda "bioconda::gatk4=4.4.0.0"
     container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
 
-    time '60h'
 
     input:
     	path(pon_vcfs)
@@ -205,10 +199,17 @@ workflow variant_call {
     // best practices from https://gatk.broadinstitute.org/hc/en-us/articles/360035531132
     // How to Call somatic mutations using GATK4 Mutect2
 
-    sample_bams_w_key = sample_bams.map{ it -> ["${it.getSimpleName()[0..-5]}", it]}
+    /*
     bam_pairs_w_key = sample_bams_w_key.groupTuple(size: 2, sort: true)
     bam_pairs = bam_pairs_w_key.map{it -> it[1]}
+    */
     //bam_pairs.view()
+
+    sample_bams_w_key = sample_bams.map{ it -> ["${it.getSimpleName()}", it]}
+    sample_bams_idx_w_key = index_bam(sample_bams).map{ it -> ["${it.getSimpleName()}", it] }
+    sample_bams_w_indices = sample_bams_w_key.join(sample_bams_idx_w_key).map{ it -> [it[0].split('_')[0], [it[1], it[2]]] }
+    bam_pairs = sample_bams_w_indices.groupTuple(by: 0, size:2, sort:{it[0]}).map{ it -> [it[1][0][0], it[1][0][1], it[1][1][0], it[1][1][1]] }
+    bam_pairs.view()
 
     refgenome_index = index_fasta(args.refgenome).fasta_index
     refgenome_dict = gatk_createsequencedictionary(args.refgenome).refgenome_dict
@@ -223,6 +224,7 @@ workflow variant_call {
     // panel_of_normals_index = gatk_indexfeaturefile(panel_of_normals).known_sites_index
     panel_of_normals_index = indices_mid.first{ it -> "${file(it).getSimpleName()}" == "${file(panel_of_normals).getSimpleName()}" }
     germline_resource_index = indices_mid.first{ it -> "${file(it).getSimpleName()}" == "${file(germline_resource).getSimpleName()}" }
+
 
     mut = gatk_mutect(bam_pairs, intervals, 
 	    panel_of_normals, panel_of_normals_index,
