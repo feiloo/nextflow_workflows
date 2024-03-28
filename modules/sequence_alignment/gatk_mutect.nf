@@ -77,6 +77,7 @@ process gatk_learn_readorientationmodel {
 
     script:
     """
+    mkdir -p tmp
     gatk LearnReadOrientationModel \\
 	--java-options "-Djava.io.tmpdir=tmp -Xms50G -Xmx50G" \\
 	--input "${f1r2_data}" \\
@@ -92,17 +93,18 @@ process gatk_getpileupsummaries {
     memory '56 GB'
 
     input:
-        tuple path(sample_vcf), path(sample_bam)
+        tuple path(sample_bam), path(sample_bam_index)
         path(genomic_intervals)
 	// prepared from like gnomAD with pop-freqs in the info field
         path(variant_frequency_vcf)
         path(variant_frequency_vcf_index)
 
     output:
-      path("${sample_bam.getSimpleName()}_pileup.table"), emit: vcf
+      path("${sample_bam.getSimpleName()}_pileup.table"), emit: table
 
     script:
     """
+    mkdir -p tmp
     gatk GetPileupSummaries \\
 	--java-options "-Djava.io.tmpdir=tmp -Xms50G -Xmx50G" \\
 	-I ${sample_bam} \\
@@ -122,14 +124,16 @@ process gatk_calculate_contamination {
         tuple path(normal_pileups), path(tumor_pileups)
 
     output:
-      path("${tumor_pileups.getSimpleName()}_contamination.table"), emit: contamination_table
+      tuple path("${tumor_pileups.getSimpleName()}_contamination.table"), path("${tumor_pileups.getSimpleName()}_segments.tsv"), emit: contamination_table_and_segments
 
     script:
     """
+    mkdir -p tmp
     gatk CalculateContamination \\
 	--java-options "-Djava.io.tmpdir=tmp -Xms50G -Xmx50G" \\
 	--input ${tumor_pileups} \\
 	-matched ${normal_pileups} \\
+	--tumor-segmentation ${tumor_pileups.getSimpleName()}_segments.tsv \\
 	--output "${tumor_pileups.getSimpleName()}_contamination.table"
     """
 }
@@ -140,9 +144,7 @@ process gatk_filter_calls {
     memory '56 GB'
 
     input:
-        tuple path(sample_vcf), path(sample_vcf_stats)
-        path(contamination_table)
-	path(orientation_model)
+        tuple path(sample_vcf), path(contamination_table), path(tumor_segments) path(orientation_model)
 	path(refgenome)
 	path(refgenome_index)
 	path(refgenome_dict)
@@ -152,10 +154,13 @@ process gatk_filter_calls {
 
     script:
     """
+    mkdir -p tmp
     gatk FilterMutectCalls \\
 	--java-options "-Djava.io.tmpdir=tmp -Xms50G -Xmx50G" \\
 	--variant ${sample_vcf} \\
 	--ob-priors ${orientation_model} \\
+	--contamination-table-segmentation ${contamination_table} \\
+	--tumor-segmentation ${tumor_segments} \\
 	--output "${sample_vcf.getSimpleName()}_filtered.vcf" \\
 	-R "${refgenome}"
     """
@@ -176,6 +181,7 @@ process create_pon_db {
 
     script:
     """
+    mkdir -p tmp
     gatk GenomicsDBImport \\
         -R ${refgenome} \\
         --genomicsdb-workspace-path pon_genomics_db \\
@@ -230,19 +236,35 @@ workflow variant_call {
 	    panel_of_normals, panel_of_normals_index,
 	    germline_resource,  germline_resource_index,  
 	    refgenome, refgenome_index, refgenome_dict)
+
+    vcf = mut.vcf.map{it -> it[0]}
     om = gatk_learn_readorientationmodel(mut.f1r2_data).orientation_model
 
     // for tumors and for normals
     // todo, check that ew can use the same germline resource for pileup here
+    vcf.view()
 
-    bams_and_vcf = mut.vcf.map{it -> ["${it[0].getSimpleName()[0..-16]}",it]}.combine(sample_bams_w_key, by: 0).map{it -> it[1..2]}
+    //sample_bams_w_small_key = sample_bams.map{it -> ["${it[0].getSimpleName().split('_')[0]}", it]}
+    //bams_and_vcf = mut.vcf.map{it -> ["${it[0].getSimpleName().split('_')[0]}",it]}.combine(sample_bams_w_small_key, by: 0).map{it -> it[1..2]}
+    //bams_and_vcf.view()
 
-    all_pileups = gatk_getpileupsummaries(bams_and_vcf, intervals, germline_resource, germline_resource_index)
+    sample_bams_w_indices_no_key = sample_bams_w_indices.map{it -> it[1]}
+    all_pileups = gatk_getpileupsummaries(sample_bams_w_indices_no_key, intervals, germline_resource, germline_resource_index).table
 
-    matched_pileups = all_pileups.map{it -> ["${it.getSimpleName()[0..-12]}", it]}.groupTuple(size: 2, sort: true).map{it -> it[1]}
+    // group pileups by samplename
+    matched_pileups = all_pileups.map{it -> ["${it.getSimpleName().split('_')[0]}", it]}.groupTuple(size: 2, sort: true).map{it -> it[1]}
+    matched_pileups.view()
 
-    contamination = gatk_calculate_contamination(matched_pileups)
-    filtered_vcf = gatk_filter_calls(mut.vcf, contamination, om, args.refgenome, refgenome_index, refgenome_dict)
+    contamination_table_and_segments = gatk_calculate_contamination(matched_pileups).contamination_table_and_segments
+    c_w_key = contamination_table_and_segments.map{it -> ["{it.getSimpleName().split('_')[0]}", it]}
+
+    vcf_w_key = vcf.map{it -> ["{it.getSimpleName().split('_')[0]}", it]}
+    om_w_key = om.map{it -> ["{it.getSimpleName().split('_')[0]}", it]}
+    vcf_w_filter_data = vcf_w_key.join(c_w_key).join(om_w_key).flatten().map{it -> it[1..4]}
+    vcf_w_filter_data.view()
+    
+
+    filtered_vcf = gatk_filter_calls(vcf_w_filter_data, args.refgenome, refgenome_index, refgenome_dict).vcf
 
   emit:
     vcf = filtered_vcf
