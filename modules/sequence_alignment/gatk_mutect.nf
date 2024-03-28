@@ -144,7 +144,7 @@ process gatk_filter_calls {
     memory '56 GB'
 
     input:
-        tuple path(sample_vcf), path(contamination_table), path(tumor_segments) path(orientation_model)
+        tuple path(sample_vcf), path(sample_vcf_stats), path(contamination_table), path(tumor_segments), path(orientation_model)
 	path(refgenome)
 	path(refgenome_index)
 	path(refgenome_dict)
@@ -155,11 +155,12 @@ process gatk_filter_calls {
     script:
     """
     mkdir -p tmp
+
     gatk FilterMutectCalls \\
 	--java-options "-Djava.io.tmpdir=tmp -Xms50G -Xmx50G" \\
 	--variant ${sample_vcf} \\
 	--ob-priors ${orientation_model} \\
-	--contamination-table-segmentation ${contamination_table} \\
+	--contamination-table ${contamination_table} \\
 	--tumor-segmentation ${tumor_segments} \\
 	--output "${sample_vcf.getSimpleName()}_filtered.vcf" \\
 	-R "${refgenome}"
@@ -215,7 +216,7 @@ workflow variant_call {
     sample_bams_idx_w_key = index_bam(sample_bams).map{ it -> ["${it.getSimpleName()}", it] }
     sample_bams_w_indices = sample_bams_w_key.join(sample_bams_idx_w_key).map{ it -> [it[0].split('_')[0], [it[1], it[2]]] }
     bam_pairs = sample_bams_w_indices.groupTuple(by: 0, size:2, sort:{it[0]}).map{ it -> [it[1][0][0], it[1][0][1], it[1][1][0], it[1][1][1]] }
-    bam_pairs.view()
+    //bam_pairs.view()
 
     refgenome_index = index_fasta(args.refgenome).fasta_index
     refgenome_dict = gatk_createsequencedictionary(args.refgenome).refgenome_dict
@@ -242,7 +243,7 @@ workflow variant_call {
 
     // for tumors and for normals
     // todo, check that ew can use the same germline resource for pileup here
-    vcf.view()
+    //vcf.view()
 
     //sample_bams_w_small_key = sample_bams.map{it -> ["${it[0].getSimpleName().split('_')[0]}", it]}
     //bams_and_vcf = mut.vcf.map{it -> ["${it[0].getSimpleName().split('_')[0]}",it]}.combine(sample_bams_w_small_key, by: 0).map{it -> it[1..2]}
@@ -253,14 +254,14 @@ workflow variant_call {
 
     // group pileups by samplename
     matched_pileups = all_pileups.map{it -> ["${it.getSimpleName().split('_')[0]}", it]}.groupTuple(size: 2, sort: true).map{it -> it[1]}
-    matched_pileups.view()
+    //matched_pileups.view()
 
     contamination_table_and_segments = gatk_calculate_contamination(matched_pileups).contamination_table_and_segments
     c_w_key = contamination_table_and_segments.map{it -> ["{it.getSimpleName().split('_')[0]}", it]}
 
-    vcf_w_key = vcf.map{it -> ["{it.getSimpleName().split('_')[0]}", it]}
+    vcf_w_key = mut.vcf.map{it -> ["{it.getSimpleName().split('_')[0]}", it]}
     om_w_key = om.map{it -> ["{it.getSimpleName().split('_')[0]}", it]}
-    vcf_w_filter_data = vcf_w_key.join(c_w_key).join(om_w_key).flatten().map{it -> it[1..4]}
+    vcf_w_filter_data = vcf_w_key.join(c_w_key).join(om_w_key).map{it -> [it[1][0], it[1][1], it[2][0], it[2][1], it[3]]}
     vcf_w_filter_data.view()
     
 
@@ -270,9 +271,11 @@ workflow variant_call {
     vcf = filtered_vcf
 }
 
+/*
 workflow create_pon {
   take:
     args
   main:
     vcf = filtered_vcf
 }
+*/
