@@ -23,6 +23,87 @@ process gatk_mutect {
 
     output:
       tuple path("${tumor_bam.getSimpleName()}_unfiltered.vcf"), path("${tumor_bam.getSimpleName()}_unfiltered.vcf.stats"), emit: vcf
+      path("${tumor_bam.getSimpleName()}_f1r2_data.shards.tar"), emit: f1r2_data
+
+    script:
+    n_cpus = Runtime.runtime.availableProcessors()
+    def normal_samplename = "${normal_bam.getSimpleName()}"
+    """
+
+mkdir -p beds
+
+script="
+from itertools import groupby
+
+with open('${intervals}') as f:
+    txt = f.readlines()
+
+
+for k,g in groupby(txt, lambda x: x.split('\t')[0]):
+    gr = list(g)
+    with open(f'beds/{k}.bed', 'w') as f2:
+        f2.writelines(gr)
+"
+
+python3 -c "\$script"
+
+
+
+    Mute () {
+    INTERVALS=\$1
+
+    mkdir -p tmp/\$2
+    gatk Mutect2 \\
+	--java-options "-Djava.io.tmpdir=tmp/\$2 -Xms4G -Xmx4G" \\
+    	--native-pair-hmm-threads ${2*n_cpus} \\
+	--tmp-dir tmp/\$2 \\
+	--input ${tumor_bam} \\
+	--input ${normal_bam} \\
+	-normal ${normal_bam.getSimpleName()} \\
+	-L \$INTERVALS \\
+	-pon ${panel_of_normals} \\
+	-germline-resource ${germline_resource} \\
+        --reference ${refgenome} \\
+	--f1r2-tar-gz "${tumor_bam.getSimpleName()}_f1r2_data_\$2.tar.gz" \\
+	--output "${tumor_bam.getSimpleName()}_unfiltered_\$2.vcf"
+
+    }
+    export -f Mute
+
+    #mute beds/chr1.bed
+    ls beds/* | parallel --jobs 12 "Mute {} {#}" --pipe
+
+    ls *.vcf > outputs.list
+    ls *.stats > outputs_stats.list
+
+    gatk MergeVcfs -I outputs.list -O "${tumor_bam.getSimpleName()}_unfiltered.vcf"
+    gatk MergeMutectStats --stats outputs_stats.list -O "${tumor_bam.getSimpleName()}_unfiltered.vcf.stats"
+    tar -cf "${tumor_bam.getSimpleName()}_f1r2_data.shards.tar" *_f1r2_data_*
+
+    """
+}
+
+
+
+process gatk_mutect_single {
+    conda "bioconda::gatk4=4.4.0.0"
+    container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
+
+    memory {Math.min(56, 36+(10 * (task.attempt-1))).GB}
+
+    input:
+        tuple path(normal_bam), path(normal_bam_index), path(tumor_bam), path(tumor_bam_index)
+	path(intervals)
+	path(panel_of_normals)
+	path(panel_of_normals_index)
+	path(germline_resource)
+	path(germline_resource_index)
+	path(refgenome)
+	path(refgenome_index)
+	path(refgenome_dict)
+
+    output:
+      tuple path("${tumor_bam.getSimpleName()}_unfiltered.vcf"), path("${tumor_bam.getSimpleName()}_unfiltered.vcf.stats"), emit: vcf
       path("${tumor_bam.getSimpleName()}_f1r2_data.tar.gz"), emit: f1r2_data
 
     script:
@@ -78,9 +159,14 @@ process gatk_learn_readorientationmodel {
     script:
     """
     mkdir -p tmp
+
+    tar -xf ${f1r2_data}
+    # note, make sure that the input archive itself included in it
+    all_f1r2=\$(ls *_f1r2_*.tar.gz | xargs -i printf -- " -I {} ")
+
     gatk LearnReadOrientationModel \\
 	--java-options "-Djava.io.tmpdir=tmp -Xms50G -Xmx50G" \\
-	--input "${f1r2_data}" \\
+	\$all_f1r2 \\
 	--output "${f1r2_data.getSimpleName()}_model.tar.gz"
     """
 }
