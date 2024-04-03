@@ -8,7 +8,7 @@ process gatk_mutect {
     conda "bioconda::gatk4=4.4.0.0"
     container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
 
-    memory '56 GB'
+    memory {Math.min(56, 36+(10 * (task.attempt-1))).GB}
 
     input:
         tuple path(normal_bam), path(normal_bam_index), path(tumor_bam), path(tumor_bam_index)
@@ -67,7 +67,7 @@ process gatk_learn_readorientationmodel {
     conda "bioconda::gatk4=4.4.0.0"
     container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
 
-    memory '56 GB'
+    memory {Math.min(56, 40+(10 * (task.attempt-1))).GB}
 
     input:
         path(f1r2_data)
@@ -90,7 +90,7 @@ process gatk_getpileupsummaries {
     conda "bioconda::gatk4=4.4.0.0"
     container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
 
-    memory '56 GB'
+    memory {Math.min(56, 40+(10 * (task.attempt-1))).GB}
 
     input:
         tuple path(sample_bam), path(sample_bam_index)
@@ -254,13 +254,15 @@ workflow variant_call {
 
     // group pileups by samplename
     matched_pileups = all_pileups.map{it -> ["${it.getSimpleName().split('_')[0]}", it]}.groupTuple(size: 2, sort: true).map{it -> it[1]}
-    //matched_pileups.view()
 
     contamination_table_and_segments = gatk_calculate_contamination(matched_pileups).contamination_table_and_segments
-    c_w_key = contamination_table_and_segments.map{it -> ["{it.getSimpleName().split('_')[0]}", it]}
+    c_w_key = contamination_table_and_segments.map{it -> ["${it[0].getSimpleName().split('_')[0]}", it]}
+    c_w_key.view()
 
-    vcf_w_key = mut.vcf.map{it -> ["{it.getSimpleName().split('_')[0]}", it]}
-    om_w_key = om.map{it -> ["{it.getSimpleName().split('_')[0]}", it]}
+    vcf_w_key = mut.vcf.map{it -> ["${it[0].getSimpleName().split('_')[0]}", it]}
+    vcf_w_key.view()
+
+    om_w_key = om.map{it -> ["${it.getSimpleName().split('_')[0]}", it]}
     vcf_w_filter_data = vcf_w_key.join(c_w_key).join(om_w_key).map{it -> [it[1][0], it[1][1], it[2][0], it[2][1], it[3]]}
     vcf_w_filter_data.view()
     
