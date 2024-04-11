@@ -65,12 +65,22 @@ test('nextflow_workflow_sequence_alignment',
 	timeout: 3600
 	)
 
+create_testdirs = custom_target('create_testdirs',
+	command : ['mkdir', '-p', meson.current_build_dir() / 'nas_import', 
+		meson.current_build_dir() / 'nas_export', 
+		'&&', 'touch', 'nas_testfile'
+		],
+	output : ['nas_testfile']
+	)
+
 
 test('nextflow_workflow_clc',
 	nextflow_bin,
 	is_parallel : false,
 	suite : ['nextflow', 'workflow'],
-	env: ['NEXTFLOW_MODULES='+meson.current_build_dir()],
+	env: ['NEXTFLOW_MODULES='+meson.current_build_dir(), 
+		'NAS_IMPORT_DIR='+meson.current_build_dir()/'nas_import', 
+		'NAS_EXPORT_DIR='+meson.current_build_dir()/'nas_export'],
 	args : [
 	'run',
 	meson.current_build_dir()+'/ukb_main_workflow/main.nf',
@@ -79,7 +89,7 @@ test('nextflow_workflow_clc',
 	'--samplesheet', test_samplesheets/'test_clc_samplesheet.csv',
 	'-stub'
 	],
-	depends: [clc_nextflow, ukb_main_workflow],
+	depends: [clc_nextflow, ukb_main_workflow, create_testdirs],
 	timeout: 6000
 	)
 

@@ -28,7 +28,7 @@ process clc_workflow_single {
     val(clc_import_dir)
     val(clc_export_dir)
     val(clc_destdir)
-    val(workflow_name)
+    val(clc_workflow_name)
 
   output:
     stdout emit: output
@@ -44,7 +44,7 @@ process clc_workflow_single {
 
     """
     clcserver -S \$CLC_HOST -U \$CLC_USER -W \$CLC_PSW -A mkdir -t "${destdir}" -n "${samplename}"
-    clcserver -S \$CLC_HOST -U \$CLC_USER -W \$CLC_PSW -A ${workflow_name} \\
+    clcserver -S \$CLC_HOST -U \$CLC_USER -W \$CLC_PSW -A ${clc_workflow_name} \\
         --dna-reads-import-command ngs_import_illumina \\
         --dna-reads-select-files \"clc://serverfile/${clc_import_dir}/${n1}\"  \\
         --dna-reads-select-files \"clc://serverfile/${clc_import_dir}/${n2}\"  \\
@@ -247,7 +247,7 @@ workflow {
   	args.clc_import_dir, 
 	args.clc_export_dir,
 	args.clc_destdir,
-	args.workflow_name,
+	args.clc_workflow_name,
 	args.nas_import_dir,
 	args.nas_export_dir
 	)
