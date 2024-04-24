@@ -40,7 +40,7 @@ meson uses out of source build directories, which has various advantages.
 create one with:
 
 ```
-meson setup --wipe /path_to_builddir/
+meson setup --wipe -D test_datadir=path_to_datadir/ -D external_deps=path_to_external_deps/ path_to_builddir/
 ```
 
 #### compile with meson

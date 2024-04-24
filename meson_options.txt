@@ -1,2 +1,2 @@
-option('test_configs', type: 'string')
-option('test_samplesheets', type: 'string')
+option('test_datadir', type: 'string')
+option('external_deps', type: 'string')
