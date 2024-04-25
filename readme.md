@@ -11,7 +11,7 @@ the implementation is inspired by various nf-core modules and the nf-core/sarek 
 
 ### NEXTFLOW_MODULES environment variable
 
-the modules in this repo include eachother from the directory in the environment variable NEXTFLOW_MODULES
+the modules in this repo can include eachother and be included from the directory in the environment variable `NEXTFLOW_MODULES`
 
 modules should be installed into a sensible linux filesystem standard directory.
 
@@ -22,19 +22,25 @@ export NEXTFLOW_MODULES=/usr/local/lib/nextflow
 
 if you want to create a portable/static workflow, you can simply copy all required modules into a single directory and set the variable.
 
-### build with meson
+## development
 
-for development, you can set the NEXTFLOW_MODULES variable to this repos modules directory.
+for development, you can set the NEXTFLOW_MODULES variable to this repos modules directory:
+```
+export NEXTFLOW_MODULES="$(pwd)/modules"
+```
+
+### building
 
 the meson buildsystem enables additional steps for building, testing and packaging.
 
 #### create a builddir
 
 meson uses out of source build directories, which has various advantages.
+
 create one with:
 
 ```
-meson setup --wipe /path_to_builddir/
+meson setup --wipe -D test_datadir=path_to_datadir/ -D external_deps=path_to_external_deps/ path_to_builddir/
 ```
 
 #### compile with meson
@@ -46,26 +52,30 @@ meson compile
 
 #### run tests with meson
 
+create a test_main.config and a samplesheet for each workflow_variation (e.q. test_clc_samplesheet.csv).
+
+now configure the tests with them:
 ```
 cd /path_to_builddir
+meson configure -Dtest_samplesheets=/path_to_test_samplesheet_dir -Dtest_configs=/path_to_test_configs_dir
+```
+
+run tests
+```
 meson test
 ```
 
-### usefull env-vars:
+### useful nextflow environment variables:
 
+```
 export NXF_HOME='$HOME/.nextflow'
-
 export NXF_ASSETS='$NXF_HOME/assets'
-
 export NXF_OPTS='-Dlog=/path/nextflow_logs'
-
 export NXF_TEMP=/path/nextflow_temp/
-
 export NXF_LOG_FILE='/path/nextflow_logs'
-
 export NXF_PLUGINS_DIR='/path/nextflow_plugins'
-
 export NEXTFLOW_MODULES="$(pwd)/modules"
+```
 
 ### our paralellism strategy:
 
@@ -80,13 +90,12 @@ for now, we avoid splitting files for more parallelism
 instead we use tool-level threading
 
 so we run multiple nf-processes
+
 each nf-process runs a single tool process 
+
 each tool process runs the tool with the tools parallelism option
 
 
 with the current filesize to count ratio: 1GB to 5 GB per file and about 5-50 files per workflow on ~100 cores this works pretty well
 
 and most importantly it is quite simple to reason about
-
-
-

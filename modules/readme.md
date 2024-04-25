@@ -1,17 +1,20 @@
 # Modules
 
-the module ukb_main_workflow delegates the inputs to one of the subworkflows via the --workflow_variation parameter
+ukb_main_workflow implements a main workflow that delegates to one of the subworkflows via the --workflow_variation parameter.
 
-sclust only implements the first steps
+arriba_nextflow allows running the arriba tool in a simple reproducable fashion.
 
-sarek_wrapper is not functional yet
+variantinterpretation implements a workflow for analysing variants from vcf files.
 
-arriba_nextflow allows running the arriba tool in a simple reproducable fashion
+sequence_alignment implements an variant_callig workflow from fastq to vcf.
 
-variantinterpretation implements a workflow for analysing variants from vcf files
-invoke nextflow 
+sclust is not fully implemented yet.
 
-### how to run arriba
+## usage
+
+### run arriba
+
+```
 nextflow run ukb_main_workflow/  \
 	-c ~/nextflow_conf_general.config \
 	-with-report /path/nextflow_report.html \
@@ -20,19 +23,13 @@ nextflow run ukb_main_workflow/  \
 	--reference_data /path/arriba_reference/GRCh38+GENCODE38/ \
 	--samplesheet /path/input_Arriba/samplesheets/samples_DD_MM_YYYY.csv \
 	--output_dir /path/output_Arriba/workflow_run_DD_MM_YYYY/ 
+```
 
-### how to run sequence_alignment
+### run sequence_alignment
 
+```
 cd $NEXTFLOW_CALLDIR && nextflow run $NEXTFLOW_MODULES/ukb_main_workflow \
 	-c $NEXTFLOW_CONFIGS_CUSTOM/nextflow_conf_specific.config \
 	--workflow_variation sequence_alignment \
 	--samplesheet $PRIVATE_TESTDATA_DIR/samplesheets/samplesheet_wes_ukb_main_workflow.csv \
 	-resume
-
-### reference data:
-refseq:
-
-# storedir data:
-
-
-

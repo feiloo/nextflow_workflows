@@ -1,2 +1,2 @@
-option('testconfig_path', type: 'string')
-option('test_samplesheet', type: 'string')
+option('test_datadir', type: 'string')
+option('external_deps', type: 'string')
