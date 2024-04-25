@@ -8,7 +8,7 @@ process gatk_mutect {
     conda "bioconda::gatk4=4.4.0.0"
     container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
 
-    memory {Math.min(56, 36+(10 * (task.attempt-1))).GB}
+    memory {Math.min(196, 196+(64 * (task.attempt-1))).GB}
 
     input:
         tuple path(normal_bam), path(normal_bam_index), path(tumor_bam), path(tumor_bam_index)
@@ -54,8 +54,8 @@ python3 -c "\$script"
 
     mkdir -p tmp/\$2
     gatk Mutect2 \\
-	--java-options "-Djava.io.tmpdir=tmp/\$2 -Xms4G -Xmx4G" \\
-    	--native-pair-hmm-threads ${2*n_cpus} \\
+	--java-options "-Djava.io.tmpdir=tmp/\$2 -Xms8G -Xmx8G" \\
+	--native-pair-hmm-threads ${n_cpus} \\
 	--tmp-dir tmp/\$2 \\
 	--input ${tumor_bam} \\
 	--input ${normal_bam} \\
@@ -71,7 +71,7 @@ python3 -c "\$script"
     export -f Mute
 
     #mute beds/chr1.bed
-    ls beds/* | parallel --jobs 12 "Mute {} {#}" --pipe
+    ls beds/* | parallel "Mute {} {#}" --pipe
 
     ls *.vcf > outputs.list
     ls *.stats > outputs_stats.list
@@ -113,7 +113,7 @@ process gatk_mutect_single {
     mkdir -p tmp
     gatk Mutect2 \\
 	--java-options "-Djava.io.tmpdir=tmp -Xms50G -Xmx50G" \\
-    	--native-pair-hmm-threads ${2*n_cpus} \\
+	--native-pair-hmm-threads ${n_cpus} \\
 	--tmp-dir tmp \\
 	--input ${tumor_bam} \\
 	--input ${normal_bam} \\

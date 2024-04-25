@@ -16,8 +16,8 @@ process stage_fastq {
     // it renames them to the required naming scheme if necessary
     // it also allows copying, in case the datasource is on a slow network drive
 
-    stageInMode 'copy'
-    //stageInMode 'link'
+    //stageInMode 'copy'
+    stageInMode 'link'
     cache 'lenient'
 
     input:

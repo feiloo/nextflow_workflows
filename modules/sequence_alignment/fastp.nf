@@ -2,10 +2,11 @@ process fastp {
     conda "bioconda::fastp=0.23.4"
     container 'quay.io/biocontainers/fastp:0.23.4--h5f740d0_0'
 
-    //memory "56 GB"
+    memory = { Math.min(56, 56 + 56 * task.attempt).GB}
     cache 'lenient'
 
-    cpus { Math.max(1, Math.round(Runtime.runtime.availableProcessors() * (1 - ((1/4)*(task.attempt-1))))) }
+    //cpus { Math.max(1, Math.round(Runtime.runtime.availableProcessors() * (1 - ((1/4)*(task.attempt-1))))) }
+    cpus 4
     errorStrategy 'retry'
     maxRetries 4
 

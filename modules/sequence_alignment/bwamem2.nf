@@ -45,7 +45,8 @@ process bwamem2_align {
     path("${read1.getSimpleName()}.bam")
 
     script:
-    n_cpus = Runtime.runtime.availableProcessors()
+    n_cpus = Runtime.runtime.availableProcessors() - 8
+
     // see https://github.com/broadinstitute/gatk-docs/blob/master/gatk3-dictionary/Read_groups.md for more info
     // example: def read_group_info = "@RG\tID:SAMN10471711\tSM:SAMN10471711\tLB:SAMN10471711\tPL:ILLUMINA"
     // the real read group data has to come from the illumina casava 1.8 format lines from the fastq
@@ -78,7 +79,7 @@ process bwamem2_align {
     def read_group_info = "@RG\\tID:${read_group_identifier}\\tPL:${platform_technology}\\tLB:${library_prep_identifier}\\tPU:${platform_unit}\\tSM:${sample_name}"
 
     """
-    bwa-mem2 mem -R "${read_group_info}" -t $n_cpus ${refgenome} ${read1} ${read2} | samtools view --bam --threads ${task.cpus} -o ${read1.getSimpleName()}.bam
+    bwa-mem2 mem -R "${read_group_info}" -t $n_cpus ${refgenome} ${read1} ${read2} | samtools view --bam --threads ${n_cpus} -o ${read1.getSimpleName()}.bam
     if [[ "${args.cleanup_intermediate_files}" == 'true' ]]; then
       rm ${read1} && rm ${read2}
     fi

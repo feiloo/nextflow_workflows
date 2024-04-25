@@ -62,7 +62,7 @@ process gatk_markduplicates {
     errorStrategy 'retry'
     maxRetries 4
 
-    memory {Math.min(56, 30+(14 * (task.attempt-1))).GB}
+    memory {Math.min(80, 80+(80 * (task.attempt-1))).GB}
 
     input:
         path(bam)
@@ -101,7 +101,7 @@ process gatk_set_tags {
     errorStrategy 'retry'
     maxRetries 4
 
-    memory {Math.min(56, 35+(14 * (task.attempt-1))).GB}
+    memory {Math.min(80, 80+(80 * (task.attempt-1))).GB}
 
     input:
         path(bam)
