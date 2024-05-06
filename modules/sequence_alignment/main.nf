@@ -153,9 +153,6 @@ workflow sequence_alignment {
 	throw new Exception("unknown bwa_tool ${args.bwa_tool}")
     }
 
-    //sorted_bams = sort_bam(bams)
-    //bam_indices = index_bam(sorted_bams)
-
     marked_bams = gatk_markduplicates(bams).marked_bams
     tagged_bams = gatk_set_tags(marked_bams, args.refgenome, args.cleanup_intermediate_files).tagged_bams
 

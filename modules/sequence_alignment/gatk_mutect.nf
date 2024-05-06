@@ -30,6 +30,26 @@ process gatk_mutect {
     def normal_samplename = "${normal_bam.getSimpleName()}"
     """
 
+if [[ ${normal_bam} != *N_1.bam ]] 
+then
+  exit 1
+fi
+  
+if [[ ${normal_bam_index} != *N_1.bam.bai ]] 
+then
+  exit 1
+fi
+
+if [[ ${tumor_bam} != *T_1.bam ]] 
+then
+  exit 1
+fi
+
+if [[ ${tumor_bam_index} != *T_1.bam.bai ]] 
+then
+  exit 1
+fi
+
 mkdir -p beds
 
 script="
@@ -190,6 +210,7 @@ process gatk_getpileupsummaries {
 
     script:
     """
+
     mkdir -p tmp
     gatk GetPileupSummaries \\
 	--java-options "-Djava.io.tmpdir=tmp -Xms50G -Xmx50G" \\
@@ -214,6 +235,17 @@ process gatk_calculate_contamination {
 
     script:
     """
+
+if [[ ${normal_pileups} != *N_1_pileup.table ]] 
+then
+  exit 1
+fi
+
+if [[ ${tumor_pileups} != *T_1_pileup.table ]] 
+then
+  exit 1
+fi
+
     mkdir -p tmp
     gatk CalculateContamination \\
 	--java-options "-Djava.io.tmpdir=tmp -Xms50G -Xmx50G" \\
@@ -292,27 +324,37 @@ workflow variant_call {
     // best practices from https://gatk.broadinstitute.org/hc/en-us/articles/360035531132
     // How to Call somatic mutations using GATK4 Mutect2
 
-    /*
-    bam_pairs_w_key = sample_bams_w_key.groupTuple(size: 2, sort: true)
-    bam_pairs = bam_pairs_w_key.map{it -> it[1]}
-    */
-    //bam_pairs.view()
-
+    // key is XXX_T_1
     sample_bams_w_key = sample_bams.map{ it -> ["${it.getSimpleName()}", it]}
     sample_bams_idx_w_key = index_bam(sample_bams).map{ it -> ["${it.getSimpleName()}", it] }
+    // SAMPLENAME, [XX.bam, XX.bai]
     sample_bams_w_indices = sample_bams_w_key.join(sample_bams_idx_w_key).map{ it -> [it[0].split('_')[0], [it[1], it[2]]] }
-    bam_pairs = sample_bams_w_indices.groupTuple(by: 0, size:2, sort:{it[0]}).map{ it -> [it[1][0][0], it[1][0][1], it[1][1][0], it[1][1][1]] }
-    //bam_pairs.view()
+
+    // warning, whatever the path type is for bam1 and bam2, 
+    // the strings and .endsWith() methods do not work as expected
+    def pair_bams_fn = { it ->
+        def key = it[0]
+	def bam1 = it[1][0]
+	def bam2 = it[1][1]
+
+	if(bam1[0].name.endsWith("T_1.bam") and bam2[0].name.endsWith("N_1.bam")){
+	    return [bam2[0], bam2[1], bam1[0], bam1[1]]
+	} 
+	else if(bam2[0].name.endsWith("T_1.bam") and bam1[0].name.endsWith("N_1.bam")){
+	    return [bam1[0], bam1[1], bam2[0], bam2[1]]
+	}
+	else {
+	  throw new Exception("error ordering bam pair: ${it}")
+	}
+    }
+
+    bam_pairs = sample_bams_w_indices.groupTuple(by: 0, size:2).map{ it -> pair_bams_fn(it) }
 
     refgenome_index = index_fasta(args.refgenome).fasta_index
     refgenome_dict = gatk_createsequencedictionary(args.refgenome).refgenome_dict
 
     indices = Channel.of(germline_resource, panel_of_normals)
     indices_mid = gatk_indexfeaturefile(indices).known_sites_index
-
-    // indices_mid.map{it -> it.getSimpleName() }.view()
-    // println "${file(panel_of_normals).getSimpleName()}"
-
 
     // panel_of_normals_index = gatk_indexfeaturefile(panel_of_normals).known_sites_index
     panel_of_normals_index = indices_mid.first{ it -> "${file(it).getSimpleName()}" == "${file(panel_of_normals).getSimpleName()}" }
@@ -329,29 +371,34 @@ workflow variant_call {
 
     // for tumors and for normals
     // todo, check that ew can use the same germline resource for pileup here
-    //vcf.view()
-
-    //sample_bams_w_small_key = sample_bams.map{it -> ["${it[0].getSimpleName().split('_')[0]}", it]}
-    //bams_and_vcf = mut.vcf.map{it -> ["${it[0].getSimpleName().split('_')[0]}",it]}.combine(sample_bams_w_small_key, by: 0).map{it -> it[1..2]}
-    //bams_and_vcf.view()
 
     sample_bams_w_indices_no_key = sample_bams_w_indices.map{it -> it[1]}
     all_pileups = gatk_getpileupsummaries(sample_bams_w_indices_no_key, intervals, germline_resource, germline_resource_index).table
 
+    def pair_pileups = { it ->
+        def pu1 = it[1][0]
+        def pu2 = it[1][1]
+
+	if(pu1.name.endsWith("T_1_pileup.table") and pu2.name.endsWith("N_1_pileup.table")){
+	    return [pu2, pu1]
+	} 
+	else if(pu2.name.endsWith("T_1_pileup.table") and pu1.name.endsWith("N_1_pileup.table")){
+	    return [pu1, pu2]
+	} 
+	else {
+	  throw new Exception("error ordering pileups pair: ${it}")
+	}
+
+    }
+
     // group pileups by samplename
-    matched_pileups = all_pileups.map{it -> ["${it.getSimpleName().split('_')[0]}", it]}.groupTuple(size: 2, sort: true).map{it -> it[1]}
+    matched_pileups = all_pileups.map{it -> ["${it.getSimpleName().split('_')[0]}", it]}.groupTuple(size: 2, sort: true).map{it -> pair_pileups(it)}
 
     contamination_table_and_segments = gatk_calculate_contamination(matched_pileups).contamination_table_and_segments
     c_w_key = contamination_table_and_segments.map{it -> ["${it[0].getSimpleName().split('_')[0]}", it]}
-    c_w_key.view()
-
     vcf_w_key = mut.vcf.map{it -> ["${it[0].getSimpleName().split('_')[0]}", it]}
-    vcf_w_key.view()
-
     om_w_key = om.map{it -> ["${it.getSimpleName().split('_')[0]}", it]}
     vcf_w_filter_data = vcf_w_key.join(c_w_key).join(om_w_key).map{it -> [it[1][0], it[1][1], it[2][0], it[2][1], it[3]]}
-    vcf_w_filter_data.view()
-    
 
     filtered_vcf = gatk_filter_calls(vcf_w_filter_data, args.refgenome, refgenome_index, refgenome_dict).vcf
 
