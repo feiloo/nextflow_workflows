@@ -6,6 +6,8 @@ include { CIOABCD_VARIANTINTERPRETATION } from "$NEXTFLOW_MODULES/variantinterpr
 include { sequence_alignment } from "$NEXTFLOW_MODULES/sequence_alignment"
 //include { SAREK } from "$NEXTFLOW_MODULES/sarek_wrapper"
 
+include { publish } from "$NEXTFLOW_MODULES/sequence_alignment/utils.nf"
+
 process rename_clcad_to_ad {
     conda "bioconda::bcftools=1.17"
     container "quay.io/biocontainers/bcftools:1.17--haef29d1_0"
@@ -85,7 +87,9 @@ workflow {
   for (param in params) { args[param.key] = param.value }
 
   if(args.workflow_variation == 'sequence_alignment'){
-  	sequence_alignment(args)
+	output = sequence_alignment(args)
+	pub = output.bam.mix(output.vcf).mix(output.bam_depth).mix(output.bam_stats)
+	publish(pub, args.output_dir)
   }
   else if(args.workflow_variation == 'arriba'){
   	arriba_nextflow(args)

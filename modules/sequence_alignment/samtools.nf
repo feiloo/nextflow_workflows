@@ -108,11 +108,11 @@ process bam_depth {
     path(refgenome)
 
     output:
-    path("${bamfile.getSimpleName()}_depth")
+    path("${bamfile.getSimpleName()}_samdepth")
 
     script:
     n_cpus = Runtime.runtime.availableProcessors()
     """
-    samtools depth "${bamfile}" > "${bamfile.getSimpleName()}_depth"
+    samtools depth "${bamfile}" > "${bamfile.getSimpleName()}_samdepth"
     """
 }

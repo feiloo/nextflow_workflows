@@ -172,10 +172,7 @@ workflow sequence_alignment {
     bam_w_depth = bam_depth(bam_recalibrated, args.refgenome)
     bams_w_stats = bam_stats(bam_recalibrated, args.refgenome)
 
-    //bam_recalibrated.view()
-
-    
-    variant_call(
+    vcfs = variant_call(
 	    bam_recalibrated,
 	    args.intervals,
 	    args.panel_of_normals,
@@ -186,6 +183,9 @@ workflow sequence_alignment {
 
   emit:
     bam = bam_recalibrated
+    vcf = vcfs
+    bam_depth = bam_w_depth
+    bam_stats = bams_w_stats
 }
 
 workflow {
