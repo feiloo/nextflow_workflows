@@ -6,7 +6,7 @@ include { fastp } from "$NEXTFLOW_MODULES/sequence_alignment/fastp.nf"
 include { bwamem2_index_refgenome; bwamem2_align } from "$NEXTFLOW_MODULES/sequence_alignment/bwamem2.nf"
 include { bwa_index_refgenome; bwa_align } from "$NEXTFLOW_MODULES/sequence_alignment/bwa.nf"
 
-include { bam_stats; bam_depth; sam_to_bam; sort_bam; index_bam; index_fasta } from "$NEXTFLOW_MODULES/sequence_alignment/samtools.nf"
+include { bam_coverage; bam_stats; bam_depth; sam_to_bam; sort_bam; index_bam; index_fasta } from "$NEXTFLOW_MODULES/sequence_alignment/samtools.nf"
 include { gatk_indexfeaturefile; gatk_createsequencedictionary; gatk_markduplicates; gatk_set_tags; gatk_baserecalibrator; gatk_apply_bqsr } from "$NEXTFLOW_MODULES/sequence_alignment/gatk.nf"
 
 include { variant_call } from "$NEXTFLOW_MODULES/sequence_alignment/gatk_mutect.nf"
@@ -166,7 +166,8 @@ workflow sequence_alignment {
     bam_w_recal_data = keyed_bams.join(keyed_recal_data).map{ it -> [it[1], it[2]] }
 
     bam_recalibrated = gatk_apply_bqsr(bam_w_recal_data, args.refgenome, refgenome_index, refgenome_dict)
-    bam_w_depth = bam_depth(bam_recalibrated, args.refgenome)
+    //bam_w_depth = bam_depth(bam_recalibrated, args.refgenome)
+    bam_coverage = bam_coverage(bam_recalibrated)
     bams_w_stats = bam_stats(bam_recalibrated, args.refgenome)
 
     vcfs = variant_call(
@@ -181,7 +182,8 @@ workflow sequence_alignment {
   emit:
     bam = bam_recalibrated
     vcf = vcfs
-    bam_depth = bam_w_depth
+    //bam_depth = bam_w_depth
+    bam_coverage = bam_coverage
     bam_stats = bams_w_stats
 }
 

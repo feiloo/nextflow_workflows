@@ -88,7 +88,7 @@ workflow {
 
   if(args.workflow_variation == 'sequence_alignment'){
 	output = sequence_alignment(args)
-	pub = output.bam.mix(output.vcf).mix(output.bam_depth).mix(output.bam_stats)
+	pub = output.bam.mix(output.vcf).mix(output.bam_coverage).mix(output.bam_stats)
 	publish(pub, args.output_dir)
   }
   else if(args.workflow_variation == 'arriba'){

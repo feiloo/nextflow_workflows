@@ -75,7 +75,7 @@ python3 -c "\$script"
     mkdir -p tmp/\$2
     gatk Mutect2 \\
 	--java-options "-Djava.io.tmpdir=tmp/\$2 -Xms8G -Xmx8G" \\
-	--native-pair-hmm-threads ${n_cpus} \\
+	--native-pair-hmm-threads 12 \\
 	--tmp-dir tmp/\$2 \\
 	--input ${tumor_bam} \\
 	--input ${normal_bam} \\
