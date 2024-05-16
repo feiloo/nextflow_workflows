@@ -67,15 +67,16 @@ for k,g in groupby(txt, lambda x: x.split('\t')[0]):
 
 python3 -c "\$script"
 
+    export JAVA_HEAP=8
+    export HMM_THREADS=12
 
-
-    Mute () {
+    Mutect_chrom () {
     INTERVALS=\$1
 
     mkdir -p tmp/\$2
     gatk Mutect2 \\
-	--java-options "-Djava.io.tmpdir=tmp/\$2 -Xms8G -Xmx8G" \\
-	--native-pair-hmm-threads 12 \\
+	--java-options "-Djava.io.tmpdir=tmp/\$2 -Xms\${JAVA_HEAP}G -Xmx\${JAVA_HEAP}G" \\
+	--native-pair-hmm-threads \${HMM_THREADS} \\
 	--tmp-dir tmp/\$2 \\
 	--input ${tumor_bam} \\
 	--input ${normal_bam} \\
@@ -88,10 +89,14 @@ python3 -c "\$script"
 	--output "${tumor_bam.getSimpleName()}_unfiltered_\$2.vcf"
 
     }
-    export -f Mute
+    export -f Mutect_chrom
 
-    #mute beds/chr1.bed
-    ls beds/* | parallel "Mute {} {#}" --pipe
+    # calculate max jobs for the given resources
+    MEMJOBS=\$((${task.memory.getGiga()} / \$JAVA_HEAP))
+    CPUJOBS=${task.cpus}
+    JOBS=\$((MEMJOBS<CPUJOBS ? MEMJOBS : CPUJOBS))
+
+    ls beds/* | parallel --jobs \$JOBS "Mutect_chrom {} {#}" --pipe
 
     ls *.vcf > outputs.list
     ls *.stats > outputs_stats.list
