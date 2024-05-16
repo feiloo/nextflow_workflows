@@ -17,7 +17,7 @@ process stage_fastq {
     // it also allows copying, in case the datasource is on a slow network drive
 
     //stageInMode 'copy'
-    stageInMode 'link'
+    //stageInMode 'link'
     cache 'lenient'
 
     input:
