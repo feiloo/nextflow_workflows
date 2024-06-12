@@ -32,8 +32,6 @@ process bwa_align {
     //container 'quay.io/biocontainers/bwa:0.7.17--hed695b0_7'
     container 'quay.io/biocontainers/mulled-v2-fe8faa35dbf6dc65a0f7f5d4ea12e31a79f73e40:219b6c272b25e7e642ae3ff0bf0c5c81a5135ab4-0'
 
-    publishDir '/PAT-Sequenzer/NEB_FFPE_WGS_30-01-2024/nextflow_outputs/other_bams', mode: 'copy', overwrite: true
-
     cpus { Math.max(1, Math.round(Runtime.runtime.availableProcessors() * (1 - ((1/4)*(task.attempt-1))))) }
     errorStrategy 'retry'
     maxRetries 4
