@@ -6,7 +6,7 @@ include { fastp } from "$NEXTFLOW_MODULES/sequence_alignment/fastp.nf"
 include { bwamem2_index_refgenome; bwamem2_align } from "$NEXTFLOW_MODULES/sequence_alignment/bwamem2.nf"
 include { bwa_index_refgenome; bwa_align } from "$NEXTFLOW_MODULES/sequence_alignment/bwa.nf"
 
-include { bam_stats; bam_depth; sam_to_bam; sort_bam; index_bam; index_fasta } from "$NEXTFLOW_MODULES/sequence_alignment/samtools.nf"
+include { bam_coverage; bam_stats; bam_depth; sam_to_bam; sort_bam; index_bam; index_fasta } from "$NEXTFLOW_MODULES/sequence_alignment/samtools.nf"
 include { gatk_indexfeaturefile; gatk_createsequencedictionary; gatk_markduplicates; gatk_set_tags; gatk_baserecalibrator; gatk_apply_bqsr } from "$NEXTFLOW_MODULES/sequence_alignment/gatk.nf"
 
 include { variant_call } from "$NEXTFLOW_MODULES/sequence_alignment/gatk_mutect.nf"
@@ -16,8 +16,9 @@ process stage_fastq {
     // it renames them to the required naming scheme if necessary
     // it also allows copying, in case the datasource is on a slow network drive
 
-    // stageInMode 'copy'
-    stageInMode 'link'
+    //stageInMode 'copy'
+    //stageInMode 'link'
+    cache 'lenient'
 
     input:
     tuple val(sample_id), path(normal_read1), path(normal_read2), path(tumor_read1), path(tumor_read2)
@@ -111,7 +112,7 @@ workflow sequence_alignment {
 	}
 
 
-    qualities = fastqc(all_reads)
+    //qualities = fastqc(all_reads)
 
     // a flat channel of [sample_id, read1, read2, file_prefix] tuples
     sample_reads_w_prefix = staged_sample_pairs.flatMap{
@@ -143,18 +144,14 @@ workflow sequence_alignment {
     preprocessed_reads_no_id = preprocessed_reads.map{it -> [it[1], it[2]]} 
 
     if(args.bwa_tool == 'bwa'){
-    	sams = bwa_align(preprocessed_reads_no_id, args.refgenome, bwa_idx.amb, bwa_idx.ann, bwa_idx.bwt, bwa_idx.pac, bwa_idx.sa, args.cleanup_intermediate_files)
+    	bams = bwa_align(preprocessed_reads_no_id, args.refgenome, bwa_idx.amb, bwa_idx.ann, bwa_idx.bwt, bwa_idx.pac, bwa_idx.sa, args.cleanup_intermediate_files)
     } else if(args.bwa_tool == 'bwa2'){
         // bwa_idx.f0123 was has an f prefixed so, the file ending starts with a non-numeral
-        sams = bwamem2_align(preprocessed_reads_no_id, args.refgenome, bwa_idx.f0123, bwa_idx.amb, bwa_idx.ann, bwa_idx.bwt_2bit_64, bwa_idx.pac, args.cleanup_intermediate_files)
+        bams = bwamem2_align(preprocessed_reads_no_id, args.refgenome, bwa_idx.f0123, bwa_idx.amb, bwa_idx.ann, bwa_idx.bwt_2bit_64, bwa_idx.pac, args.cleanup_intermediate_files)
+    	//bams = sam_to_bam(sams, args.cleanup_intermediate_files)
     } else {
 	throw new Exception("unknown bwa_tool ${args.bwa_tool}")
     }
-
-    bams = sam_to_bam(sams, args.cleanup_intermediate_files)
-
-    //sorted_bams = sort_bam(bams)
-    //bam_indices = index_bam(sorted_bams)
 
     marked_bams = gatk_markduplicates(bams).marked_bams
     tagged_bams = gatk_set_tags(marked_bams, args.refgenome, args.cleanup_intermediate_files).tagged_bams
@@ -169,13 +166,11 @@ workflow sequence_alignment {
     bam_w_recal_data = keyed_bams.join(keyed_recal_data).map{ it -> [it[1], it[2]] }
 
     bam_recalibrated = gatk_apply_bqsr(bam_w_recal_data, args.refgenome, refgenome_index, refgenome_dict)
-    bam_w_depth = bam_depth(bam_recalibrated, args.refgenome)
+    //bam_w_depth = bam_depth(bam_recalibrated, args.refgenome)
+    bam_coverage = bam_coverage(bam_recalibrated)
     bams_w_stats = bam_stats(bam_recalibrated, args.refgenome)
 
-    //bam_recalibrated.view()
-
-    
-    variant_call(
+    vcfs = variant_call(
 	    bam_recalibrated,
 	    args.intervals,
 	    args.panel_of_normals,
@@ -186,6 +181,10 @@ workflow sequence_alignment {
 
   emit:
     bam = bam_recalibrated
+    vcf = vcfs
+    //bam_depth = bam_w_depth
+    bam_coverage = bam_coverage
+    bam_stats = bams_w_stats
 }
 
 workflow {

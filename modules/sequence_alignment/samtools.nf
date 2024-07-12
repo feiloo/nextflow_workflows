@@ -79,7 +79,7 @@ process bam_stats {
     conda "bioconda::samtools=1.17"
     container 'quay.io/biocontainers/samtools:1.17--h00cdaf9_0'
 
-    memory "4 GB"
+    memory "1 GB"
 
     input:
     path(bamfile)
@@ -102,17 +102,35 @@ process bam_depth {
     conda "bioconda::samtools=1.17"
     container 'quay.io/biocontainers/samtools:1.17--h00cdaf9_0'
 
-    memory "32 GB"
+    memory "1 GB"
     input:
     path(bamfile)
     path(refgenome)
 
     output:
-    path("${bamfile.getSimpleName()}_depth")
+    path("${bamfile.getSimpleName()}_samdepth")
 
     script:
     n_cpus = Runtime.runtime.availableProcessors()
     """
-    samtools depth "${bamfile}" > "${bamfile.getSimpleName()}_depth"
+    samtools depth "${bamfile}" > "${bamfile.getSimpleName()}_samdepth"
+    """
+}
+
+process bam_coverage {
+    conda "bioconda::samtools=1.17"
+    container 'quay.io/biocontainers/samtools:1.17--h00cdaf9_0'
+
+    memory "1 GB"
+    input:
+    path(bamfile)
+
+    output:
+    path("${bamfile.getSimpleName()}_samcov")
+
+    script:
+    n_cpus = Runtime.runtime.availableProcessors()
+    """
+    samtools coverage "${bamfile}" -o "${bamfile.getSimpleName()}_samcov"
     """
 }

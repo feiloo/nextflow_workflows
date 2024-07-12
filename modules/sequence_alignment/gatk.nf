@@ -6,6 +6,12 @@ process gatk_createsequencedictionary {
 
     storeDir "$NEXTFLOW_STOREDIR"
 
+    cpus { Math.max(1, Math.round(Runtime.runtime.availableProcessors() * (1 - ((1/4)*(task.attempt-1))))) }
+    errorStrategy 'retry'
+    maxRetries 4
+
+    memory "56 GB"
+
     input:
 	path(refgenome)
 
@@ -28,6 +34,10 @@ process gatk_indexfeaturefile {
 
     storeDir "$NEXTFLOW_STOREDIR"
 
+    cpus { Math.max(1, Math.round(Runtime.runtime.availableProcessors() * (1 - ((1/4)*(task.attempt-1))))) }
+    errorStrategy 'retry'
+    maxRetries 4
+
     input:
         path(known_sites)
 
@@ -48,7 +58,11 @@ process gatk_markduplicates {
     conda "bioconda::gatk4=4.4.0.0"
     container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
 
-    memory "60 GB"
+    cpus { Math.max(1, Math.round(Runtime.runtime.availableProcessors() * (1 - ((1/4)*(task.attempt-1))))) }
+    errorStrategy 'retry'
+    maxRetries 4
+
+    memory {Math.min(80, 80+(80 * (task.attempt-1))).GB}
 
     input:
         path(bam)
@@ -59,14 +73,20 @@ process gatk_markduplicates {
 
     script:
     // write to output directory to avoid filename collision but keeping the filename in the channels the same
-    n_cpus = Runtime.runtime.availableProcessors()
     //--METRICS_FILE ${bam.getSimpleName()}_metrics.txt
 
     """
     mkdir out
+    mkdir tmp
     gatk MarkDuplicatesSpark \\
         --input ${bam} \\
-    	--spark-master local[$n_cpus] \\
+	--java-options "-Djava.io.tmpdir=tmp -Xms24G -Xmx24G" \\
+	--conf 'spark.local.dir=tmp' \\
+	--conf 'spark.executor.cores=${task.cpus}' \\
+	--conf 'spark.executor.memory=24g' \\
+	--conf 'spark.driver.memory=2g' \\
+	--tmp-dir tmp \\
+    	--spark-master local[${task.cpus}] \\
 	--output out/${bam}
 
     """
@@ -76,7 +96,12 @@ process gatk_set_tags {
     conda "bioconda::gatk4=4.4.0.0"
     container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
 
-    memory "46 GB"
+
+    cpus { Math.max(1, Math.round(Runtime.runtime.availableProcessors() * (1 - ((1/4)*(task.attempt-1))))) }
+    errorStrategy 'retry'
+    maxRetries 4
+
+    memory {Math.min(80, 80+(80 * (task.attempt-1))).GB}
 
     input:
         path(bam)
@@ -89,7 +114,9 @@ process gatk_set_tags {
     script:
     """
     mkdir out
+    mkdir tmp
     gatk SetNmMdAndUqTags \\
+	--java-options "-Djava.io.tmpdir=tmp -Xms50G -Xmx50G" \\
     	--INPUT ${bam} \\
 	--REFERENCE_SEQUENCE ${refgenome} \\
 	--OUTPUT out/${bam}
@@ -104,7 +131,13 @@ process gatk_baserecalibrator {
     conda "bioconda::gatk4=4.4.0.0"
     container "quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0"
 
-    memory "46 GB"
+    cpus { Math.max(1, Math.round(Runtime.runtime.availableProcessors() * (1 - ((1/4)*(task.attempt-1))))) }
+    errorStrategy 'retry'
+    maxRetries 4
+
+
+    memory {Math.min(56, 20+(14 * (task.attempt-1))).GB}
+
 
     input:
         path(bamfile)
@@ -119,7 +152,9 @@ process gatk_baserecalibrator {
 
     script:
     """
+    mkdir tmp
     gatk BaseRecalibrator \\
+	--java-options "-Djava.io.tmpdir=tmp -Xms24G -Xmx24G -XX:ParallelGCThreads=2" \\
         --input ${bamfile} \\
 	--reference ${refgenome} \\
 	--known-sites ${known_sites} \\
@@ -132,7 +167,12 @@ process gatk_apply_bqsr {
     conda "bioconda::gatk4=4.4.0.0"
     container "quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0"
 
-    memory "46 GB"
+    memory {Math.min(56, 20+(14 * (task.attempt-1))).GB}
+
+    cpus { Math.max(1, Math.round(Runtime.runtime.availableProcessors() * (1 - ((1/4)*(task.attempt-1))))) }
+    errorStrategy 'retry'
+    maxRetries 4
+
 
     input:
         tuple path(bamfile), path(bam_recal_data)
@@ -146,7 +186,9 @@ process gatk_apply_bqsr {
     script:
     """
     mkdir out
+    mkdir tmp
     gatk ApplyBQSR \\
+        --java-options "-Djava.io.tmpdir=tmp -Xms24G -Xmx24G -XX:ParallelGCThreads=2" \\
         --input ${bamfile} \\
 	--reference ${refgenome} \\
 	--bqsr-recal-file ${bam_recal_data} \\

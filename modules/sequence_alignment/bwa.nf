@@ -1,6 +1,7 @@
 process bwa_index_refgenome {
     conda "bioconda::bwa=0.7.17"
-    container 'quay.io/biocontainers/bwa:0.7.17--hed695b0_7'
+    //container 'quay.io/biocontainers/bwa:0.7.17--hed695b0_7'
+    container 'quay.io/biocontainers/mulled-v2-fe8faa35dbf6dc65a0f7f5d4ea12e31a79f73e40:219b6c272b25e7e642ae3ff0bf0c5c81a5135ab4-0'
 
     storeDir "$NEXTFLOW_STOREDIR"
 
@@ -27,10 +28,13 @@ process bwa_index_refgenome {
 }
 
 process bwa_align {
-    conda "bioconda::bwa=0.7.17"
-    container 'quay.io/biocontainers/bwa:0.7.17--hed695b0_7'
+    conda "bioconda::bwa=0.7.17 samtools=1.16.1"
+    //container 'quay.io/biocontainers/bwa:0.7.17--hed695b0_7'
+    container 'quay.io/biocontainers/mulled-v2-fe8faa35dbf6dc65a0f7f5d4ea12e31a79f73e40:219b6c272b25e7e642ae3ff0bf0c5c81a5135ab4-0'
 
-    memory '60 GB'
+    cpus { Math.max(1, Math.round(Runtime.runtime.availableProcessors() * (1 - ((1/4)*(task.attempt-1))))) }
+    errorStrategy 'retry'
+    maxRetries 4
 
     input:
     tuple path(read1), path(read2)
@@ -44,7 +48,7 @@ process bwa_align {
 
 
     output:
-    path("${read1.getSimpleName()}.sam")
+    path("${read1.getSimpleName()}.bam")
 
     script:
     n_cpus = Runtime.runtime.availableProcessors()
@@ -86,7 +90,7 @@ process bwa_align {
 
     // bwa mem -t $n_cpus ${refgenome} ${read1} ${read2} -o ${read1.getSimpleName()}.sam
     """
-    bwa mem -R "${read_group_info}" -t $n_cpus ${refgenome} ${read1} ${read2} -o ${read1.getSimpleName()}.sam
+    bwa mem -R "${read_group_info}" -t ${task.cpus} ${refgenome} ${read1} ${read2} | samtools view --bam --threads ${task.cpus} -o ${read1.getSimpleName()}.bam
     if [[ "${args.cleanup_intermediate_files}" == 'true' ]]; then
       rm ${read1} && rm ${read2}
     fi

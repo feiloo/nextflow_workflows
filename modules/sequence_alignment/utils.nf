@@ -1,19 +1,19 @@
 process publish {
   memory '1 GB'
-  
+
+  publishDir "${output_dir}/outputs", mode: 'copy', overwrite: false
 
   input:
-    path(resultfile)
-    val(args)
+    path(inputfile)
+    val(output_dir)
   output:
-    path(bamfile)
+    path(inputfile)
 
-  publishDir "${args.output_dir}", mode: 'copy', overwrite: false
 
   script:
-  println "finished workflow, outputs are in: ${args.output_dir}"
   """
-  touch ${resultfile}
+  mkdir -p ${output_dir}/outputs/
+  echo published ${inputfile} to ${output_dir}/outputs/${inputfile}
   """
 }
 

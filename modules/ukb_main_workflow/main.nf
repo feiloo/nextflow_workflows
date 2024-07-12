@@ -1,10 +1,26 @@
-nextflow.enable.dsl=2
-
 include { arriba_nextflow } from "$NEXTFLOW_MODULES/arriba_nextflow"
 include { clc_nextflow } from "$NEXTFLOW_MODULES/clc_nextflow"
 include { CIOABCD_VARIANTINTERPRETATION } from "$NEXTFLOW_MODULES/variantinterpretation"
 include { sequence_alignment } from "$NEXTFLOW_MODULES/sequence_alignment"
-//include { SAREK } from "$NEXTFLOW_MODULES/sarek_wrapper"
+
+include { publish } from "$NEXTFLOW_MODULES/sequence_alignment/utils.nf"
+
+process bcftools_get_tumor {
+    conda "bioconda::bcftools=1.17"
+    container "quay.io/biocontainers/bcftools:1.17--haef29d1_0"
+
+    input:
+    path(vcf)
+
+    output:
+    path("out/${vcf.getSimpleName()}.vcf.gz"), emit: vcf
+ 
+    script:
+    """
+    mkdir out
+    bcftools view --samples "${vcf.getSimpleName().split('_')[0]}_T_1" "${vcf}" | bgzip -c - >"out/${vcf.getSimpleName()}.vcf.gz"
+    """
+}
 
 process rename_clcad_to_ad {
     conda "bioconda::bcftools=1.17"
@@ -85,7 +101,9 @@ workflow {
   for (param in params) { args[param.key] = param.value }
 
   if(args.workflow_variation == 'sequence_alignment'){
-  	sequence_alignment(args)
+	output = sequence_alignment(args)
+	pub = output.bam.mix(output.vcf).mix(output.bam_coverage).mix(output.bam_stats)
+	publish(pub, args.output_dir)
   }
   else if(args.workflow_variation == 'arriba'){
   	arriba_nextflow(args)
@@ -117,6 +135,23 @@ workflow {
 	fasta = rename_chromosomes_refgenome(args.refgenome)
 
   	CIOABCD_VARIANTINTERPRETATION(args, new_samplesheet, fasta)
+  }
+  else if (args.workflow_variation == 'align_interpret'){
+	output = sequence_alignment(args)
+	pub = output.bam.mix(output.vcf).mix(output.bam_coverage).mix(output.bam_stats)
+
+	tumor_vcf = bcftools_get_tumor(output.vcf).vcf.map{it -> [it.getSimpleName(), it]}
+
+	chr_fixed_vcf = rename_chromosomes_vcf(tumor_vcf).vcf
+	fixed_vcfs = rename_clcad_to_ad(chr_fixed_vcf).vcf
+	new_rows = Channel.of("sample,vcf").concat((fixed_vcfs.map{it -> "${it[0]},${it[1]}"})).collect()
+	//.collectFile(name: "fixed_samplesheet.csv", newLine: true)
+	new_samplesheet = write_samplesheet(new_rows).samplesheet
+	fasta = rename_chromosomes_refgenome(args.refgenome)
+
+  	CIOABCD_VARIANTINTERPRETATION(args, new_samplesheet, fasta)
+
+	publish(pub, args.output_dir)
   }
   else {
     println "invalid value for parameter workflow_variation " + args.workflow_variation
