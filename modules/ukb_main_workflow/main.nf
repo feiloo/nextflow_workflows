@@ -2,6 +2,7 @@ include { arriba_nextflow } from "$NEXTFLOW_MODULES/arriba_nextflow"
 include { clc_nextflow } from "$NEXTFLOW_MODULES/clc_nextflow"
 include { CIOABCD_VARIANTINTERPRETATION } from "$NEXTFLOW_MODULES/variantinterpretation"
 include { sequence_alignment } from "$NEXTFLOW_MODULES/sequence_alignment"
+include { pancancer_analyse } from "$NEXTFLOW_MODULES/nextpipe"
 
 include { publish } from "$NEXTFLOW_MODULES/sequence_alignment/utils.nf"
 
@@ -111,14 +112,19 @@ workflow {
   else if(args.workflow_variation == 'clc'){
   	//clc_nextflow(args)
 
-	  clc_nextflow(args.samplesheet, 
-		args.clc_import_dir, 
-		args.clc_export_dir,
-		args.clc_destdir,
-		args.clc_workflow_name,
-		args.nas_import_dir,
-		args.nas_export_dir
-		)
+	clc_out = clc_nextflow(args.samplesheet, 
+	  args.clc_import_dir, 
+	  args.clc_export_dir,
+	  args.clc_destdir,
+	  args.clc_workflow_name,
+	  args.nas_import_dir,
+	  args.nas_export_dir
+	  )
+
+	pancancer_analyse(
+	  clc_out.vcf, clc_out.csv, args.vep_cache, args.fasta, 
+	  args.transcriptlist, args.variantlist, args.outdir
+	  )
   }
   else if(args.workflow_variation == 'sarek'){
   	SAREK(args)

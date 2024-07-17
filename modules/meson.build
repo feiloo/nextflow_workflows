@@ -7,10 +7,40 @@ subdir('clc_nextflow')
 subdir('sequence_alignment')
 subdir('ukb_main_workflow')
 
+nextpipe_sources = [
+'nextpipe/bin/organize_variant_table.py',
+'nextpipe/bin/variantlist_utils.py',
+]
+
 sources = ['ukb_main_workflow'/'test_main.config']
 testdata = []
 
-copy_sources = custom_target('copy_sources',
+create_nextpipe_dir = custom_target('create_nextpipe_dir',
+	command : ['mkdir', '-p', meson.current_build_dir() / 'nextpipe'/'bin', 
+		'&&', 
+		'touch', 'nextpipe_testfile'
+		],
+	output : ['nextpipe_testfile']
+	)
+
+copy_nextpipe_bin = custom_target('copy_nextpipe_bin',
+	input : nextpipe_sources,
+	output : ['organize_variant_table.py','variantlist_utils.py'],
+	command : ['cp', '-r', '@INPUT0@', '@INPUT1@', '@OUTDIR@/nextpipe/bin/'],
+	install : false,
+	depends : [create_nextpipe_dir]
+	)
+
+copy_nextpipe_sources = custom_target('copy_nextpipe_main',
+	input : 'nextpipe/main.nf',
+	output : 'main.nf',
+	command : ['cp', '-r', meson.current_source_dir() / '@INPUT@', '@OUTDIR@/nextpipe/'],
+	install : false,
+	depends : [copy_nextpipe_bin]
+	)
+
+
+copy_main_sources = custom_target('copy_main_sources',
 	input : sources + testdata,
 	output : 'test_main.config',
 	command : ['cp', '-r', '@INPUT@', '@OUTDIR@/ukb_main_workflow'],
@@ -21,7 +51,7 @@ variantinterpretation = custom_target('variantinterpretation',
 	input : 'variantinterpretation/main.nf',
 	output : 'variantinterpretation',
 	command : ['cp', '-r', '@CURRENT_SOURCE_DIR@/variantinterpretation', '@OUTPUT@/'],
-	depends: [copy_sources, arriba_nextflow, clc_nextflow]
+	depends: [copy_main_sources, arriba_nextflow, clc_nextflow]
 	)
 
 
@@ -40,7 +70,7 @@ test('nextflow_workflow_variantinterpretation',
 	'--workflow_variation', 'variantinterpretation',
 	'--samplesheet', test_datadir / 'test_variantinterpretation_samplesheet.csv',
 	],
-	depends: [copy_sources, variantinterpretation, ukb_main_workflow],
+	depends: [copy_main_sources, variantinterpretation, ukb_main_workflow],
 	timeout: 6000
 	)
 
@@ -58,7 +88,7 @@ test('nextflow_workflow_arriba',
 	'--workflow_variation', 'arriba',
 	'--samplesheet', test_datadir / 'test_arriba_samplesheet.csv',
 	],
-	depends: [copy_sources, arriba_nextflow, ukb_main_workflow],
+	depends: [copy_main_sources, arriba_nextflow, ukb_main_workflow],
 	timeout: 600
 	)
 
@@ -78,7 +108,7 @@ test('nextflow_workflow_sequence_alignment',
 	'--workflow_variation', 'sequence_alignment',
 	'--samplesheet', test_datadir/'test_sequence_alignment_samplesheet.csv',
 	],
-	depends: [copy_sources, variantinterpretation, sequence_alignment_nextflow, ukb_main_workflow],
+	depends: [copy_main_sources, variantinterpretation, sequence_alignment_nextflow, ukb_main_workflow],
 	timeout: 360000
 	)
 
@@ -97,7 +127,7 @@ test('nextflow_workflow_sequence_alignment_local',
 	'--workflow_variation', 'sequence_alignment',
 	'--samplesheet', test_datadir/'test_sequence_alignment_samplesheet.csv',
 	],
-	depends: [copy_sources, variantinterpretation, sequence_alignment_nextflow, ukb_main_workflow],
+	depends: [copy_main_sources, variantinterpretation, sequence_alignment_nextflow, ukb_main_workflow],
 	timeout: 360000
 	)
 
@@ -116,7 +146,7 @@ test('nextflow_workflow_sequence_alignment_hpc',
 	'--workflow_variation', 'sequence_alignment',
 	'--samplesheet', test_datadir/'test_sequence_alignment_samplesheet.csv',
 	],
-	depends: [copy_sources, variantinterpretation, sequence_alignment_nextflow, ukb_main_workflow],
+	depends: [copy_main_sources, variantinterpretation, sequence_alignment_nextflow, ukb_main_workflow],
 	timeout: 360000
 	)
 
@@ -135,7 +165,7 @@ test('nextflow_workflow_sequence_align_interpret',
 	'--workflow_variation', 'align_interpret',
 	'--samplesheet', test_datadir/'test_sequence_alignment_samplesheet.csv',
 	],
-	depends: [copy_sources, variantinterpretation, sequence_alignment_nextflow, ukb_main_workflow],
+	depends: [copy_main_sources, variantinterpretation, sequence_alignment_nextflow, ukb_main_workflow],
 	timeout: 360000
 	)
 
@@ -162,8 +192,28 @@ test('nextflow_workflow_clc',
 	'-c', meson.current_build_dir() / 'ukb_main_workflow' / 'test_main.config',
 	'--workflow_variation', 'clc',
 	'--samplesheet', test_datadir/'test_clc_samplesheet.csv',
+	'-with-conda',
 	'-stub'
 	],
-	depends: [clc_nextflow, ukb_main_workflow, create_testdirs, copy_sources, sequence_alignment_nextflow, variantinterpretation],
+	depends: [clc_nextflow, ukb_main_workflow, create_testdirs, copy_main_sources, copy_nextpipe_sources, sequence_alignment_nextflow, variantinterpretation],
+	timeout: 6000
+	)
+
+test('nextflow_workflow_clc_full',
+	nextflow_bin,
+	is_parallel : false,
+	suite : ['nextflow', 'workflow', 'full'],
+	env: ['NEXTFLOW_MODULES='+meson.current_build_dir(), 
+		'NAS_IMPORT_DIR='+meson.current_build_dir()/'nas_import', 
+		'NAS_EXPORT_DIR='+meson.current_build_dir()/'nas_export'],
+	args : [
+	'run',
+	meson.current_build_dir()+'/ukb_main_workflow/main.nf',
+	'-c', meson.current_build_dir() / 'ukb_main_workflow' / 'test_main.config',
+	'--workflow_variation', 'clc',
+	'--samplesheet', test_datadir/'test_clc_samplesheet.csv',
+	'-with-conda',
+	],
+	depends: [clc_nextflow, ukb_main_workflow, create_testdirs, copy_main_sources, copy_nextpipe_sources, sequence_alignment_nextflow, variantinterpretation],
 	timeout: 6000
 	)

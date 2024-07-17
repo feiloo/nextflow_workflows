@@ -1,5 +1,6 @@
 nextflow.enable.dsl=2
 
+
 def samplename_from_filename = { filename ->
     filename.split('-')[0]//.join('-')
 }
@@ -29,9 +30,12 @@ process clc_workflow_single {
     val(clc_export_dir)
     val(clc_destdir)
     val(clc_workflow_name)
+    val(nas_import_dir)
 
   output:
     stdout emit: output
+    val(vcf_path), emit: vcf_path
+    val(csv_path), emit: csv_path
 
     script:
 
@@ -41,6 +45,8 @@ process clc_workflow_single {
     def n3 = file(rna_read1).name
     def n4 = file(rna_read2).name
     def samplename = samplename_from_filename(n1)
+    vcf_path = "${nas_import_dir}/${samplename}/${samplename}.vcf"
+    csv_path = "${nas_import_dir}/${samplename}/${samplename}.csv"
 
     """
     clcserver -S \$CLC_HOST -U \$CLC_USER -W \$CLC_PSW -A mkdir -t "${destdir}" -n "${samplename}"
@@ -73,6 +79,8 @@ process clc_workflow_single {
     def n3 = file(rna_read1).name
     def n4 = file(rna_read2).name
     def samplename = samplename_from_filename(n1)
+    vcf_path = "${nas_import_dir}/${samplename}/${samplename}.vcf"
+    csv_path = "${nas_import_dir}/${samplename}/${samplename}.csv"
 
     """
     echo "${destdir}"
@@ -235,7 +243,21 @@ workflow clc_nextflow {
 
     out = clc_workflow_single(staged_reads_w_export_dir, 
     	clc_import_dir, clc_export_dir,
-    	clc_destdir, clc_workflow_name)
+    	clc_destdir, clc_workflow_name,
+	nas_import_dir)
+
+    fils = copyback(out.vcf_path.mix(out.csv_path))
+
+    fils.branch{
+	vcf: it.getExtension() == 'vcf'
+	csv: it.getExtension() == 'csv'
+    }.set{ res }
+  
+
+    emit:
+      vcf = res.vcf
+      csv = res.csv
+
 }
 
 
@@ -251,4 +273,5 @@ workflow {
 	args.nas_import_dir,
 	args.nas_export_dir
 	)
+  
 }
