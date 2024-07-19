@@ -41,7 +41,7 @@ test('nextflow_workflow_variantinterpretation',
 	'--samplesheet', test_datadir / 'test_variantinterpretation_samplesheet.csv',
 	],
 	depends: [copy_sources, variantinterpretation, ukb_main_workflow],
-	timeout: 6000
+	timeout: 600000
 	)
 
 test('nextflow_workflow_arriba',

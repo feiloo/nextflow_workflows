@@ -1,6 +1,7 @@
 include { arriba_nextflow } from "$NEXTFLOW_MODULES/arriba_nextflow"
 include { clc_nextflow } from "$NEXTFLOW_MODULES/clc_nextflow"
-include { CIOABCD_VARIANTINTERPRETATION } from "$NEXTFLOW_MODULES/variantinterpretation"
+//include { CIOABCD_VARIANTINTERPRETATION } from "$NEXTFLOW_MODULES/variantinterpretation"
+include { VARIANTINTERPRETATION } from "$NEXTFLOW_MODULES/variantinterpretation/workflows/variantinterpretation"
 include { sequence_alignment } from "$NEXTFLOW_MODULES/sequence_alignment"
 
 include { publish } from "$NEXTFLOW_MODULES/sequence_alignment/utils.nf"
@@ -68,14 +69,14 @@ process rename_chromosomes_refgenome {
     path(refgenome)
 
     output:
-    path("out/${refgenome}")
+    path("out/${refgenome.getName()}")
 
     script:
     """
     mkdir mid
     mkdir out
-    sed 's/^>\\([1-9XY]\\)/>chr\\1/g' "${refgenome}" > "mid/${refgenome}"
-    dos2unix -F -n "mid/${refgenome}" "out/${refgenome}"
+    sed 's/^>\\([1-9XY]\\)/>chr\\1/g' "${refgenome}" > "mid/${refgenome.getName()}"
+    dos2unix -F -n "mid/${refgenome.getName()}" "out/${refgenome.getName()}"
     
     """
 }
@@ -129,12 +130,40 @@ workflow {
     	csv_channel = Channel.fromPath(samplesheet, checkIfExists: true, type: 'file').splitCsv(header: header, skip: 1)
 	chr_fixed_vcf = rename_chromosomes_vcf(csv_channel).vcf
 	fixed_vcfs = rename_clcad_to_ad(chr_fixed_vcf).vcf
-	new_rows = Channel.of("sample,vcf").concat((fixed_vcfs.map{it -> "${it[0]},${it[1]}"})).collect()
+	fixed_vcfs_mapped = fixed_vcfs.map{it -> "${it[0]},${it[1]}" }
+	fixed_vcfs_mapped.view()
+	//new_rows = Channel.of("sample,vcf").concat(fixed_vcfs_mapped).collect()
 	//.collectFile(name: "fixed_samplesheet.csv", newLine: true)
-	new_samplesheet = write_samplesheet(new_rows).samplesheet
+	//new_samplesheet = write_samplesheet(new_rows).samplesheet
 	fasta = rename_chromosomes_refgenome(args.refgenome)
 
-  	CIOABCD_VARIANTINTERPRETATION(args, new_samplesheet, fasta)
+	vep_cache_version = channel.value(110)
+	species = channel.value('homo_sapiens')
+	annotation_fields = channel.value('all')
+	vep_extra_files = channel.value([])
+	datavzrd_config = channel.value(null)
+	annotation_colinfo = channel.value(null)
+	custom_filters = channel.value(null)
+
+	ch_vep_cache = channel.value(args.vep_cache)
+	//ch_vep_cache = channel.empty() //args.vep_cache
+	vep_genome = channel.empty()
+
+	VARIANTINTERPRETATION (
+	    fixed_vcfs.map{ it -> [['id':it[0]], [it[1]]] },
+	    fasta, // fasta needs to be a channel
+	    ch_vep_cache,
+	    vep_cache_version,
+	    vep_genome, //args.refgenome, //args.ch_vep_genome,
+	    species,
+	    vep_extra_files,
+	    annotation_fields,
+	    args.transcriptlist,
+	    datavzrd_config,
+	    annotation_colinfo,
+	    args.intervals,
+	    custom_filters
+	)
   }
   else if (args.workflow_variation == 'align_interpret'){
 	output = sequence_alignment(args)
@@ -149,9 +178,9 @@ workflow {
 	new_samplesheet = write_samplesheet(new_rows).samplesheet
 	fasta = rename_chromosomes_refgenome(args.refgenome)
 
-  	CIOABCD_VARIANTINTERPRETATION(args, new_samplesheet, fasta)
+  	//CIOABCD_VARIANTINTERPRETATION(args, new_samplesheet, fasta)
 
-	publish(pub, args.output_dir)
+	//publish(pub, args.output_dir)
   }
   else {
     println "invalid value for parameter workflow_variation " + args.workflow_variation
