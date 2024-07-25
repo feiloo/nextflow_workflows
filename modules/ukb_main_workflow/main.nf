@@ -141,20 +141,26 @@ workflow {
 	species = channel.value('homo_sapiens')
 	annotation_fields = channel.value('all')
 	vep_extra_files = channel.value([])
-	datavzrd_config = channel.value(null)
-	annotation_colinfo = channel.value(null)
-	custom_filters = channel.value(null)
+
+	//datavzrd_config = channel.value(null)
+	datavzrd_config = Channel.fromPath("$NEXTFLOW_MODULES/variantinterpretation/assets/datavzrd_config_template.yaml", checkIfExists: true)
+
+	//annotation_colinfo = channel.value(null)
+	annotation_colinfo = Channel.fromPath("$NEXTFLOW_MODULES/variantinterpretation/assets/annotation_colinfo.tsv", checkIfExists: true)
+
+	custom_filters = []//channel.value(null)
 
 	ch_vep_cache = channel.value(args.vep_cache)
-	//ch_vep_cache = channel.empty() //args.vep_cache
-	vep_genome = channel.empty()
+
+	// fill in the assenbly as a string
+	vep_genome = channel.value('GRCh38')
 
 	VARIANTINTERPRETATION (
 	    fixed_vcfs.map{ it -> [['id':it[0]], [it[1]]] },
 	    fasta, // fasta needs to be a channel
 	    ch_vep_cache,
 	    vep_cache_version,
-	    vep_genome, //args.refgenome, //args.ch_vep_genome,
+	    vep_genome,//vep_genome, //args.refgenome, //args.ch_vep_genome,
 	    species,
 	    vep_extra_files,
 	    annotation_fields,
