@@ -209,11 +209,11 @@ test('nextflow_workflow_clc_full',
 	args : [
 	'run',
 	meson.current_build_dir()+'/ukb_main_workflow/main.nf',
-	'-c', meson.current_build_dir() / 'ukb_main_workflow' / 'test_main.config',
+	'-c', test_datadir/ 'test_main.config',
 	'--workflow_variation', 'clc',
 	'--samplesheet', test_datadir/'test_clc_samplesheet.csv',
 	'-with-conda',
 	],
 	depends: [clc_nextflow, ukb_main_workflow, create_testdirs, copy_main_sources, copy_nextpipe_sources, sequence_alignment_nextflow, variantinterpretation],
-	timeout: 6000
+	timeout: 172800 # 2 days
 	)

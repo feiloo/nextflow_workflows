@@ -45,8 +45,11 @@ process clc_workflow_single {
     def n3 = file(rna_read1).name
     def n4 = file(rna_read2).name
     def samplename = samplename_from_filename(n1)
-    vcf_path = "${nas_import_dir}/${samplename}/${samplename}.vcf"
-    csv_path = "${nas_import_dir}/${samplename}/${samplename}.csv"
+
+    def output_filename = "todo fix naming here"
+
+    vcf_path = "${nas_import_dir}/${samplename}/${output_filename}.vcf"
+    csv_path = "${nas_import_dir}/${samplename}/${output_filename}.csv"
 
     """
     clcserver -S \$CLC_HOST -U \$CLC_USER -W \$CLC_PSW -A mkdir -t "${destdir}" -n "${samplename}"
@@ -273,5 +276,7 @@ workflow {
 	args.nas_import_dir,
 	args.nas_export_dir
 	)
+
+  
   
 }
