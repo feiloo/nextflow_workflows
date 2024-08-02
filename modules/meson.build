@@ -8,8 +8,8 @@ subdir('sequence_alignment')
 subdir('ukb_main_workflow')
 
 nextpipe_sources = [
-'nextpipe/bin/organize_variant_table.py',
-'nextpipe/bin/variantlist_utils.py',
+'nextpipe/resources/usr/bin/organize_variant_table.py',
+'nextpipe/resources/usr/bin/variantlist_utils.py',
 ]
 
 sources = ['ukb_main_workflow'/'test_main.config']
@@ -26,7 +26,7 @@ create_nextpipe_dir = custom_target('create_nextpipe_dir',
 copy_nextpipe_bin = custom_target('copy_nextpipe_bin',
 	input : nextpipe_sources,
 	output : ['organize_variant_table.py','variantlist_utils.py'],
-	command : ['cp', '-r', '@INPUT0@', '@INPUT1@', '@OUTDIR@/nextpipe/bin/'],
+	command : ['mkdir', '-p', '@OUTDIR@/nextpipe/resources/usr/bin', '&&', 'cp', '-r', '@INPUT0@', '@INPUT1@', '@OUTDIR@/nextpipe/resources/usr/bin/'],
 	install : false,
 	depends : [create_nextpipe_dir]
 	)

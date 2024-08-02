@@ -4,7 +4,7 @@ nextflow.enable.dsl=2
 // example 10000-24-DNA_1.fq.gz -> 10000-24
 // todo robustness/parsing
 def samplename_from_filename = { filename ->
-    filename.split('-')[0..1]//.join('-')
+    filename.split('-')[0..1].join('-')
 }
 
 def samplename_from_path = { path ->
@@ -61,7 +61,7 @@ process clc_workflow_single {
     def samplename = samplename_from_filename(n1)
 
     // compose name of clc output files (this depends on the clc workflow settings)
-    def output_filename = "ngs_pipeline_Variants passing filters-${samplename}-DNA_1 (paired)_${samplename}-DNA_1 (paired).vcf
+    def output_filename = "${samplename}-DNA_1 (paired)_${samplename}-DNA_1 (paired)"
 
     vcf_path = "${nas_import_dir}/${samplename}/${output_filename}.vcf"
     csv_path = "${nas_import_dir}/${samplename}/${output_filename}.csv"
@@ -76,17 +76,6 @@ process clc_workflow_single {
         --rna-reads-import-algo-id ngs_import_illumina \\
         --rna-reads-select-files \"clc://serverfile/${clc_import_dir}/${n3}\"  \\
         --rna-reads-select-files \"clc://serverfile/${clc_import_dir}/${n4}\"  \\
-	--export-json-reports-export-destination \"clc://serverfile/${clc_export_dir}/${samplename}\" \\
-	--export-json-reports--2--export-destination \"clc://serverfile/${clc_export_dir}/${samplename}\" \\
-	--export-json-reports--3--export-destination \"clc://serverfile/${clc_export_dir}/${samplename}\" \\
-	--export-json-reports--4--export-destination \"clc://serverfile/${clc_export_dir}/${samplename}\" \\
-	--export-json-reports--5--export-destination \"clc://serverfile/${clc_export_dir}/${samplename}\" \\
-	--export-json-reports--6--export-destination \"clc://serverfile/${clc_export_dir}/${samplename}\" \\
-	--export-table-csv-export-destination \"clc://serverfile/${clc_export_dir}/${samplename}\" \\
-	--export-table-csv--2--export-destination \"clc://serverfile/${clc_export_dir}/${samplename}\" \\
-	--export-table-csv--3--export-destination \"clc://serverfile/${clc_export_dir}/${samplename}\" \\
-	--export-table-csv--4--export-destination \"clc://serverfile/${clc_export_dir}/${samplename}\" \\
-	--export-vcf-export-destination \"clc://serverfile/${clc_export_dir}/${samplename}\" \\
         -d "${destdir}/${samplename}"
     """
 
