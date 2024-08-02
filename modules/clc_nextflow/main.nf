@@ -1,8 +1,10 @@
 nextflow.enable.dsl=2
 
 
+// example 10000-24-DNA_1.fq.gz -> 10000-24
+// todo robustness/parsing
 def samplename_from_filename = { filename ->
-    filename.split('-')[0]//.join('-')
+    filename.split('-')[0..1]//.join('-')
 }
 
 def samplename_from_path = { path ->
@@ -26,10 +28,20 @@ process clc_workflow_single {
 
   input:
     tuple val(dna_read1), val(dna_read2), val(rna_read1), val(rna_read2)
+    // windows path, where the windows-hosted clc server expects to import files from
+    // must be the full mounted path if its on a network drive and properly slash escaped
+    // \\host.domain\MOUNTPOINT\SHARENAME\IMPORT\...
+    // is therefore prefixed wth clc://serverfile
     val(clc_import_dir)
+    // windows path, where the windows-hosted clc server expects to export files to
+    // same rules as for clc_import_dir
+    // can be the same as clc_import_dir
     val(clc_export_dir)
+    // clc path where clc should write workflow outputs (clc storage, e.g. clc://server/...)
     val(clc_destdir)
+    // string that specifies the clc workflow to call as required by the clc command line tools
     val(clc_workflow_name)
+    // unix path, where the network share is mounted, to copy the results from there
     val(nas_import_dir)
 
   output:
@@ -44,13 +56,17 @@ process clc_workflow_single {
     def n2 = file(dna_read2).name
     def n3 = file(rna_read1).name
     def n4 = file(rna_read2).name
+    //todo add checks for filen naming scheme, n1, ... n4, should have the same prefix
+    // this is used below as the a directory to group the outputs related to the sample
     def samplename = samplename_from_filename(n1)
 
-    def output_filename = "todo fix naming here"
+    // compose name of clc output files (this depends on the clc workflow settings)
+    def output_filename = "ngs_pipeline_Variants passing filters-${samplename}-DNA_1 (paired)_${samplename}-DNA_1 (paired).vcf
 
     vcf_path = "${nas_import_dir}/${samplename}/${output_filename}.vcf"
     csv_path = "${nas_import_dir}/${samplename}/${output_filename}.csv"
 
+    // clc requires to specify output folders, iirc doesnt allow setting filename with the cli tools
     """
     clcserver -S \$CLC_HOST -U \$CLC_USER -W \$CLC_PSW -A mkdir -t "${destdir}" -n "${samplename}"
     clcserver -S \$CLC_HOST -U \$CLC_USER -W \$CLC_PSW -A ${clc_workflow_name} \\
