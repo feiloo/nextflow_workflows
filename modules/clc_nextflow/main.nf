@@ -43,6 +43,7 @@ process clc_workflow_single {
     val(clc_workflow_name)
     // unix path, where the network share is mounted, to copy the results from there
     val(nas_import_dir)
+    val(nas_export_dir)
 
   output:
     stdout emit: output
@@ -61,10 +62,10 @@ process clc_workflow_single {
     def samplename = samplename_from_filename(n1)
 
     // compose name of clc output files (this depends on the clc workflow settings)
-    def output_filename = "${samplename}-DNA_1 (paired)_${samplename}-DNA_1 (paired)"
+    def output_filename = "${samplename}"
 
-    vcf_path = "${nas_import_dir}/${samplename}/${output_filename}.vcf"
-    csv_path = "${nas_import_dir}/${samplename}/${output_filename}.csv"
+    vcf_path = "${nas_export_dir}/${samplename}/${output_filename}.vcf"
+    csv_path = "${nas_export_dir}/${samplename}/${output_filename}.csv"
 
     // clc requires to specify output folders, iirc doesnt allow setting filename with the cli tools
     """
@@ -76,6 +77,10 @@ process clc_workflow_single {
         --rna-reads-import-algo-id ngs_import_illumina \\
         --rna-reads-select-files \"clc://serverfile/${clc_import_dir}/${n3}\"  \\
         --rna-reads-select-files \"clc://serverfile/${clc_import_dir}/${n4}\"  \\
+        --export-table-csv-csv-destination \"clc://serverfile/${clc_export_dir}/${samplename}\"  \\
+        --export-table-csv-custom-file-name "${samplename}.csv\"  \\
+        --export-vcf-vcf-destination \"clc://serverfile/${clc_export_dir}/${samplename}\"  \\
+        --export-vcf-custom-file-name "${samplename}.vcf\"  \\
         -d "${destdir}/${samplename}"
     """
 
@@ -252,7 +257,7 @@ workflow clc_nextflow {
     out = clc_workflow_single(staged_reads_w_export_dir, 
     	clc_import_dir, clc_export_dir,
     	clc_destdir, clc_workflow_name,
-	nas_import_dir)
+	nas_import_dir, nas_export_dir)
 
     fils = copyback(out.vcf_path.mix(out.csv_path))
 
