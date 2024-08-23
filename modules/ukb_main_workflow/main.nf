@@ -124,6 +124,7 @@ workflow {
 	pancancer_analyse(
 	  clc_out.vcf, clc_out.csv, args.vep_cache, args.fasta, 
 	  args.transcriptlist, args.variantlist, args.outdir
+	  args.pancancer_refgenome
 	  )
   }
   else if(args.workflow_variation == 'sarek'){
