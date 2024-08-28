@@ -2,6 +2,3 @@
 	path = modules/variantinterpretation
 	url = git@github.com:cio-abcd/variantinterpretation.git
 	branch = remove_nfcore
-[submodule "modules/nextpipe"]
-	path = modules/nextpipe
-	url = https://github.com/PatrickBasitta/nextpipe.git
