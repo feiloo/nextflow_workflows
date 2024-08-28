@@ -52,7 +52,7 @@ process clc_workflow_single {
 
     script:
 
-    def destdir = clc_destdir + " " + UUID.randomUUID().toString()
+    def destdir = clc_destdir
     def n1 = file(dna_read1).name
     def n2 = file(dna_read2).name
     def n3 = file(rna_read1).name

@@ -110,21 +110,20 @@ workflow {
   	arriba_nextflow(args)
   }
   else if(args.workflow_variation == 'clc'){
-  	//clc_nextflow(args)
+	def clc_destdir = args.clc_destdir + "/${args.workflow_id}/"
 
 	clc_out = clc_nextflow(args.samplesheet, 
 	  args.clc_import_dir, 
 	  args.clc_export_dir,
-	  args.clc_destdir,
+	  clc_destdir,
 	  args.clc_workflow_name,
 	  args.nas_import_dir,
 	  args.nas_export_dir
 	  )
 
 	pancancer_analyse(
-	  clc_out.vcf, clc_out.csv, args.vep_cache, args.fasta, 
+	  clc_out.vcf, clc_out.csv, args.vep_cache, args.vep_refgenome, 
 	  args.transcriptlist, args.variantlist, args.outdir
-	  args.pancancer_refgenome
 	  )
   }
   else if(args.workflow_variation == 'sarek'){
