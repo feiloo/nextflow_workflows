@@ -110,15 +110,14 @@ workflow {
   	arriba_nextflow(args)
   }
   else if(args.workflow_variation == 'clc'){
-	def clc_destdir = args.clc_destdir + "/${args.workflow_id}/"
-
 	clc_out = clc_nextflow(args.samplesheet, 
 	  args.clc_import_dir, 
 	  args.clc_export_dir,
-	  clc_destdir,
+	  args.clc_destdir,
 	  args.clc_workflow_name,
 	  args.nas_import_dir,
-	  args.nas_export_dir
+	  args.nas_export_dir,
+	  args.workflow_run_id
 	  )
 
 	pancancer_analyse(

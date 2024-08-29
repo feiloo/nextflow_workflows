@@ -44,6 +44,8 @@ process clc_workflow_single {
     // unix path, where the network share is mounted, to copy the results from there
     val(nas_import_dir)
     val(nas_export_dir)
+    // workflow run id
+    val(workflow_run_id)
 
   output:
     stdout emit: output
@@ -52,7 +54,8 @@ process clc_workflow_single {
 
     script:
 
-    def destdir = clc_destdir
+    def run_id_clc = workflow_run_id.replace(":","_")
+    def workflow_run_destdir = "${clc_destdir + '/' + run_id_clc}"
     def n1 = file(dna_read1).name
     def n2 = file(dna_read2).name
     def n3 = file(rna_read1).name
@@ -69,7 +72,8 @@ process clc_workflow_single {
 
     // clc requires to specify output folders, iirc doesnt allow setting filename with the cli tools
     """
-    clcserver -S \$CLC_HOST -U \$CLC_USER -W \$CLC_PSW -A mkdir -t "${destdir}" -n "${samplename}"
+    clcserver -S \$CLC_HOST -U \$CLC_USER -W \$CLC_PSW -A mkdir -t "${clc_destdir}" -n "${workflow_run_id}"
+    clcserver -S \$CLC_HOST -U \$CLC_USER -W \$CLC_PSW -A mkdir -t "${workflow_run_destdir}" -n "${samplename}"
     clcserver -S \$CLC_HOST -U \$CLC_USER -W \$CLC_PSW -A ${clc_workflow_name} \\
         --dna-reads-import-command ngs_import_illumina \\
         --dna-reads-select-files \"clc://serverfile/${clc_import_dir}/${n1}\"  \\
@@ -81,7 +85,7 @@ process clc_workflow_single {
         --export-table-csv-custom-file-name "${samplename}.csv\"  \\
         --export-vcf-vcf-destination \"clc://serverfile/${clc_export_dir}/${samplename}\"  \\
         --export-vcf-custom-file-name "${samplename}.vcf\"  \\
-        -d "${destdir}/${samplename}"
+        -d "${workflow_run_destdir}/${samplename}"
     """
 
     stub:
@@ -209,6 +213,7 @@ workflow clc_nextflow {
     clc_workflow_name
     nas_import_dir
     nas_export_dir
+    workflow_run_id
 
   main:
     samples = Channel.fromPath(samplesheet, checkIfExists: true, type: 'file').splitCsv(header: true)
@@ -257,7 +262,8 @@ workflow clc_nextflow {
     out = clc_workflow_single(staged_reads_w_export_dir, 
     	clc_import_dir, clc_export_dir,
     	clc_destdir, clc_workflow_name,
-	nas_import_dir, nas_export_dir)
+	nas_import_dir, nas_export_dir,
+	workflow_run_id)
 
     fils = copyback(out.vcf_path.mix(out.csv_path))
 
