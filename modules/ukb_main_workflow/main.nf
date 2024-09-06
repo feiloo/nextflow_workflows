@@ -1,7 +1,7 @@
 include { arriba_nextflow } from "$NEXTFLOW_MODULES/arriba_nextflow"
 include { clc_nextflow } from "$NEXTFLOW_MODULES/clc_nextflow"
 //include { CIOABCD_VARIANTINTERPRETATION } from "$NEXTFLOW_MODULES/variantinterpretation"
-include { VARIANTINTERPRETATION } from "$NEXTFLOW_MODULES/variantinterpretation/workflows/variantinterpretation"
+include { VARIANTINTERPRETATION_CORE } from "$NEXTFLOW_MODULES/variantinterpretation/workflows/variantinterpretation"
 include { sequence_alignment } from "$NEXTFLOW_MODULES/sequence_alignment"
 
 include { publish } from "$NEXTFLOW_MODULES/sequence_alignment/utils.nf"
@@ -155,7 +155,7 @@ workflow {
 	// fill in the assenbly as a string
 	vep_genome = channel.value('GRCh38')
 
-	VARIANTINTERPRETATION (
+	VARIANTINTERPRETATION_CORE (
 	    fixed_vcfs.map{ it -> [['id':it[0]], [it[1]]] },
 	    fasta, // fasta needs to be a channel
 	    ch_vep_cache,
