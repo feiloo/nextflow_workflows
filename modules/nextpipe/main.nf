@@ -1,8 +1,8 @@
 nextflow.enable.dsl=2
 
 process ensembl_vep {
-  cpus 10
-  memory 35.GB
+  //cpus 10
+  //memory 35.GB
 
   conda "bioconda::ensembl-vep=112.0"
  
@@ -31,7 +31,7 @@ process ensembl_vep {
   println "${fasta}"
   """ 
   vep -i ${vcf} -o ${vcf}.txt --tab --everything --species homo_sapiens --assembly GRCh38 \
-      --format vcf --force_overwrite --cache_version 112 --merged --cache --dir_cache "${vep_cache}" \
+      --format vcf --force_overwrite --cache_version 112 --refseq --cache --dir_cache "${vep_cache}" \
       --fasta "${fasta}" --offline  
   """
 }
