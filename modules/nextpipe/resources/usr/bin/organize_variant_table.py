@@ -279,12 +279,12 @@ pre_final_data["NM_merge"] = pre_final_data["NM_merge"].astype(str)
 
 print("--> Processing VEP_Ensembl data: successful!")
 
-# Merge CLC_PAN_data with VEP via columns "Chromosome", "Position", "NM_merge"
+# Merge CLC_PAN_data with VEP via columns "Chromosome", "Position", "End Position", "Allele", "NM_merge"
 # and add aditional columns from vep
 merged = pd.merge(pre_final_data, VEP_data[["Chromosome", "Position", "End Position", \
-                 "NM_merge", "HGVSc", "HGVSp", "SYMBOL", "EXON", "AF", "MAX_AF", \
+                 "Allele", "NM_merge", "HGVSc", "HGVSp", "SYMBOL", "EXON", "AF", "MAX_AF", \
                  "gnomADe_AF", "gnomADg_AF", "SIFT", "PolyPhen", "CLIN_SIG", "cosmic_ID"]], \
-                 on = ["Chromosome", "Position", "End Position", "NM_merge"], \
+                 on = ["Chromosome", "Position", "End Position", "Allele", "NM_merge"], \
                  how = "left")
 
 # Get HGVSp nomenclature RefSeq
