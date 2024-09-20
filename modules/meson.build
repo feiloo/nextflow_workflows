@@ -199,7 +199,7 @@ test('nextflow_workflow_clc',
 	timeout: 6000
 	)
 
-test('nextflow_workflow_clc_full',
+test('nextflow_workflow_clc_dna_only_full',
 	nextflow_bin,
 	is_parallel : false,
 	suite : ['nextflow', 'workflow', 'full'],
@@ -211,7 +211,27 @@ test('nextflow_workflow_clc_full',
 	meson.current_build_dir()+'/ukb_main_workflow/main.nf',
 	'-c', test_datadir/ 'test_main.config',
 	'--workflow_variation', 'clc',
-	'--samplesheet', test_datadir/'test_clc_samplesheet.csv',
+	'--samplesheet', test_datadir/'test_clc_dna_only_samplesheet.csv',
+	'-with-conda',
+	],
+	depends: [clc_nextflow, ukb_main_workflow, create_testdirs, copy_main_sources, copy_nextpipe_sources, sequence_alignment_nextflow, variantinterpretation],
+	timeout: 172800 # 2 days
+	)
+
+test('nextflow_workflow_clc_dna_rna_full',
+	nextflow_bin,
+	is_parallel : false,
+	suite : ['nextflow', 'workflow', 'full'],
+	env: ['NEXTFLOW_MODULES='+meson.current_build_dir(), 
+		'NAS_IMPORT_DIR='+meson.current_build_dir()/'nas_import', 
+		'NAS_EXPORT_DIR='+meson.current_build_dir()/'nas_export'],
+	args : [
+	'run',
+	meson.current_build_dir()+'/ukb_main_workflow/main.nf',
+	'-c', test_datadir/ 'test_main.config',
+	'--workflow_variation', 'clc',
+	'--samplesheet', test_datadir/'test_clc_dna_rna_samplesheet.csv',
+	'--has_rna true',
 	'-with-conda',
 	],
 	depends: [clc_nextflow, ukb_main_workflow, create_testdirs, copy_main_sources, copy_nextpipe_sources, sequence_alignment_nextflow, variantinterpretation],
