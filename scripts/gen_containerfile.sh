@@ -26,8 +26,15 @@ cp pipeline_container.containerfile $temp_dir/gen_containerfiles
 echo "RUN mkdir gen_containerfiles" >> $temp_dir/gen_containerfiles/pipeline_container.containerfile
 
 # generate containerfile instructions that copy and run the scripts within the container
-ls $temp_dir/gen_containerfiles/x* | xargs -i echo -e "COPY {} /root/gen_containerfiles \nRUN ./{}" >> $temp_dir/gen_containerfiles/pipeline_container.containerfile
+ls gen_containerfiles/x* | xargs -i echo -e "COPY {} /root/gen_containerfiles \nRUN ./{}" >> $temp_dir/gen_containerfiles/pipeline_container.containerfile
+
+pushd $temp_dir/
+mkdir -p $TMPDIR
+chmod ug+rx gen_containerfiles/*
 
 containerfile=gen_containerfiles/pipeline_container.containerfile
 tag="${containerfile%%.containerfile}"
+echo building from $temp_dir
 podman build --ulimit nofile=65535:65535 --tag="$tag" --file "$containerfile" .
+
+popd

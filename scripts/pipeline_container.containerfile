@@ -12,6 +12,5 @@ RUN zypper install -y libtool cmake which \
 
 RUN cd /usr/bin/ && ln -s /usr/bin/python3.11 /usr/bin/python
 
-COPY build_deps.sh /root/build_deps.sh
-
+#COPY build_deps.sh /root/build_deps.sh
 #RUN ./build_deps.sh
