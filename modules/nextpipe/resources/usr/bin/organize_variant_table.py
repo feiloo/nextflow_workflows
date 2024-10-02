@@ -53,65 +53,49 @@ columns_to_filter = ["Frequency", "QUAL", "Forward/reverse balance", \
                      "Read position test probability", \
                      "Read direction test probability"]
 
+def partition_dataframe(df, condition):
+    ''' returns dataframe rows that match and that dont match the condition '''
+    return df[condition], df[~condition]
+
 # Convert string number in float of columns_to_filter
 clc_data_ReferenceAllele_NO = vu.convert_coltype_str_to_float\
     (columns_to_filter, clc_data_ReferenceAllele_NO)
 
 # Filter data with QUAL >= 150
-clc_data_filtered = clc_data_ReferenceAllele_NO\
-[clc_data_ReferenceAllele_NO["QUAL"] >= 150]
-
-# discarded variants 1 (keep discarded data)
-clc_data_discarded_1 = clc_data_ReferenceAllele_NO\
-[clc_data_ReferenceAllele_NO["QUAL"] < 150]
+clc_data_filtered, clc_data_discarded_1 = partition_dataframe(
+        clc_data_ReferenceAllele_NO,
+        clc_data_ReferenceAllele_NO["QUAL"] >= 150)
 
 # Filter data with Av quality >= 35
-clc_data_filtered_aq = clc_data_filtered\
-[clc_data_filtered["Average quality"] >= 35]
-
-# discarded variants 2 (keep discared data)
-clc_data_discarded_2 = clc_data_filtered\
-[clc_data_filtered["Average quality"] < 25]
+clc_data_filtered_aq, clc_data_discarded_2 = partition_dataframe(
+    clc_data_filtered,
+    clc_data_filtered["Average quality"] >= 35)
 
 # Filter data with count >= 2
-clc_data_filtered_c = clc_data_filtered_aq\
-[clc_data_filtered_aq["Count"] >= 2]
+clc_data_filtered_c, clc_data_discarded_3 = partition_dataframe(
+    clc_data_filtered_aq,
+    clc_data_filtered_aq["Count"] >= 2)
 
-# discarded variants 3 (keep discared data)
-clc_data_discarded_3 = clc_data_filtered_aq\
-[clc_data_filtered_aq["Count"] < 2]
 
 # Filter data with Frequency >= 5
-clc_data_filtered_frq = clc_data_filtered_c\
-[clc_data_filtered_c["Frequency"] >= 5]
-
-# discarded variants 4 (keep discared data)
-clc_data_discarded_4 = clc_data_filtered_c\
-[clc_data_filtered_c["Frequency"] < 5]
+clc_data_filtered_frq, clc_data_discarded_4 = partition_dataframe(
+    clc_data_filtered_c,
+    clc_data_filtered_c["Frequency"] >= 5)
 
 # Filter data with Forward/reverse balance > 0
-clc_data_filtered_frb = clc_data_filtered_frq\
-[clc_data_filtered_frq["Forward/reverse balance"] > 0]
-
-# discarded variants 5 (keep discared data)
-clc_data_discarded_5 = clc_data_filtered_frq\
-[clc_data_filtered_frq["Forward/reverse balance"] <= 0]
+clc_data_filtered_frb, clc_data_discarded_5 = partition_dataframe(
+    clc_data_filtered_frq,
+    clc_data_filtered_frq["Forward/reverse balance"] > 0)
 
 # Filter data with Read position test probability >= 0.000001
-clc_data_filtered_rptp = clc_data_filtered_frb\
-[clc_data_filtered_frb["Read position test probability"] >= 0.000001]
-
-# discarded variants 6 (keep discared data)
-clc_data_discarded_6 = clc_data_filtered_frb\
-[clc_data_filtered_frb["Read position test probability"] < 0.000001]
+clc_data_filtered_rptp, clc_data_discarded_6 = partition_dataframe(
+    clc_data_filtered_frb,
+    clc_data_filtered_frb["Read position test probability"] >= 0.000001)
 
 # Filter data with Read direction test probability >= 0.000001
-clc_data_filtered = clc_data_filtered_rptp\
-[clc_data_filtered_rptp["Read direction test probability"] >= 0.000001]
-
-# discarded variants 6 (keep discared data)
-clc_data_discarded_7 = clc_data_filtered_rptp\
-[clc_data_filtered_rptp["Read direction test probability"] < 0.000001]
+clc_data_filtered, clc_data_discarded_7 = partition_dataframe(
+    clc_data_filtered_rptp,
+    clc_data_filtered_rptp["Read direction test probability"] >= 0.000001)
 
 # filter non-synonymous???
 
