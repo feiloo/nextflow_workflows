@@ -1,5 +1,7 @@
 set -euo pipefail
 
+# this script serves as a template to generate the dockerfile
+
 # install libbz2-devel gsl-devel nasm yasm
 
 mkdir -p deps
