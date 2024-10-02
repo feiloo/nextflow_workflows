@@ -57,54 +57,66 @@ def partition_dataframe(df, condition):
     ''' returns dataframe rows that match and that dont match the condition '''
     return df[condition], df[~condition]
 
+
 # Convert string number in float of columns_to_filter
 clc_data_ReferenceAllele_NO = vu.convert_coltype_str_to_float\
     (columns_to_filter, clc_data_ReferenceAllele_NO)
 
+# collect filtered out variant rows 
+discarded_clc_data = []
+
 # Filter data with QUAL >= 150
-clc_data_filtered, clc_data_discarded_1 = partition_dataframe(
+clc_data_filtered, discarded_filter_data = partition_dataframe(
         clc_data_ReferenceAllele_NO,
         clc_data_ReferenceAllele_NO["QUAL"] >= 150)
 
+discarded_clc_data.append(discarded_filter_data)
+
 # Filter data with Av quality >= 35
-clc_data_filtered_aq, clc_data_discarded_2 = partition_dataframe(
+clc_data_filtered_aq, discarded_filter_data = partition_dataframe(
     clc_data_filtered,
     clc_data_filtered["Average quality"] >= 35)
 
+discarded_clc_data.append(discarded_filter_data)
+
 # Filter data with count >= 2
-clc_data_filtered_c, clc_data_discarded_3 = partition_dataframe(
+clc_data_filtered_c, discarded_filter_data = partition_dataframe(
     clc_data_filtered_aq,
     clc_data_filtered_aq["Count"] >= 2)
 
+discarded_clc_data.append(discarded_filter_data)
 
 # Filter data with Frequency >= 5
-clc_data_filtered_frq, clc_data_discarded_4 = partition_dataframe(
+clc_data_filtered_frq, discarded_filter_data = partition_dataframe(
     clc_data_filtered_c,
     clc_data_filtered_c["Frequency"] >= 5)
 
+discarded_clc_data.append(discarded_filter_data)
+
 # Filter data with Forward/reverse balance > 0
-clc_data_filtered_frb, clc_data_discarded_5 = partition_dataframe(
+clc_data_filtered_frb, discarded_filter_data = partition_dataframe(
     clc_data_filtered_frq,
     clc_data_filtered_frq["Forward/reverse balance"] > 0)
 
+discarded_clc_data.append(discarded_filter_data)
+
 # Filter data with Read position test probability >= 0.000001
-clc_data_filtered_rptp, clc_data_discarded_6 = partition_dataframe(
+clc_data_filtered_rptp, discarded_filter_data = partition_dataframe(
     clc_data_filtered_frb,
     clc_data_filtered_frb["Read position test probability"] >= 0.000001)
 
+discarded_clc_data.append(discarded_filter_data)
+
 # Filter data with Read direction test probability >= 0.000001
-clc_data_filtered, clc_data_discarded_7 = partition_dataframe(
+clc_data_filtered, discarded_filter_data = partition_dataframe(
     clc_data_filtered_rptp,
     clc_data_filtered_rptp["Read direction test probability"] >= 0.000001)
+
+discarded_clc_data.append(discarded_filter_data)
 
 # filter non-synonymous???
 
 # Generate xlsx file of removed_variants
-discarded_clc_data = [clc_data_discarded_1, clc_data_discarded_2, \
-                      clc_data_discarded_3, clc_data_discarded_4, \
-                      clc_data_discarded_5, clc_data_discarded_6, \
-                      clc_data_discarded_7]
-
 # concatenate discarded/removed clc_data variants
 removed_variants = pd.concat(discarded_clc_data)
 
