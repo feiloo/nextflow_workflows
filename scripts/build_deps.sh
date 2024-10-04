@@ -85,10 +85,12 @@ git clone https://github.com/ebiggers/libdeflate.git
 cd libdeflate
 cmake -B build
 cmake --build build
-cmake --install build
+#cmake --install build
 cd ..
 
 ###buildstep
 # fastp
 git clone https://github.com/OpenGene/fastp.git
 cd fastp
+LIBRARY_DIRS="../libdeflate/build ../isa-l/.libs" make -j
+cd ..
