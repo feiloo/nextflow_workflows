@@ -2,9 +2,7 @@ set -euo pipefail
 
 cd
 cd gatk
-cp $(pwd)/build/libs/* /usr/local/lib
-export GATK_LOCAL_JAR=/usr/local/lib/gatk.jar
-echo "export GATK_LOCAL_JAR=/usr/local/lib/gatk.jar" >> /etc/bash.bashrc.local
+cp $(pwd)/build/libs/* /usr/local/bin
 cp gatk /usr/local/bin
 cd ..
 
@@ -34,7 +32,7 @@ cd ..
 
 cd fastp
 #export LD_LIBRARY_PATH=$LD_LIBRARY_PATH
-#echo "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH" >> /etc/bash.bashrc.local
+echo 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH' >> /etc/bash.bashrc.local
 make install
 cd ..
 

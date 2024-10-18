@@ -8,7 +8,8 @@ RUN zypper install -y libtool cmake which \
         java-17-openjdk \
 	java-17-openjdk-headless \
 	git-lfs \
-	python311
+	python311 \
+	gnu_parallel
 
 RUN cd /usr/bin/ && ln -s /usr/bin/python3.11 /usr/bin/python
 
