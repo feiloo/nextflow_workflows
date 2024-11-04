@@ -1,6 +1,6 @@
 include { arriba_nextflow } from "$NEXTFLOW_MODULES/arriba_nextflow"
 include { clc_nextflow } from "$NEXTFLOW_MODULES/clc_nextflow"
-include { CIOABCD_VARIANTINTERPRETATION } from "$NEXTFLOW_MODULES/variantinterpretation"
+include { VARIANTINTERPRETATION } from "$NEXTFLOW_MODULES/variantinterpretation/workflows/variantinterpretation.nf"
 include { sequence_alignment } from "$NEXTFLOW_MODULES/sequence_alignment"
 
 include { publish } from "$NEXTFLOW_MODULES/sequence_alignment/utils.nf"
@@ -129,12 +129,36 @@ workflow {
     	csv_channel = Channel.fromPath(samplesheet, checkIfExists: true, type: 'file').splitCsv(header: header, skip: 1)
 	chr_fixed_vcf = rename_chromosomes_vcf(csv_channel).vcf
 	fixed_vcfs = rename_clcad_to_ad(chr_fixed_vcf).vcf
-	new_rows = Channel.of("sample,vcf").concat((fixed_vcfs.map{it -> "${it[0]},${it[1]}"})).collect()
+	//new_rows = Channel.of("sample,vcf").concat((fixed_vcfs.map{it -> "${it[0]},${it[1]}"})).collect()
+
 	//.collectFile(name: "fixed_samplesheet.csv", newLine: true)
-	new_samplesheet = write_samplesheet(new_rows).samplesheet
+
+	//new_samplesheet = write_samplesheet(new_rows).samplesheet
+
 	fasta = rename_chromosomes_refgenome(args.refgenome)
 
-  	CIOABCD_VARIANTINTERPRETATION(args, new_samplesheet, fasta)
+	extra_files = []
+	annotation_colinfo = Channel.fromPath("$NEXTFLOW_MODULES/variantinterpretation/assets/annotation_colinfo.tsv")
+	datavzrd_config = Channel.fromPath("$NEXTFLOW_MODULES/variantinterpretation/assets/datavzrd_config_template.yaml")
+
+	new_csv_channel = fixed_vcfs.map { it -> [[id:it[0]], it[1]] }
+
+  	VARIANTINTERPRETATION(
+	  new_csv_channel, //new_samplesheet,
+	  fasta,
+	  args.vep_cache,
+	  args.vep_cache_version,
+	  args.vep_genome,
+	  args.vep_species,
+	  extra_files,
+	  args.annotation_fields,
+	  args.transcriptlist,
+	  datavzrd_config,
+	  annotation_colinfo,
+	  args.bedfile,
+	  args.custom_filters,
+	  )
+	
   }
   else if (args.workflow_variation == 'align_interpret'){
 	output = sequence_alignment(args)
@@ -149,7 +173,7 @@ workflow {
 	new_samplesheet = write_samplesheet(new_rows).samplesheet
 	fasta = rename_chromosomes_refgenome(args.refgenome)
 
-  	CIOABCD_VARIANTINTERPRETATION(args, new_samplesheet, fasta)
+  	VARIANTINTERPRETATION(args, new_samplesheet, fasta)
 
 	publish(pub, args.output_dir)
   }
