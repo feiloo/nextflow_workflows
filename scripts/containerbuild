@@ -1,6 +1,0 @@
-#!/bin/bash
-
-containerfile="$1"
-tag="${containerfile%%.containerfile}"
-podman build --tag="$tag" --file "$containerfile" .
-

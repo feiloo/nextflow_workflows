@@ -6,6 +6,7 @@ RUN zypper install -y git gcc autoconf automake libbz2-devel gsl-devel nasm yasm
 
 RUN zypper install -y libtool cmake which \
         java-17-openjdk \
+        java-17-openjdk-devel \
 	java-17-openjdk-headless \
 	git-lfs \
 	python311 \
