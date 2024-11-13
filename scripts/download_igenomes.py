@@ -1,3 +1,4 @@
+import argparse
 import boto3
 import botocore
 from pathlib import Path
@@ -36,25 +37,18 @@ igenomes/Homo_sapiens/GATK/GRCh38/Annotation/GATKBundle/1000g_pon.hg38.vcf.gz.tb
 
 
 bucket_name = 'ngi-igenomes' # replace with your bucket name
-obj_name = 'igenomes/Homo_sapiens/GATK/GRCh38/Annotation/ASCAT/G1000_alleles_hg38.zip'
-
-# obj_name = 'igenomes_base/Homo_sapiens/GATK/GRCh38/Annotation/GATKBundle/{Mills_and_1000G_gold_standard.indels.hg38,beta/Homo_sapiens_assembly38.known_indels}.vcf.gz.tbi'
-
-print(obj_name)
-# replace with your object key
-
 region = 'eu-west-1'
 s3 = boto3.client('s3', region_name=region, config=Config(signature_version=UNSIGNED))
 
-def download_file(obj_name):
-    localf = obj_name.lstrip('igenomes/')
+def download_file(obj_name, output_dir):
+    localf = str(Path(output_dir) / obj_name.lstrip('igenomes/'))
     outdir = Path(localf).absolute().parent
     outdir.mkdir(exist_ok=True,parents=True)
     if Path(localf).exists():
         return
     s3.download_file(bucket_name, obj_name, localf)
 
-def download_recursive(obj_name):
+def download_recursive(obj_name, output_dir):
     if obj_name.endswith('/'):
         print(f'recursing {obj_name}')
         obs = s3.list_objects(Bucket=bucket_name, Prefix=obj_name)
@@ -62,14 +56,28 @@ def download_recursive(obj_name):
         ks = [x['Key'] for x in obs['Contents']]
         print(f'got ks: {ks}')
         for o in ks:
-            download_recursive(o)
+            download_recursive(o, output_dir)
 
     else:
-        download_file(obj_name)
+        download_file(obj_name, output_dir)
 
-filel = files.strip().split('\n')
-print(filel)
 
-for f in filel:
-    print(f)
-    download_recursive(f)
+
+def cli(output_dir):
+    print(f"Beginning downloading igenomes to output directory: {output_dir}")
+
+    filel = files.strip().split('\n')
+    print(f"Downloading files: {filel}")
+
+    for f in filel:
+        print(f)
+        download_recursive(f, output_dir)
+
+def main():
+    parser = argparse.ArgumentParser(description="A simple CLI example")
+    parser.add_argument("output_dir", help="The directory where output will be saved")
+    args = parser.parse_args()
+    cli(args.output_dir)
+
+if __name__ == "__main__":
+    main()
