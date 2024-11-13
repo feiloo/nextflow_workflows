@@ -68,7 +68,7 @@ set -euo pipefail
 # assumes we already have htslib
 git clone --recursive https://github.com/samtools/bcftools.git
 cd bcftools
-autoheader && autoconf && ./configure --enable-libgsl --enable-perl-filters
+autoheader && autoconf && ./configure --enable-libgsl
 make -j
 
 cd ..
