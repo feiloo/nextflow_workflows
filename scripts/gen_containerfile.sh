@@ -1,11 +1,21 @@
 #!/bin/bash
 set -euo pipefail
 
+repodir=$(pwd)/..
+
 # generate the sub-scripts that make up the steps of the containerfile and build the container
 # this allows for layered caching of the container build, which helps because the build is slow
 
 temp_dir=$(mktemp -d ${TMPDIR:-/tmp}/nextflow_generated_scripts.XXXXXX)
 echo $temp_dir
+
+# temp_dir_abs=${"$(pwd)/$temp_dir":-/tmp}
+
+if [ -n "$TMPDIR" ]; then
+	temp_dir_abs=$(pwd)/$temp_dir
+else
+	temp_dir_abs="/tmp"
+fi
 
 cp build_deps.sh $temp_dir
 cp install_deps.sh $temp_dir
@@ -30,8 +40,6 @@ echo -e "RUN chmod u+x install_deps.sh && ./install_deps.sh /root/\n" >> pipelin
 
 echo -e "RUN chmod u+x install_deps.sh && ./install_deps.sh /root/\n" >> pipeline_task.containerfile
 
-pushd $temp_dir
-
 container_version="0.0.1"
 
 # build the pipeline task container
@@ -47,7 +55,7 @@ sed -i "1s/.*/FROM pipeline_task:${container_version}/" pipeline.containerfile
 # build the full pipeline container
 containerfile=pipeline.containerfile
 tag="${containerfile%%.containerfile}:${container_version}"
-echo "$containerfile" container building from $temp_dir
-podman build --ulimit nofile=65535:65535 --tag="$tag" --file "$containerfile" .
+echo "$containerfile" container building from "$repodir"
+TMPDIR=$temp_dir_abs podman build --ulimit nofile=65535:65535 --tag="$tag" --file "$containerfile" "$repodir"
 
 popd
