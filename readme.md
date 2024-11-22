@@ -1,26 +1,66 @@
 # Nextflow modules for NGS
 
-this is vey much a work in progress!
-
-this repo contains nextflow modules which can be and are composed into NGS analysis pipelines.
+this repo contains multiple nextflow workflows for somatic NGS analysis.
 
 we focus on modularity and simplicity.
 
 the implementation is inspired by various nf-core modules and the nf-core/sarek pipeline.
 
+## Setup
 
-### NEXTFLOW_MODULES environment variable
+there are multiple ways of running the workflow. for now we recommend running on a single host with conda.
 
-the modules in this repo can include eachother and be included from the directory in the environment variable `NEXTFLOW_MODULES`
+Dependencies:
 
-modules should be installed into a sensible linux filesystem standard directory.
+* nextflow
+* conda
 
-therefore we recommend using:
 ```
-export NEXTFLOW_MODULES=/usr/local/lib/nextflow
+git clone --recursive https://github.com/feiloo/nextflow_workflows.git
 ```
 
-if you want to create a portable/static workflow, you can simply copy all required modules into a single directory and set the variable.
+#### Required environment variables
+
+the following environment variables and directories are required:
+
+```
+export NEXTFLOW_MODULES='path_to_this_repo/modules'
+export NGS_REFERENCE_DIR='path_to_reference_data'
+export NEXTFLOW_CALLDIR='unique_path_for_nextflow_invocation'
+export NEXTFLOW_WORKDIR_CUSTOM='path_to_workdir'
+export NEXTFLOW_OUTPUTDIR_CUSTOM="path_to_outputdir"
+export NEXTFLOW_STOREDIR="path_to_workflow_cache_dir"
+```
+
+#### Required reference data
+
+some required reference data can be downloaded with:
+
+```
+python scripts/download_igenomes.py
+```
+
+other reference data has to be downloaded manualy for now, this includes:
+
+* vep_cache
+* todo
+
+#### configuration
+
+some configuration is needed, see modules/ukb_main_workflow/test_main.config for an example
+
+## usage
+
+the pipeline has multiple variations, the main variation is "align_interpret"
+
+```
+nextflow run $NEXTFLOW_MODULES/ukb_main_workflow/main.nf \
+    -c path_to_your_config.config \
+    -profile standard \
+    --workflow_variation align_interpret \
+    --samplesheet test_sequence_alignment_samplesheet.csv
+```
+
 
 ## development
 
@@ -52,18 +92,40 @@ meson compile
 
 #### run tests with meson
 
-create a test_main.config and a samplesheet for each workflow_variation (e.q. test_clc_samplesheet.csv).
+test setup: todo
 
 now configure the tests with them:
+
 ```
 cd /path_to_builddir
-meson configure -Dtest_samplesheets=/path_to_test_samplesheet_dir -Dtest_configs=/path_to_test_configs_dir
+meson configure -Dtest_datadir=/path_to_test_samplesheet_dir
 ```
 
 run tests
+
 ```
 meson test
 ```
+
+#### install tools natively
+
+instead of conda or containers, the required tools within the pipeline can be installed locally, see:
+
+```
+scripts/build_deps.sh
+scripts/install_deps.sh
+```
+
+#### use merged container
+
+another way is to use a single container for all processes or for the whole pipeline, see:
+
+```
+scripts/gen_container.sh
+```
+
+
+## Other notes and hints
 
 ### useful nextflow environment variables:
 
