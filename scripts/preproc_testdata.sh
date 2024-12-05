@@ -25,5 +25,6 @@ mv $TESTDATA_DIR/tmpdir/SRR7890824_2.fastq $TESTDATA_DIR/tmpdir/SRR7890824-24_T_
 mv $TESTDATA_DIR/tmpdir/SRR7890827_1.fastq $TESTDATA_DIR/tmpdir/SRR7890824-24_N_1.fastq
 mv $TESTDATA_DIR/tmpdir/SRR7890827_2.fastq $TESTDATA_DIR/tmpdir/SRR7890824-24_N_2.fastq
 
+# generate samplesheet
 echo "sample_id,normal_read1,normal_read2,tumor_read1,tumor_read2
 SRR7890824-24,$TESTDATA_DIR/tmpdir/SRR7890824-24_N_1.fastq,$TESTDATA_DIR/tmpdir/SRR7890824-24_N_2.fastq,$TESTDATA_DIR/tmpdir/SRR7890824-24_T_1.fastq,$TESTDATA_DIR/tmpdir/SRR7890824-24_T_2.fastq" > $TESTDATA_DIR/test_sequence_alignment_samplesheet.csv

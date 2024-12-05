@@ -2,9 +2,13 @@ import argparse
 import boto3
 import botocore
 from pathlib import Path
+import tarfile
 
 from botocore import UNSIGNED
 from botocore.client import Config
+
+
+import urllib.request
 
 files = '''
 igenomes/Homo_sapiens/GATK/GRCh38/Annotation/ASCAT/G1000_alleles_hg38.zip
@@ -36,6 +40,13 @@ igenomes/Homo_sapiens/GATK/GRCh38/Annotation/GATKBundle/1000g_pon.hg38.vcf.gz.tb
 '''
 
 
+sra_testdata = [
+	"https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR7890824/SRR7890824",
+	"https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR7890827/SRR7890827"
+    ]
+
+vep_cache = 'https://ftp.ensembl.org/pub/release-113/variation/indexed_vep_cache/homo_sapiens_vep_113_GRCh38.tar.gz'
+
 bucket_name = 'ngi-igenomes' # replace with your bucket name
 region = 'eu-west-1'
 s3 = boto3.client('s3', region_name=region, config=Config(signature_version=UNSIGNED))
@@ -47,6 +58,7 @@ def download_file(obj_name, output_dir):
     if Path(localf).exists():
         return
     s3.download_file(bucket_name, obj_name, localf)
+
 
 def download_recursive(obj_name, output_dir):
     if obj_name.endswith('/'):
@@ -63,7 +75,7 @@ def download_recursive(obj_name, output_dir):
 
 
 
-def cli(output_dir):
+def download_igenomes(output_dir):
     print(f"Beginning downloading igenomes to output directory: {output_dir}")
 
     filel = files.strip().split('\n')
@@ -73,8 +85,38 @@ def cli(output_dir):
         print(f)
         download_recursive(f, output_dir)
 
+
+def download_testdata_sra(output_dir):
+    for srafile in sra_testdata:
+        srafile_name = srafile.split('/')[-1]
+        urllib.request.urlretrieve(srafile, str(output_dir) + '/testdata/' + srafile_name + '.sra')
+
+
+def untar_file(tar_file, directory):
+    with tarfile.open(tar_file, 'r') as f:
+                f.extractall(directory)
+
+def download_vep_cache(output_dir):
+    outpath = (Path(output_dir) / 'vep_caches' / 'indexed')
+    outpath.mkdir()
+    cachename = vep_cache.split('/')[-1]
+    outfile = str(outpath / cachename)
+    urllib.request.urlretrieve(vep_cache, outfile)
+
+
+def cli(output_dir, dataset):
+    if dataset == 'reference':
+        download_igenomes(output_dir)
+        download_vep_cache(output_dir)
+    elif dataset == 'test':
+        download_testdata_sra(output_dir)
+    else:
+        raise RuntimeError('invalid dataset')
+
+    
 def main():
-    parser = argparse.ArgumentParser(description="A simple CLI example")
+    parser = argparse.ArgumentParser(description="helper tool to download the pipelines reference or test or example")
+    parser.add_argument('dataset', choices=['reference', 'test', 'example'], help="which data to download")
     parser.add_argument("output_dir", help="The directory where output will be saved")
     args = parser.parse_args()
     cli(args.output_dir)
