@@ -94,6 +94,20 @@ process write_samplesheet {
     """
 }
 
+process untar_file {
+    input:
+    path(filen)
+
+    output:
+    path(untared_cache)
+
+    script:
+    """
+    mkdir untared_cache
+    tar -xzf ${filen} --directory untared_cache
+    """
+}
+
 
 workflow {
   //def args = params
@@ -143,10 +157,12 @@ workflow {
 
 	new_csv_channel = fixed_vcfs.map { it -> [[id:it[0]], it[1]] }
 
+	untared_vep = untar_file(args.vep_cache)
+
   	VARIANTINTERPRETATION(
 	  new_csv_channel, //new_samplesheet,
 	  fasta,
-	  args.vep_cache,
+	  untared_vep,
 	  args.vep_cache_version,
 	  args.vep_genome,
 	  args.vep_species,
@@ -179,11 +195,12 @@ workflow {
 
 	new_csv_channel = fixed_vcfs.map { it -> [[id:it[0]], it[1]] }
 
+	untared_vep = untar_file(args.vep_cache)
 
   	VARIANTINTERPRETATION(
 	  new_csv_channel, //new_samplesheet,
 	  fasta,
-	  args.vep_cache,
+	  untared_vep,
 	  args.vep_cache_version,
 	  args.vep_genome,
 	  args.vep_species,

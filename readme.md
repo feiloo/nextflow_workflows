@@ -8,7 +8,10 @@ the implementation is inspired by various nf-core modules and the nf-core/sarek 
 
 ## Setup
 
-there are multiple ways of running the workflow. for now we recommend running on a single host with conda.
+there are multiple ways of running the workflow. 
+the simplest way is to run (portable) from a single folder, but WARNING this pipeline requires a few terabytes of free storage.
+
+for now we recommend running on a single host with conda.
 
 Dependencies:
 
@@ -19,47 +22,48 @@ Dependencies:
 git clone --recursive https://github.com/feiloo/nextflow_workflows.git
 ```
 
-#### Required environment variables
-
-the following environment variables and directories are required:
+#### Set required environment variables
 
 ```
-export NEXTFLOW_MODULES='path_to_this_repo/modules'
-export NGS_REFERENCE_DIR='path_to_reference_data'
-export NEXTFLOW_CALLDIR='unique_path_for_nextflow_invocation'
-export NEXTFLOW_WORKDIR_CUSTOM='path_to_workdir'
-export NEXTFLOW_OUTPUTDIR_CUSTOM="path_to_outputdir"
-export NEXTFLOW_STOREDIR="path_to_workflow_cache_dir"
+mkdir reference nextflow_calldir nextflow_workdir nextflow_outputdir cache
+export NEXTFLOW_MODULES="$(pwd)/nextflow_workflows/modules"
+export NGS_REFERENCE_DIR="$(pwd)/reference"
+export NEXTFLOW_CALLDIR="$(pwd)/nextflow_calldir"
+export NEXTFLOW_WORKDIR_CUSTOM="$(pwd)/nextflow_workdir'
+export NEXTFLOW_OUTPUTDIR_CUSTOM="$(pwd)/nextflow_outputdir"
+export NEXTFLOW_STOREDIR="$(pwd)/cache"
 ```
 
-#### Required reference data
-
-some required reference data can be downloaded with:
+#### Download required reference data
 
 ```
-python scripts/download_igenomes.py
+# requires boto3
+python scripts/download_data.py reference $NGS_REFERENCE_DIR
 ```
-
-other reference data has to be downloaded manualy for now, this includes:
-
-* vep_cache
-* todo
-
-#### configuration
-
-some configuration is needed, see modules/ukb_main_workflow/test_main.config for an example
 
 ## usage
 
 the pipeline has multiple variations, the main variation is "align_interpret"
 
+it requires a samplesheet.csv like this:
+
+```
+sample_id,normal_read1,normal_read2,tumor_read1,tumor_read2
+SAMPLENAME-24,/data/testdata/SAMPLENAME-24_N_1.fq.gz,/data/testdata/SAMPLENAME-24_N_2.fq.gz,/data/testdata/SAMPLENAME-24_T_1.fq.gz,/data/testdata/SAMPLENAME-24_T_2.fq.gz
+```
+
+now start the pipeline.
+
 ```
 nextflow run $NEXTFLOW_MODULES/ukb_main_workflow/main.nf \
-    -c path_to_your_config.config \
     -profile standard \
     --workflow_variation align_interpret \
     --samplesheet test_sequence_alignment_samplesheet.csv
 ```
+
+## configuration
+
+see the environment variables and nextflow-configs like modules/ukb_main_workflow/user.config
 
 
 ## development
@@ -68,6 +72,10 @@ for development, you can set the NEXTFLOW_MODULES variable to this repos modules
 ```
 export NEXTFLOW_MODULES="$(pwd)/modules"
 ```
+
+development dependencies:
+
+* meson
 
 ### building
 

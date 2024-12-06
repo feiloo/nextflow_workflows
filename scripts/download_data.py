@@ -45,7 +45,10 @@ sra_testdata = [
 	"https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR7890827/SRR7890827"
     ]
 
-vep_cache = 'https://ftp.ensembl.org/pub/release-113/variation/indexed_vep_cache/homo_sapiens_vep_113_GRCh38.tar.gz'
+vep_cache_version = '113'
+
+#vep_cache = 'https://ftp.ensembl.org/pub/release-113/variation/indexed_vep_cache/homo_sapiens_vep_113_GRCh38.tar.gz'
+vep_cache = 'https://ftp.ensembl.org/pub/release-{vep_cache_version}/variation/indexed_vep_cache/homo_sapiens_vep_{vep_cache_version}_GRCh38.tar.gz'
 
 bucket_name = 'ngi-igenomes' # replace with your bucket name
 region = 'eu-west-1'
@@ -63,6 +66,7 @@ def download_file(obj_name, output_dir):
 def download_recursive(obj_name, output_dir):
     if obj_name.endswith('/'):
         print(f'recursing {obj_name}')
+        # note, list_objects only shows the first 1000
         obs = s3.list_objects(Bucket=bucket_name, Prefix=obj_name)
         print(f'got obs: {obs}')
         ks = [x['Key'] for x in obs['Contents']]
@@ -94,11 +98,11 @@ def download_testdata_sra(output_dir):
 
 def untar_file(tar_file, directory):
     with tarfile.open(tar_file, 'r') as f:
-                f.extractall(directory)
+        f.extractall(directory)
 
 def download_vep_cache(output_dir):
-    outpath = (Path(output_dir) / 'vep_caches' / 'indexed')
-    outpath.mkdir()
+    outpath = (Path(output_dir) / 'vep_cache' / vep_cache_version / 'indexed')
+    outpath.mkdir(parents=True, exist_ok=True)
     cachename = vep_cache.split('/')[-1]
     outfile = str(outpath / cachename)
     urllib.request.urlretrieve(vep_cache, outfile)
