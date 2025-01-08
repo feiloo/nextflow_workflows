@@ -3,7 +3,7 @@ install_subdir('../ukb_main_workflow',
 	exclude_files:['meson.build'], 
 	install_tag : 'nextflow')
 
-nextflow_files = ['main.nf','nextflow.config']
+nextflow_files = ['main.nf','nextflow.config','user.config']
 ukb_main_workflow = custom_target('ukb_main_workflow',
 	input : nextflow_files,
 	output : '.',
