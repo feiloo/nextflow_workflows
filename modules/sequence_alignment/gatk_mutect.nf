@@ -156,6 +156,8 @@ process gatk_getsamplename {
     conda "bioconda::gatk4=4.4.0.0"
     container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
 
+    cpus 1
+
     input:
         path(sample_bam)
 
@@ -294,6 +296,7 @@ process create_pon_db {
     conda "bioconda::gatk4=4.4.0.0"
     container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
 
+    cpus 1
 
     input:
     	path(pon_vcfs)
