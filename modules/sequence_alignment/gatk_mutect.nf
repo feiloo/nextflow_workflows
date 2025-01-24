@@ -275,9 +275,12 @@ process gatk_filter_calls {
 	path(refgenome_dict)
 
     output:
-      path("${sample_vcf.getSimpleName()}_filtered.vcf"), emit: vcf
+      path("${outputfile}"), emit: vcf
 
     script:
+
+    outputfile = "${sample_vcf.getSimpleName().substring(0, sample_vcf.getSimpleName().length() - 11)}.vcf"
+
     """
     mkdir -p tmp
 
@@ -287,7 +290,7 @@ process gatk_filter_calls {
 	--ob-priors ${orientation_model} \\
 	--contamination-table ${contamination_table} \\
 	--tumor-segmentation ${tumor_segments} \\
-	--output "${sample_vcf.getSimpleName()}_filtered.vcf" \\
+	--output "${outputfile}" \\
 	-R "${refgenome}"
     """
 }
