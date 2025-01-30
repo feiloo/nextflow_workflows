@@ -1,11 +1,15 @@
 nextflow_bin = find_program('nextflow')
 nextflow_libdir = '/usr/local/lib/nextflow'
 test_datadir = get_option('test_datadir')
+enable_proprietary = get_option('enable_proprietary')
 
 subdir('arriba_nextflow')
-subdir('clc_nextflow')
+
+if enable_proprietary
+  subdir('clc_nextflow')
+endif
+
 subdir('sequence_alignment')
-subdir('ukb_main_workflow')
 
 sources = ['ukb_main_workflow'/'test_main.config']
 testdata = []
@@ -17,14 +21,15 @@ copy_sources = custom_target('copy_sources',
 	install : false
 	)
 
+# just builds/copies the variantinterpretation, since it doesnt have meson
 variantinterpretation = custom_target('variantinterpretation',
 	input : 'variantinterpretation/main.nf',
 	output : 'variantinterpretation',
 	command : ['cp', '-r', '@CURRENT_SOURCE_DIR@/variantinterpretation', '@OUTPUT@/'],
-	depends: [copy_sources, arriba_nextflow, clc_nextflow]
 	)
 
-
+# need to include here, so that variantinterpretation is defined
+subdir('ukb_main_workflow')
 
 test('nextflow_workflow_variantinterpretation',
 	nextflow_bin,
@@ -140,30 +145,32 @@ test('nextflow_workflow_sequence_align_interpret',
 	)
 
 
-create_testdirs = custom_target('create_testdirs',
-	command : ['mkdir', '-p', meson.current_build_dir() / 'nas_import', 
-		meson.current_build_dir() / 'nas_export', 
-		'&&', 'touch', 'nas_testfile'
-		],
-	output : ['nas_testfile']
-	)
 
+if enable_proprietary
+  create_testdirs = custom_target('create_testdirs',
+          command : ['mkdir', '-p', meson.current_build_dir() / 'nas_import', 
+                  meson.current_build_dir() / 'nas_export', 
+                  '&&', 'touch', 'nas_testfile'
+                  ],
+          output : ['nas_testfile']
+          )
 
-test('nextflow_workflow_clc',
-	nextflow_bin,
-	is_parallel : false,
-	suite : ['nextflow', 'workflow'],
-	env: ['NEXTFLOW_MODULES='+meson.current_build_dir(), 
-		'NAS_IMPORT_DIR='+meson.current_build_dir()/'nas_import', 
-		'NAS_EXPORT_DIR='+meson.current_build_dir()/'nas_export'],
-	args : [
-	'run',
-	meson.current_build_dir()+'/ukb_main_workflow/main.nf',
-	'-c', meson.current_build_dir() / 'ukb_main_workflow' / 'test_main.config',
-	'--workflow_variation', 'clc',
-	'--samplesheet', test_datadir/'test_clc_samplesheet.csv',
-	'-stub'
-	],
-	depends: [clc_nextflow, ukb_main_workflow, create_testdirs, copy_sources, sequence_alignment_nextflow, variantinterpretation],
-	timeout: 6000
-	)
+  test('nextflow_workflow_clc',
+          nextflow_bin,
+          is_parallel : false,
+          suite : ['nextflow', 'workflow'],
+          env: ['NEXTFLOW_MODULES='+meson.current_build_dir(), 
+                  'NAS_IMPORT_DIR='+meson.current_build_dir()/'nas_import', 
+                  'NAS_EXPORT_DIR='+meson.current_build_dir()/'nas_export'],
+          args : [
+          'run',
+          meson.current_build_dir()+'/ukb_main_workflow/main.nf',
+          '-c', meson.current_build_dir() / 'ukb_main_workflow' / 'test_main.config',
+          '--workflow_variation', 'clc',
+          '--samplesheet', test_datadir/'test_clc_samplesheet.csv',
+          '-stub'
+          ],
+          depends: [clc_nextflow, ukb_main_workflow, create_testdirs, copy_sources, sequence_alignment_nextflow, variantinterpretation],
+          timeout: 6000
+          )
+endif
