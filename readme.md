@@ -29,7 +29,7 @@ mkdir reference nextflow_calldir nextflow_workdir nextflow_outputdir cache
 export NEXTFLOW_MODULES="$(pwd)/nextflow_workflows/modules"
 export NGS_REFERENCE_DIR="$(pwd)/reference"
 export NEXTFLOW_CALLDIR="$(pwd)/nextflow_calldir"
-export NEXTFLOW_WORKDIR_CUSTOM="$(pwd)/nextflow_workdir'
+export NEXTFLOW_WORKDIR_CUSTOM="$(pwd)/nextflow_workdir"
 export NEXTFLOW_OUTPUTDIR_CUSTOM="$(pwd)/nextflow_outputdir"
 export NEXTFLOW_STOREDIR="$(pwd)/cache"
 ```
@@ -55,7 +55,7 @@ SAMPLENAME-24,/data/testdata/SAMPLENAME-24_N_1.fq.gz,/data/testdata/SAMPLENAME-2
 now start the pipeline.
 
 ```
-nextflow run $NEXTFLOW_MODULES/ukb_main_workflow/main.nf \
+cd $NEXTFLOW_CALLDIR && nextflow run $NEXTFLOW_MODULES/ukb_main_workflow/main.nf \
     -profile standard \
     --workflow_variation align_interpret \
     --samplesheet test_sequence_alignment_samplesheet.csv
@@ -63,7 +63,7 @@ nextflow run $NEXTFLOW_MODULES/ukb_main_workflow/main.nf \
 
 ## configuration
 
-see the environment variables and nextflow-configs like modules/ukb_main_workflow/user.config
+see the environment variables and nextflow-configs like `modules/ukb_main_workflow/user.config`
 
 
 ## development
@@ -146,26 +146,3 @@ export NXF_LOG_FILE='/path/nextflow_logs'
 export NXF_PLUGINS_DIR='/path/nextflow_plugins'
 export NEXTFLOW_MODULES="$(pwd)/modules"
 ```
-
-### our paralellism strategy:
-
-*subject to change*
-
-use nextflow processes (dataflow) to use multinode+multiprocessing parallelise concurrently across samples/files
-
-we work to enable multinode, but for now we just use 1 node
-
-for now, we avoid splitting files for more parallelism
-
-instead we use tool-level threading
-
-so we run multiple nf-processes
-
-each nf-process runs a single tool process 
-
-each tool process runs the tool with the tools parallelism option
-
-
-with the current filesize to count ratio: 1GB to 5 GB per file and about 5-50 files per workflow on ~100 cores this works pretty well
-
-and most importantly it is quite simple to reason about

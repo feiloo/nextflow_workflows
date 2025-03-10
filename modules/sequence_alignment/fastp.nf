@@ -1,12 +1,12 @@
 process fastp {
-    conda "bioconda::fastp=0.23.4"
-    container 'quay.io/biocontainers/fastp:0.23.4--h5f740d0_0'
+    conda "bioconda::fastp=0.24.0"
+    container 'quay.io/biocontainers/fastp:0.24.0--heae3180_1'
 
-    memory = { Math.min(56, 56 + 56 * task.attempt).GB}
+    memory = { Math.max(56, 56 * task.attempt).GB }
     cache 'lenient'
 
     //cpus { Math.max(1, Math.round(Runtime.runtime.availableProcessors() * (1 - ((1/4)*(task.attempt-1))))) }
-    cpus 4
+    cpus 8
     errorStrategy 'retry'
     maxRetries 4
 
@@ -21,8 +21,6 @@ process fastp {
     script:
 
     def gz_compressionlevel = 9 // out of 1 to 9
-
-    n_cpus = Runtime.runtime.availableProcessors()
 
     """
     mkdir -p out

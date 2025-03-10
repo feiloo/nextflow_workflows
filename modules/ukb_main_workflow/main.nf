@@ -1,5 +1,9 @@
 include { arriba_nextflow } from "$NEXTFLOW_MODULES/arriba_nextflow"
+
+if(params.workflow_variation == 'clc'){
 include { clc_nextflow } from "$NEXTFLOW_MODULES/clc_nextflow"
+}
+
 include { VARIANTINTERPRETATION } from "$NEXTFLOW_MODULES/variantinterpretation/workflows/variantinterpretation.nf"
 include { sequence_alignment } from "$NEXTFLOW_MODULES/sequence_alignment"
 

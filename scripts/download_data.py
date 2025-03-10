@@ -48,7 +48,7 @@ sra_testdata = [
 vep_cache_version = '113'
 
 #vep_cache = 'https://ftp.ensembl.org/pub/release-113/variation/indexed_vep_cache/homo_sapiens_vep_113_GRCh38.tar.gz'
-vep_cache = 'https://ftp.ensembl.org/pub/release-{vep_cache_version}/variation/indexed_vep_cache/homo_sapiens_vep_{vep_cache_version}_GRCh38.tar.gz'
+vep_cache = f'https://ftp.ensembl.org/pub/release-{vep_cache_version}/variation/indexed_vep_cache/homo_sapiens_vep_{vep_cache_version}_GRCh38.tar.gz'
 
 bucket_name = 'ngi-igenomes' # replace with your bucket name
 region = 'eu-west-1'
@@ -123,7 +123,7 @@ def main():
     parser.add_argument('dataset', choices=['reference', 'test', 'example'], help="which data to download")
     parser.add_argument("output_dir", help="The directory where output will be saved")
     args = parser.parse_args()
-    cli(args.output_dir)
+    cli(args.output_dir, args.dataset)
 
 if __name__ == "__main__":
     main()
