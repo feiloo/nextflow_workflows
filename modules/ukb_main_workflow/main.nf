@@ -6,6 +6,7 @@ include { clc_nextflow } from "$NEXTFLOW_MODULES/clc_nextflow"
 
 include { VARIANTINTERPRETATION } from "$NEXTFLOW_MODULES/variantinterpretation/workflows/variantinterpretation.nf"
 include { sequence_alignment } from "$NEXTFLOW_MODULES/sequence_alignment"
+include { analyse_biomarkers } from "$NEXTFLOW_MODULES/biomarker"
 
 include { publish } from "$NEXTFLOW_MODULES/sequence_alignment/utils.nf"
 
@@ -183,6 +184,14 @@ workflow {
   else if (args.workflow_variation == 'align_interpret'){
 	output = sequence_alignment(args)
 	pub = output.bam.mix(output.vcf).mix(output.bam_coverage).mix(output.bam_stats)
+
+
+	bams = output.bam
+	biomarkers = analyse_biomarkers(bams, args.refgenome)
+	msi_csv = biomarkers.msi_csv
+
+	pub = pub.mix(msi_csv)
+
 
 	tumor_vcf = bcftools_get_tumor(output.vcf).vcf.map{it -> [it.getSimpleName(), it]}
 

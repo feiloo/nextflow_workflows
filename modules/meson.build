@@ -10,6 +10,7 @@ if enable_proprietary
 endif
 
 subdir('sequence_alignment')
+subdir('biomarker')
 
 sources = ['ukb_main_workflow'/'user.config']
 testdata = []
@@ -20,6 +21,7 @@ copy_sources = custom_target('copy_sources',
 	command : ['cp', '-r', '@INPUT@', '@OUTDIR@/ukb_main_workflow'],
 	install : false
 	)
+
 
 # just builds/copies the variantinterpretation, since it doesnt have meson
 variantinterpretation = custom_target('variantinterpretation',
@@ -132,7 +134,7 @@ test('nextflow_workflow_sequence_align_interpret',
 	'--workflow_variation', 'align_interpret',
 	'--samplesheet', test_datadir/'test_sequence_alignment_samplesheet.csv',
 	],
-	depends: [copy_sources, variantinterpretation, sequence_alignment_nextflow, ukb_main_workflow],
+	depends: [copy_sources, variantinterpretation, sequence_alignment_nextflow, biomarker, ukb_main_workflow],
 	timeout: 360000
 	)
 

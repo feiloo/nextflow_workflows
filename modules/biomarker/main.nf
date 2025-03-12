@@ -51,7 +51,7 @@ process eval_msi {
 }
 
 
-workflow msi_annotate {
+workflow analyse_biomarkers {
   take:
     matched_bams
     refgenome
@@ -67,22 +67,23 @@ workflow msi_annotate {
     matched_preproc_bams = preproc_bams.groupTuple(size: 4).map{it -> it[1].sort{ e1, e2 -> e1.getName() <=> e2.getName() }}
 
     // assert that the pattern order and names match:
-    // _normal.bam, _normal.bam.bai, _tumor.bam, _tumor.bam.bai
+    // _N_1.bam, _N_1.bam.bai, _T_1.bam, _T_1.bam.bai
     matched_preproc_bams.subscribe{ it -> 
-    	assert it.join(",") ==~ /.*_normal\.bam.*_normal\.bam\.bai.*_tumor\.bam.*_tumor\.bam\.bai/
+    	assert it.join(",") ==~ /.*_N_1\.bam.*_N_1\.bam\.bai.*_T_1\.bam.*_T_1\.bam\.bai/
 	}
 
     msi_csv = eval_msi(matched_preproc_bams, sites).csv
+
     emit:
       matched_preproc_bams
       msi_csv
-
 }
+
 
 workflow {
   def args = [:]
   for (param in params) { args[param.key] = param.value }
 
-  sequence_alignment(args)
+  analyse_biomarkers(args.matched_bams, args.refgenome)
 
 }
