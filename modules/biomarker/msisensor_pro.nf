@@ -51,14 +51,14 @@ process eval_msi {
 }
 
 
-workflow analyse_biomarkers {
+workflow msisensor_pro {
   take:
-    matched_bams
+    bams
     refgenome
   main:
     sites = scan(refgenome).refgenome_microsatellites
 
-    all_bams = matched_bams.flatten()
+    all_bams = bams.flatten()
     sorted = sort_bam(all_bams)
     indices = index_bam(sorted)
     // add filename based key, group and remove key
@@ -76,6 +76,7 @@ workflow analyse_biomarkers {
 
     emit:
       matched_preproc_bams
+      indices
       msi_csv
 }
 
@@ -84,6 +85,6 @@ workflow {
   def args = [:]
   for (param in params) { args[param.key] = param.value }
 
-  analyse_biomarkers(args.matched_bams, args.refgenome)
+  msisensor_pro(args.bams, args.refgenome)
 
 }

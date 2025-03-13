@@ -185,13 +185,13 @@ workflow {
 	output = sequence_alignment(args)
 	pub = output.bam.mix(output.vcf).mix(output.bam_coverage).mix(output.bam_stats)
 
-
 	bams = output.bam
-	biomarkers = analyse_biomarkers(bams, args.refgenome)
+	biomarkers = analyse_biomarkers(bams, args.refgenome, output.refgenome_index, output.refgenome_dict, args.intervals)
 	msi_csv = biomarkers.msi_csv
+	hs_metrics = biomarkers.hs_metrics
+	bam_indices = biomarkers.indices
 
-	pub = pub.mix(msi_csv)
-
+	pub = pub.mix(msi_csv).mix(hs_metrics).mix(bam_indices)
 
 	tumor_vcf = bcftools_get_tumor(output.vcf).vcf.map{it -> [it.getSimpleName(), it]}
 

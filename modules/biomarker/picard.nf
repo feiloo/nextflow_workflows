@@ -1,57 +1,60 @@
-nextflow.enable.dsl=2
-/*
- * perform picard CollectHsMetrics for WGS Pilot
- */
+process collect_hs_metrics {
+    conda "bioconda::picard=3.2.0"
+    container "quay.io/biocontainers/picard:3.2.0"
 
-process collect_hs_mertics {
-    
-    tag "${sample_id}"
-    debug true
-
-    publishDir "${outdir}/QC/${sample_id}", mode: "copy"
+    memory "258 GB"
 
     input:
-        tuple val(sample_id), path(bamfile)
+        path(bamfile)
         path(ref_gatk38_fasta)
         path(ref_gatk38_fai)
+        path(ref_gatk38_dict)
         path(mappable_38_IntervalList)
 
     output:
-        tuple val(sample_id), path("${sample_id}_bam_mertics.csv"), emit: bamqc
+        path("${bamfile.getSimpleName()}_bam_mertics.csv"), emit: hs_metrics
 
     script:
     """
-    java -jar -Xmx256g /home/pbasitta/miniconda3/envs/picard_wgs_pilot/share/picard-3.2.0-0/picard.jar CollectHsMetrics \
+    mkdir tmp
+    picard BedToIntervalList I=${mappable_38_IntervalList} \
+	    O=list.interval_list SD=Homo_sapiens_assembly38.dict
+
+    picard -Xmx256g CollectHsMetrics \
      -I ${bamfile} \
-     -O ${sample_id}_bam_mertics.csv \
+     -O ${bamfile.getSimpleName()}_bam_mertics.csv \
      -R ${ref_gatk38_fasta} \
-     -TARGET_INTERVALS ${mappable_38_IntervalList} \
-     -BAIT_INTERVALS ${mappable_38_IntervalList} \
-     --TMP_DIR ${tmp_dir}  
+     -TARGET_INTERVALS list.interval_list \
+     -BAIT_INTERVALS list.interval_list \
+     --TMP_DIR tmp
     """
 }
 
-csv_ch = Channel.fromPath(params.input_csv) | splitCsv(header: true) | map { row-> tuple(row.sample_id), file(row.bamfile) }
-ref_gatk38_fasta_ch = Channel.value(params.ref_gatk38_fasta)
-ref_gatk38_fai_ch = Channel.value(params.ref_gatk38_fai)
-mappable_38_IntervalList_ch = Channel.value(params.mappable_38_IntervalList)
-tmp_dir = params.tmp_dir
-outdir = params.outdir
 
 workflow picard {
     
     take:
-        csv_ch
+        bams
         ref_gatk38_fasta_ch
         ref_gatk38_fai_ch
+        ref_gatk38_fai_dict
         mappable_38_IntervalList_ch
 
     main:
-        collect_hs_mertics(csv_ch,ref_gatk38_fasta_ch,ref_gatk38_fai_ch,mappable_38_IntervalList_ch)
+        out = collect_hs_metrics(bams,refgenome,refgenome_index, refgenome_dict, intervals)
+
+    emit:
+        hs_metrics = out.hs_metrics
         
 }
     
+/*
 workflow {
+	csv_ch = Channel.fromPath(params.input_csv) | splitCsv(header: true) | map { row-> tuple(row.sample_id), file(row.bamfile) }
+	ref_gatk38_fasta_ch = Channel.value(params.ref_gatk38_fasta)
+	ref_gatk38_fai_ch = Channel.value(params.ref_gatk38_fai)
+	mappable_38_IntervalList_ch = Channel.value(params.mappable_38_IntervalList)
     
     picard(csv_ch,ref_gatk38_fasta_ch,ref_gatk38_fai_ch,mappable_38_IntervalList_ch)    
 }
+*/

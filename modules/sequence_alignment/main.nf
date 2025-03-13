@@ -185,6 +185,8 @@ workflow sequence_alignment {
     //bam_depth = bam_w_depth
     bam_coverage = bam_coverage
     bam_stats = bams_w_stats
+    refgenome_index = refgenome_index
+    refgenome_dict = refgenome_dict
 }
 
 workflow {
