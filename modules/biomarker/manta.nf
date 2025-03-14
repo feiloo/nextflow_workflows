@@ -1,27 +1,5 @@
 nextflow.enable.dsl=2
 
-process manta_bam_index {
-   
-    tag "${sample_id}"
-    debug true
-
-    conda "bioconda::samtools=1.21"
-
-    input:
-        tuple val(sample_id), path(normal_bam), path(tumor_bam)
-
-    output:
-        tuple val(sample_id), path("${normal_bam}"), path("${normal_bam}.bai"), path("${tumor_bam}"), path("${tumor_bam}.bai"), emit: bam_bai
-        
-    script:
-    def args = task.ext.args ?: ""
-    def args2 = task.ext.args2 ?: ""
-    """   
-    samtools index -@ $args ${normal_bam} ${normal_bam}.bai
-    samtools index -@ $args2 ${tumor_bam} ${tumor_bam}.bai
-    """
-}
-
 process manta_somatic {
     
     tag "${sample_id}"

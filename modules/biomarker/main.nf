@@ -1,4 +1,5 @@
 include { msisensor_pro } from "$NEXTFLOW_MODULES/biomarker/msisensor_pro.nf"
+include { sequenza } from "$NEXTFLOW_MODULES/biomarker/sequenza_scarhrd.nf"
 include { collect_hs_metrics } from "$NEXTFLOW_MODULES/biomarker/picard.nf"
 
 workflow analyse_biomarkers {
@@ -10,6 +11,9 @@ workflow analyse_biomarkers {
     intervals
   main:
     out = msisensor_pro(bams, refgenome)
+    matched_bams = out.matched_preproc_bams
+
+    seqq = sequenza(matched_bams, refgenome)
 
     out2 = collect_hs_metrics(bams.flatten(),refgenome,refgenome_index,refgenome_dict, intervals)
 

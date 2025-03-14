@@ -2,7 +2,7 @@ process fastp {
     conda "bioconda::fastp=0.24.0"
     container 'quay.io/biocontainers/fastp:0.24.0--heae3180_1'
 
-    memory = { Math.max(56, 56 * task.attempt).GB }
+    memory = { Math.max(16, (task.attempt * read1.size() * 0.2 / 1000000000).toDouble()) .GB }
     cache 'lenient'
 
     //cpus { Math.max(1, Math.round(Runtime.runtime.availableProcessors() * (1 - ((1/4)*(task.attempt-1))))) }

@@ -22,6 +22,7 @@ process sam_to_bam {
     container 'quay.io/biocontainers/samtools:1.17--h00cdaf9_0'
 
     memory "10 GB"
+    cpus 16
 
     input:
     path(samfile)
@@ -31,9 +32,8 @@ process sam_to_bam {
     path("${samfile.getBaseName()}.bam")
 
     script:
-    n_cpus = Runtime.runtime.availableProcessors()
     """
-    samtools view "${samfile}" --bam --threads $n_cpus -o "${samfile.getBaseName()}.bam"
+    samtools view "${samfile}" --bam --threads ${task.cpus} -o "${samfile.getBaseName()}.bam"
     if [[ "${cleanup_intermediate_files}" == 'true' ]]; then
           rm ${samfile}
     fi
@@ -44,6 +44,12 @@ process sort_bam {
     conda "bioconda::samtools=1.17"
     container 'quay.io/biocontainers/samtools:1.17--h00cdaf9_0'
 
+
+    //samtools sort uses by default 768MB per thread
+    // so we set a limit according to it
+    cpus 16
+    memory "20 GB"
+
     input:
     path(bamfile)
 
@@ -51,10 +57,9 @@ process sort_bam {
     path("out/${bamfile}")
 
     script:
-    n_cpus = Runtime.runtime.availableProcessors()
     """
     mkdir out
-    samtools sort "${bamfile}" -@ $n_cpus -o "out/${bamfile}"
+    samtools sort "${bamfile}" -@ ${task.cpus} -o "out/${bamfile}"
     """
 }
 
@@ -71,9 +76,8 @@ process index_bam {
     path("${bamfile}.bai")
 
     script:
-    n_cpus = 8
     """
-    samtools index "${bamfile}" -@ $n_cpus -o "${bamfile}.bai"
+    samtools index "${bamfile}" -@ ${task.cpus} -o "${bamfile}.bai"
     """
 }
 
@@ -108,7 +112,7 @@ process bam_depth {
 
     cpus 8
 
-    memory "1 GB"
+    memory "8 GB"
     input:
     path(bamfile)
     path(refgenome)
@@ -117,9 +121,8 @@ process bam_depth {
     path("${bamfile.getSimpleName()}_samdepth")
 
     script:
-    n_cpus = 8
     """
-    samtools depth "${bamfile}" > "${bamfile.getSimpleName()}_samdepth"
+    samtools depth -@ ${task.cpus} "${bamfile}" > "${bamfile.getSimpleName()}_samdepth"
     """
 }
 
@@ -127,7 +130,7 @@ process bam_coverage {
     conda "bioconda::samtools=1.17"
     container 'quay.io/biocontainers/samtools:1.17--h00cdaf9_0'
 
-    cpus 8
+    cpus 1
 
     memory "1 GB"
     input:
@@ -137,7 +140,6 @@ process bam_coverage {
     path("${bamfile.getSimpleName()}_samcov")
 
     script:
-    n_cpus = 8
     """
     samtools coverage "${bamfile}" -o "${bamfile.getSimpleName()}_samcov"
     """

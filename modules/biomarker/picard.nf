@@ -2,7 +2,9 @@ process collect_hs_metrics {
     conda "bioconda::picard=3.2.0"
     container "quay.io/biocontainers/picard:3.2.0"
 
-    memory "258 GB"
+    //memory "258 GB"
+    // roughly 0.6 times filesize as ram consumption
+    memory "${((task.attempt * 0.2 + 0.6) * bamfile.size() / 1000000000)} GB"
 
     input:
         path(bamfile)
