@@ -26,7 +26,8 @@ process scan {
 process eval_msi {
     container 'quay.io/biocontainers/msisensor-pro:1.2.0--hfc31af2_0'
     conda 'bioconda::msisensor-pro=1.2.0'
-    memory "10 GB"
+
+    memory "${ (2**task.attempt) * 10 } GB"
 
     // sorted and indexed bams
     input:

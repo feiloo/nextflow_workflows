@@ -4,7 +4,9 @@ process collect_hs_metrics {
 
     //memory "258 GB"
     // roughly 0.6 times filesize as ram consumption
-    memory "${((task.attempt * 0.2 + 0.6) * bamfile.size() / 1000000000)} GB"
+    memory "${ Math.min(999, 16 + ((task.attempt * 0.4 + 0.6) * bamfile.size() / 1000000000).toDouble()) } GB"
+    errorStrategy 'retry'
+    maxRetries 3
 
     input:
         path(bamfile)
@@ -22,7 +24,7 @@ process collect_hs_metrics {
     picard BedToIntervalList I=${mappable_38_IntervalList} \
 	    O=list.interval_list SD=Homo_sapiens_assembly38.dict
 
-    picard -Xmx256g CollectHsMetrics \
+    picard -Xmx${task.memory.toGiga()}g CollectHsMetrics \
      -I ${bamfile} \
      -O ${bamfile.getSimpleName()}_bam_mertics.csv \
      -R ${ref_gatk38_fasta} \

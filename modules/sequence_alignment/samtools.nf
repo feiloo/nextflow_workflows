@@ -68,6 +68,7 @@ process index_bam {
     container 'quay.io/biocontainers/samtools:1.17--h00cdaf9_0'
 
     cpus 8
+    memory "${ 3 * task.attempt } GB"
 
     input:
     path(bamfile)
