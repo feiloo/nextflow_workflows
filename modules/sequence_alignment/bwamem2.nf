@@ -29,7 +29,7 @@ process bwamem2_align {
     conda "bioconda::bwa-mem2=2.2.1 samtools=1.16.1"
     container 'quay.io/biocontainers/mulled-v2-e5d375990341c5aef3c9aff74f96f66f65375ef6:2cdf6bf1e92acbeb9b2834b1c58754167173a410-0'
 
-    memory "${128 * (1+0.3*task.attempt)} GB"
+    memory "${192 * (1+0.3*task.attempt)} GB"
     cpus 26
 
     input:

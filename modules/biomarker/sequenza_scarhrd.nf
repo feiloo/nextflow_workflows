@@ -6,7 +6,7 @@ process prepare_bam_for_sequenza {
     //container 'biocontainers/sequenza-utils:3.0.0--py312h719dbc0_7' 
 
     //publishDir(path: "${outdir}/${sample_id}/preprocessed_files", mode: "copy")
-    cpus 24
+    cpus 24 // has to be 24 cause chromosome number
     errorStrategy 'ignore'
 
     input:
@@ -28,6 +28,7 @@ process prepare_bam_for_sequenza {
     def args = task.ext.args ?: ""     
     def args2 = task.ext.args2 ?: ""
     sample_id = "${normal_bam.getSimpleName()}"
+    chr_names = "chr1 chr2 chr3 chr4 chr5 chr6 chr7 chr8 chr9 chr10 chr11 chr12 chr13 chr14 chr15 chr16 chr17 chr18 chr19 chr20 chr21 chr22 chrX chrY"
     """
     #!/usr/bin/env Rscript
     library(devtools)
@@ -43,6 +44,7 @@ process prepare_bam_for_sequenza {
                    --normal ${normal_bam} \\
                    --tumor ${tumor_bam} \\
                    --fasta ${ref_fasta_gz} \\
+                   -C ${chr_names} \\
                    --parallel ${task.cpus} \\
                    -gc ${gc_wig_file} \\
                    --output ${normal_bam.getSimpleName()}.seqz.gz
