@@ -337,8 +337,8 @@ final_variants = processed_data_final.sort_values(by=["Frequency"], ascending=Fa
 final_variants = final_variants.rename(columns={"Chromosome": "Chromosom",
                                                 "SYMBOL": "Gen",
                                                 "NM_v": "Transcript_ID",
-                                                "HGVS_PROTEIN": "Amino_Acid_Change",
                                                 "HGVSc_x": "cDNA_Change",
+                                                "HGVS_PROTEIN": "Amino_Acid_Change",
                                                 "EXON": "Exon"})
 
 # Add "submit" and "Interpretation" column
