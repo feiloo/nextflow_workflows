@@ -25,7 +25,7 @@ process clc_pancancer_dna_only {
   time '80h'
 
   // use local container only for now
-  container 'docker://localhost/clc_client:latest'
+  // container 'docker://localhost/clc_client:latest'
 
   input:
     tuple val(dna_read1), val(dna_read2)

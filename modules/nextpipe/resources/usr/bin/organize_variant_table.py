@@ -312,7 +312,7 @@ processed_data_final = merged[["Chromosome", "Position", "End Position", \
                         "Homopolymer region", "Repeat region", \
                         "Count (singleton UMI)", "Count (big UMI)", \
                         "Proportion (singleton UMIs)", "SYMBOL", \
-                        "NM_v", "HGVS_PROTEIN", "HGVSc_x", "Non-synonymous", \
+                        "NM_v", "HGVSc_x", "HGVS_PROTEIN", "Non-synonymous", \
                         "EXON", \
                         "func dbsnp_v151_ensembl_hg38_no_alt_analysis_set", \
                         "name dbsnp_v151_ensembl_hg38_no_alt_analysis_set", \
@@ -337,8 +337,8 @@ final_variants = processed_data_final.sort_values(by=["Frequency"], ascending=Fa
 final_variants = final_variants.rename(columns={"Chromosome": "Chromosom",
                                                 "SYMBOL": "Gen",
                                                 "NM_v": "Transcript_ID",
-                                                "HGVSc_x": "cDNA_Change",
                                                 "HGVS_PROTEIN": "Amino_Acid_Change",
+                                                "HGVSc_x": "cDNA_Change",
                                                 "EXON": "Exon"})
 
 # Add "submit" and "Interpretation" column

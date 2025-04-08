@@ -4,7 +4,7 @@ process ensembl_vep {
   //cpus 10
   //memory 35.GB
 
-  conda "bioconda::ensembl-vep=112.0"
+  conda "bioconda::ensembl-vep=112.0 bioconda::perl-list-moreutils "
  
   //publishDir "${params.outdir}/${ID}/ENSEMBL_VEP", mode: "copy"
 
