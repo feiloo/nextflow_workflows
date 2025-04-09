@@ -1,3 +1,13 @@
+# WGS pilot Workflow, note
+
+this branch wgs_pilot_2024 models some code and some documentation for our submission.
+
+this version is very experimental and contains some known issues. 
+
+some samples have been calculated on older commits and semi-manually.
+
+
+
 # Nextflow modules for NGS
 
 this repo contains multiple nextflow workflows for somatic NGS analysis.
