@@ -48,19 +48,21 @@ process sort_bam {
     path(bamfile)
 
     output:
-    path("${bamfile}.bam")
+    path("out/${bamfile}")
 
     script:
     n_cpus = Runtime.runtime.availableProcessors()
     """
-    mv ${bamfile} unsorted_${bamfile}
-    samtools sort "unsorted_${bamfile}" -@ $n_cpus -o "${bamfile}.bam"
+    mkdir out
+    samtools sort "${bamfile}" -@ $n_cpus -o "out/${bamfile}"
     """
 }
 
 process index_bam {
     conda "bioconda::samtools=1.17"
     container 'quay.io/biocontainers/samtools:1.17--h00cdaf9_0'
+
+    cpus 8
 
     input:
     path(bamfile)
@@ -69,7 +71,7 @@ process index_bam {
     path("${bamfile}.bai")
 
     script:
-    n_cpus = Runtime.runtime.availableProcessors()
+    n_cpus = 8
     """
     samtools index "${bamfile}" -@ $n_cpus -o "${bamfile}.bai"
     """
@@ -78,6 +80,8 @@ process index_bam {
 process bam_stats {
     conda "bioconda::samtools=1.17"
     container 'quay.io/biocontainers/samtools:1.17--h00cdaf9_0'
+
+    cpus 8
 
     memory "1 GB"
 
@@ -89,7 +93,7 @@ process bam_stats {
     path("${bamfile.getSimpleName()}_samstats")
 
     script:
-    n_cpus = Runtime.runtime.availableProcessors()
+    n_cpus = 8
     """
     samtools stats "${bamfile}" \\
     	--reference ${refgenome} \\
@@ -102,6 +106,8 @@ process bam_depth {
     conda "bioconda::samtools=1.17"
     container 'quay.io/biocontainers/samtools:1.17--h00cdaf9_0'
 
+    cpus 8
+
     memory "1 GB"
     input:
     path(bamfile)
@@ -111,7 +117,7 @@ process bam_depth {
     path("${bamfile.getSimpleName()}_samdepth")
 
     script:
-    n_cpus = Runtime.runtime.availableProcessors()
+    n_cpus = 8
     """
     samtools depth "${bamfile}" > "${bamfile.getSimpleName()}_samdepth"
     """
@@ -121,6 +127,8 @@ process bam_coverage {
     conda "bioconda::samtools=1.17"
     container 'quay.io/biocontainers/samtools:1.17--h00cdaf9_0'
 
+    cpus 8
+
     memory "1 GB"
     input:
     path(bamfile)
@@ -129,7 +137,7 @@ process bam_coverage {
     path("${bamfile.getSimpleName()}_samcov")
 
     script:
-    n_cpus = Runtime.runtime.availableProcessors()
+    n_cpus = 8
     """
     samtools coverage "${bamfile}" -o "${bamfile.getSimpleName()}_samcov"
     """

@@ -6,7 +6,7 @@ process gatk_createsequencedictionary {
 
     storeDir "$NEXTFLOW_STOREDIR"
 
-    cpus { Math.max(1, Math.round(Runtime.runtime.availableProcessors() * (1 - ((1/4)*(task.attempt-1))))) }
+    cpus { Math.max(1, Math.round(8 * (1 - ((1/4)*(task.attempt-1))))) }
     errorStrategy 'retry'
     maxRetries 4
 
@@ -34,7 +34,7 @@ process gatk_indexfeaturefile {
 
     storeDir "$NEXTFLOW_STOREDIR"
 
-    cpus { Math.max(1, Math.round(Runtime.runtime.availableProcessors() * (1 - ((1/4)*(task.attempt-1))))) }
+    cpus { Math.max(1, Math.round(8 * (1 - ((1/4)*(task.attempt-1))))) }
     errorStrategy 'retry'
     maxRetries 4
 
@@ -97,7 +97,7 @@ process gatk_set_tags {
     container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
 
 
-    cpus { Math.max(1, Math.round(Runtime.runtime.availableProcessors() * (1 - ((1/4)*(task.attempt-1))))) }
+    cpus { Math.max(1, Math.round(8 * (1 - ((1/4)*(task.attempt-1))))) }
     errorStrategy 'retry'
     maxRetries 4
 
@@ -136,7 +136,7 @@ process gatk_baserecalibrator {
     maxRetries 4
 
 
-    memory {Math.min(56, 20+(14 * (task.attempt-1))).GB}
+    memory {Math.min(96, 20+(14 * (task.attempt-1))).GB}
 
 
     input:
@@ -167,7 +167,7 @@ process gatk_apply_bqsr {
     conda "bioconda::gatk4=4.4.0.0"
     container "quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0"
 
-    memory {Math.min(56, 20+(14 * (task.attempt-1))).GB}
+    memory {Math.min(96, 20+(14 * (task.attempt-1))).GB}
 
     cpus { Math.max(1, Math.round(Runtime.runtime.availableProcessors() * (1 - ((1/4)*(task.attempt-1))))) }
     errorStrategy 'retry'

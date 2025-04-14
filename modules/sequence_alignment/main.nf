@@ -194,20 +194,3 @@ workflow {
   sequence_alignment(args)
 
 }
-
-
-/*
-    // filenames have to end with N_1.fastq.gz
-    // where N or T is normal or tumor and the number is the read
-    // def pattern = ~".*[NT]_[12]\.(fastq|fq)(\.gz)?"
-
-    // the stricter pattern
-    // def pattern = ~".*[NT]_[12]\.fastq\.gz"
-
-    // check that filename matches the naming scheme
-    for (filename in all_reads.map{row->row[1]).collect()) {
-      if (!(filename =~ pattern).find()){
-	throw new Exception("filname doesnt match naming scheme ${filename}")
-	}
-    }
-*/

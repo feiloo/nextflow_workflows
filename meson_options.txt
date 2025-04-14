@@ -1,2 +1,4 @@
 option('test_datadir', type: 'string')
 option('external_deps', type: 'string')
+option('enable_proprietary', type : 'boolean', value : false)
+option('use_private_testdata', type : 'boolean', value : false)

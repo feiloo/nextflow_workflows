@@ -53,11 +53,11 @@ columns_to_filter = ["Frequency", "QUAL", "Forward/reverse balance", \
                      "Read position test probability", \
                      "Read direction test probability"]
 
-def partition_dataframe(dataframe: pd.DataFrame, condition: pd.Series[bool]):
+def partition_dataframe(dataframe: pd.DataFrame, condition: pd.Series):
     ''' returns dataframe rows that match and that dont match the condition '''
     return dataframe[condition], dataframe[~condition]
 
-def filter_and_collect(dataframe: pd.DataFrame, collector: list, condition: pd.Series[bool]) -> tuple[pd.DataFrame, list[pd.DataFrame]]:
+def filter_and_collect(dataframe: pd.DataFrame, collector: list, condition: pd.Series) -> tuple[pd.DataFrame, list[pd.DataFrame]]:
     ''' filters out rows of a dataframe and collects the discarded rows '''
     positives, negatives = partition_dataframe(dataframe, condition)
     collector.append(negatives)

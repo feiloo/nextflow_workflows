@@ -3,7 +3,7 @@ process bwamem2_index_refgenome {
     container 'quay.io/biocontainers/bwa-mem2:2.2.1--he513fc3_0'
 
     // needs 28N GB, where N is the size of the uncompressed refseq in GB
-    memory '120 GB'
+    memory '180 GB'
     storeDir "$NEXTFLOW_STOREDIR/bwamem2_indices"
 
     input:
