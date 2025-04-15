@@ -3,6 +3,7 @@
 import pandas as pd
 import argparse
 import variantlist_utils as vu
+from transcript_list_08_08_2024 import transcript_list
 from datetime import datetime
 
 # Using argparse for positinal arguments
@@ -187,14 +188,8 @@ clc_data_filtered_dropNa = clc_data_filtered[clc_data_filtered\
                           ["NM_v"].str.contains("nan") == False]
 
 # Load PANCANCER RefSeq transcripts to list
-transcript_list = args.transcripts
-RefSeq_NM = pd.read_csv(transcript_list)
-RefSeq_NM_lst = RefSeq_NM["NM_RefSeq_final"].values.tolist()
+RefSeq_NM = transcript_list
 
-# Check transcript input for " "
-for RefSeq_idx in range(len(RefSeq_NM)):
-    if ' ' in RefSeq_NM.loc[RefSeq_idx, "NM_RefSeq_final"]:
-        raise ValueError('Space in transcript name! Please correct!')
 
 # Reset indices; necessary for further processing; since index could be not
 # in order due to step "Drop Na values from DataFrame" (see above) (necessary?)
@@ -206,7 +201,7 @@ clc_data_filtered_dropNa["NM_v"] = clc_data_filtered_dropNa["NM_v"].astype(str)
 # Get index of rows presented in PANCANCER RefSeq list
 NM_idx = []
 for i in range(len(clc_data_filtered_dropNa["NM_v"])):
-    if clc_data_filtered_dropNa["NM_v"][i].split(".")[0] in RefSeq_NM_lst:
+    if clc_data_filtered_dropNa["NM_v"][i].split(".")[0] in RefSeq_NM:
         NM_idx.append(i)
 
 # Filter variants accoriing to NM_idx list

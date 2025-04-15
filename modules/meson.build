@@ -6,6 +6,7 @@ enable_proprietary = get_option('enable_proprietary')
 subdir('arriba_nextflow')
 
 nextpipe_sources = [
+'nextpipe/resources/usr/bin/transcript_list_08_08_2024.py',
 'nextpipe/resources/usr/bin/organize_variant_table.py',
 'nextpipe/resources/usr/bin/variantlist_utils.py',
 ]
@@ -30,7 +31,7 @@ create_nextpipe_dir = custom_target('create_nextpipe_dir',
 
 copy_nextpipe_bin = custom_target('copy_nextpipe_bin',
 	input : nextpipe_sources,
-	output : ['organize_variant_table.py','variantlist_utils.py'],
+	output : ['organize_variant_table.py','variantlist_utils.py', 'transcript_list_08_08_2024'],
 	command : ['mkdir', '-p', '@OUTDIR@/nextpipe/resources/usr/bin', '&&', 'cp', '-r', '@INPUT0@', '@INPUT1@', '@OUTDIR@/nextpipe/resources/usr/bin/'],
 	install : false,
 	depends : [create_nextpipe_dir]
