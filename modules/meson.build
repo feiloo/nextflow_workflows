@@ -235,7 +235,7 @@ test('nextflow_workflow_sequence_align_interpret',
 	'--workflow_variation', 'align_interpret',
 	'--samplesheet', test_datadir/'test_sequence_alignment_samplesheet.csv',
 	],
-	depends: [copy_sources, variantinterpretation, sequence_alignment_nextflow, biomarker, ukb_main_workflow],
+	depends: [copy_main_sources, variantinterpretation, sequence_alignment_nextflow, biomarker, ukb_main_workflow],
 	timeout: 360000
 	)
 
