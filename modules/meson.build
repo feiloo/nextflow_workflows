@@ -32,7 +32,7 @@ create_nextpipe_dir = custom_target('create_nextpipe_dir',
 copy_nextpipe_bin = custom_target('copy_nextpipe_bin',
 	input : nextpipe_sources,
 	output : ['organize_variant_table.py','variantlist_utils.py', 'transcript_list_08_08_2024'],
-	command : ['mkdir', '-p', '@OUTDIR@/nextpipe/resources/usr/bin', '&&', 'cp', '-r', '@INPUT0@', '@INPUT1@', '@OUTDIR@/nextpipe/resources/usr/bin/'],
+	command : ['mkdir', '-p', '@OUTDIR@/nextpipe/resources/usr/bin', '&&', 'cp', '-r', '@INPUT@', '@OUTDIR@/nextpipe/resources/usr/bin/'],
 	install : false,
 	depends : [create_nextpipe_dir]
 	)
@@ -40,7 +40,7 @@ copy_nextpipe_bin = custom_target('copy_nextpipe_bin',
 copy_nextpipe_sources = custom_target('copy_nextpipe_main',
 	input : 'nextpipe/main.nf',
 	output : 'main.nf',
-	command : ['cp', '-r', meson.current_source_dir() / '@INPUT@', '@OUTDIR@/nextpipe/'],
+	command : ['cp', '-r', '@INPUT@', '@OUTDIR@/nextpipe/'],
 	install : false,
 	depends : [copy_nextpipe_bin]
 	)
