@@ -23,6 +23,9 @@ process clc_pancancer_dna_only {
   secret 'CLC_PSW'
 
   time '80h'
+  memory "1 GB"
+  cpus 1
+  maxForks 5
 
   // use local container only for now
   // container 'docker://localhost/clc_client:latest'
@@ -110,6 +113,9 @@ process clc_pancancer_dna_rna {
   secret 'CLC_PSW'
 
   time '80h'
+  memory "1 GB"
+  cpus 1
+  maxForks 5
 
   // use local container only for now
   container 'docker://localhost/clc_client:latest'
