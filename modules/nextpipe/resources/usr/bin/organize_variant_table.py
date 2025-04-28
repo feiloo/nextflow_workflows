@@ -340,7 +340,8 @@ processed_data_final = merged[["Chromosome", "Position", "End Position", \
                         "Homopolymer region", "Repeat region", \
                         "Count (singleton UMI)", "Count (big UMI)", \
                         "Proportion (singleton UMIs)", \
-                        "localization", "HGNC_MV", "SYMBOL", \
+                        "localization", "HGNC_MV", "Feautre_type", \
+                        "Consequence", "SYMBOL", \
                         "NM_v", "HGVSc_x", "HGVS_PROTEIN", "Non-synonymous", \
                         "EXON", \
                         "func dbsnp_v151_ensembl_hg38_no_alt_analysis_set", \
