@@ -31,7 +31,7 @@ process ensembl_vep {
   println "${fasta}"
   """ 
   vep -i ${vcf} -o ${vcf}.txt --tab --everything --species homo_sapiens --assembly GRCh38 \
-      --format vcf --force_overwrite --cache_version 113 --merged --cache --dir_cache "${vep_cache}" \
+      --terms SO --format vcf --force_overwrite --cache_version 113 --merged --cache --dir_cache "${vep_cache}" \
       --fasta "${fasta}" --offline  
   """
 }
