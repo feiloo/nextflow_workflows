@@ -271,7 +271,8 @@ print("--> Processing VEP_Ensembl data: successful!")
 # Merge CLC_PAN_data with VEP via columns "Chromosome", "Position", "End Position", "Allele", "NM_merge"
 # and add aditional columns from vep
 merged = pd.merge(pre_final_data, VEP_data[["Chromosome", "Position", "End Position", \
-                 "Allele", "NM_merge", "HGVSc", "HGVSp", "SYMBOL", "EXON", "AF", "MAX_AF", \
+                 "Allele", "NM_merge", "Feature_type", "Consequence", "HGVSc", "HGVSp", \
+                 "SYMBOL", "BIOTYPE", "EXON", "AF", "MAX_AF", \
                  "gnomADe_AF", "gnomADg_AF", "SIFT", "PolyPhen", "CLIN_SIG", "cosmic_ID"]], \
                  on = ["Chromosome", "Position", "End Position", "Allele", "NM_merge"], \
                  how = "left")
@@ -297,6 +298,38 @@ merged = pd.merge(merged,\
                   right_on = ["name dbsnp_v151_ensembl_hg38_no_alt_analysis_set"],\
                   how = "left")
 
+# getting fields {coding,inRegulatoryElements,
+# notInCodingAndNotInRegulatoryElements} in field localization
+# required for the MV Oncology report
+merged["localization"] = "-"
+
+# field: coding (bool: biotype = protein_coding and HGVSp = xxx.p.xxx / exists)
+# Reset indices
+merged = merged.reset_index(drop="TRUE")
+for i in range(len(merged["BIOTYPE"])):
+    if merged.loc[i,"BIOTYPE"] == "protein_coding" and pd.isna\
+      (merged.loc[i,"HGVS_PROTEIN"]) == False and merged.loc\
+                 [i,"HGVS_PROTEIN"].startswith("p."):
+                     merged.loc[i,"localization"] = "coding"
+
+# fields {inRegulatoryElements,notInCodingAndNotInRegulatoryElements} are
+# preliminary not catched here in PanCancer, but must be added in WES/WGS
+
+# get field HGNC from clc field
+merged = merged.reset_index(drop="TRUE")
+merged["HGNC_MV"] = "-"
+for hgnc_id in range(len(merged["HGNC (Homo_sapiens_refseq_GRCh38.p14_no_alt_analysis_set_Genes)"])):
+    if len(merged.loc[hgnc_id, "HGNC (Homo_sapiens_refseq_GRCh38.p14_no_alt_analysis_set_Genes)"].split(":")) == 3:
+        tmp_hgnc_0 = merged.loc[hgnc_id, "HGNC (Homo_sapiens_refseq_GRCh38.p14_no_alt_analysis_set_Genes)"]
+        tmp_hgnc_1 =  tmp_hgnc_0.split(":")[1] + ":" +  tmp_hgnc_0.split(":")[2]
+        merged.loc[hgnc_id, "HGNC_MV"] = tmp_hgnc_1
+    elif len(merged.loc[hgnc_id, "HGNC (Homo_sapiens_refseq_GRCh38.p14_no_alt_analysis_set_Genes)"].split(",")) == 2:
+        tmp_hgnc_2 = merged.loc[hgnc_id, "HGNC (Homo_sapiens_refseq_GRCh38.p14_no_alt_analysis_set_Genes)"].split(",")[0]
+        tmp_hgnc_2_1 = tmp_hgnc_2.split(":")[1] + ":" + tmp_hgnc_2.split(":")[2]
+        tmp_hgnc_3 = merged.loc[hgnc_id, "HGNC (Homo_sapiens_refseq_GRCh38.p14_no_alt_analysis_set_Genes)"].split(",")[1]
+        tmp_hgnc_3_1 = tmp_hgnc_3.split(":")[1] + ":" + tmp_hgnc_3.split(":")[2]
+        merged.loc[hgnc_id, "HGNC_MV"] = tmp_hgnc_2_1 + ", " + tmp_hgnc_3_1
+
 # Get comprehensive output format
 processed_data_final = merged[["Chromosome", "Position", "End Position", \
                        "Reference", "Allele", "Count", "Coverage", \
@@ -306,7 +339,8 @@ processed_data_final = merged[["Chromosome", "Position", "End Position", \
                         "Homopolymer", "Homopolymer length", \
                         "Homopolymer region", "Repeat region", \
                         "Count (singleton UMI)", "Count (big UMI)", \
-                        "Proportion (singleton UMIs)", "SYMBOL", \
+                        "Proportion (singleton UMIs)", \
+                        "localization", "HGNC_MV", "SYMBOL", \
                         "NM_v", "HGVSc_x", "HGVS_PROTEIN", "Non-synonymous", \
                         "EXON", \
                         "func dbsnp_v151_ensembl_hg38_no_alt_analysis_set", \
