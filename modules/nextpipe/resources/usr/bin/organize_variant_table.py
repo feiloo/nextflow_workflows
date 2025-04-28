@@ -340,7 +340,7 @@ processed_data_final = merged[["Chromosome", "Position", "End Position", \
                         "Homopolymer region", "Repeat region", \
                         "Count (singleton UMI)", "Count (big UMI)", \
                         "Proportion (singleton UMIs)", \
-                        "localization", "HGNC_MV", "Feautre_type", \
+                        "localization", "HGNC_MV", "Feature_type", \
                         "Consequence", "SYMBOL", \
                         "NM_v", "HGVSc_x", "HGVS_PROTEIN", "Non-synonymous", \
                         "EXON", \
