@@ -47,7 +47,7 @@ def bump_version(current, part):
         raise ValueError(f"Invalid part: {part}. Choose 'major', 'minor', or 'patch'.")
 
 def version_follows(new, old):
-    return new in [bump_version(old, p) for p in ['major','minor','patch']]
+    return new[3] in [bump_version(old, p) for p in ['major','minor','patch']]
 
 def main():
     parser = argparse.ArgumentParser(description="Bump or check if a semantic versions follows another.")
