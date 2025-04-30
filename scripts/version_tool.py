@@ -49,7 +49,7 @@ def version_follows(new, old):
     return new in [bump_version(old, p) for p in ['major','minor','patch']]
 
 def main():
-    parser = argparse.ArgumentParser(description="Bump or compare semantic versions with strict validation.")
+    parser = argparse.ArgumentParser(description="Bump or check if a semantic versions follows another.")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     # Bump command
@@ -58,9 +58,9 @@ def main():
     bump_parser.add_argument("file", help="File containing the version to bump.")
 
     # Compare command
-    compare_parser = subparsers.add_parser("follows", help="Check that a version file follows another.")
-    compare_parser.add_argument("file1", help="First version file (expected to be older).")
-    compare_parser.add_argument("file2", help="Second version file (expected to be newer).")
+    follows_parser = subparsers.add_parser("follows", help="Check that a version file follows another.")
+    follows_parser.add_argument("file1", help="First version file (expected to be older).")
+    follows_parser.add_argument("file2", help="Second version file (expected to be newer).")
 
     args = parser.parse_args()
 
@@ -72,7 +72,7 @@ def main():
         print(f"   Old: {old_version_string}")
         print(f"   New: {'.'.join(map(str, new_version))}")
 
-    elif args.command == "compare":
+    elif args.command == "follows":
         v1 = read_version(args.file1)
         v2 = read_version(args.file2)
         if version_follows(v2, v1):
