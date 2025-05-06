@@ -1,0 +1,14 @@
+@startuml
+
+component "CLC PanCancer Workflow"
+component "CIO Varianteninterpretation or VEP stand alone"
+component "PAT NAS PanCancer Directory"
+component "python script"
+
+"CLC PanCancer Workflow" --> "CIO Varianteninterpretation or VEP stand alone": "submit hg38.vcf"
+"CLC PanCancer Workflow" --> "PAT NAS PanCancer Directory": "upload/submit hg38.csv and reportds in json"
+"CIO Varianteninterpretation or VEP stand alone" --> "python script": "load data in csv/tsv"
+"PAT NAS PanCancer Directory" --> "python script": "load data in csv/tsv"
+"python script" --> "final results": "processing data"
+
+@enduml

@@ -1,8 +1,9 @@
 include { arriba_nextflow } from "$NEXTFLOW_MODULES/arriba_nextflow"
 
 if(params.workflow_variation == 'clc'){
-include { clc_nextflow } from "$NEXTFLOW_MODULES/clc_nextflow"
+include { pancancer_dna_only; pancancer_dna_rna } from "$NEXTFLOW_MODULES/clc_nextflow"
 }
+include { pancancer_analyse } from "$NEXTFLOW_MODULES/nextpipe"
 
 include { VARIANTINTERPRETATION } from "$NEXTFLOW_MODULES/variantinterpretation/workflows/variantinterpretation.nf"
 include { sequence_alignment } from "$NEXTFLOW_MODULES/sequence_alignment"
@@ -128,16 +129,38 @@ workflow {
   	arriba_nextflow(args)
   }
   else if(args.workflow_variation == 'clc'){
-  	//clc_nextflow(args)
+        samples = Channel.fromPath(args.samplesheet, checkIfExists: true, type: 'file').splitCsv(header: true)
 
-	  clc_nextflow(args.samplesheet, 
-		args.clc_import_dir, 
-		args.clc_export_dir,
-		args.clc_destdir,
-		args.clc_workflow_name,
-		args.nas_import_dir,
-		args.nas_export_dir
-		)
+	untared_vep = untar_file(args.vep_cache)
+
+        if(args.containsKey('has_rna') && args.has_rna == true) {
+          clc_out = pancancer_dna_rna(
+            samples,
+            args.clc_import_dir, 
+            args.clc_export_dir,
+            args.clc_destdir,
+	    args.clc_dna_rna_workflow_name,
+            args.nas_import_dir,
+            args.nas_export_dir,
+            args.workflow_run_id
+            )
+        } else {
+          clc_out = pancancer_dna_only(
+            samples,
+            args.clc_import_dir, 
+            args.clc_export_dir,
+            args.clc_destdir,
+	    args.clc_dna_only_workflow_name,
+            args.nas_import_dir,
+            args.nas_export_dir,
+            args.workflow_run_id
+            )
+        }
+
+	pancancer_analyse(
+	  clc_out.vcf, clc_out.csv, untared_vep, args.vep_refgenome, 
+	  args.transcriptlist, args.variantlist, args.outdir
+	  )
   }
   else if(args.workflow_variation == 'sarek'){
   	SAREK(args)
