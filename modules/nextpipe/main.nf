@@ -79,7 +79,8 @@ process organize_variant_table {
       -t ${transcript_lst} \
       -D ${variantDBi} \
       -o "${ID}_final_processed.xlsx" \
-      -rv "${ID}_removed_variants.xlsx" > "log_${ID}.log"
+      -rv "${ID}_removed_variants.xlsx" \
+      | tee "log_${ID}.log"
   """
 }
 
