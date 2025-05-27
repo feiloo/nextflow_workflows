@@ -318,17 +318,26 @@ for i in range(len(merged["BIOTYPE"])):
 # get field HGNC from clc field
 merged = merged.reset_index(drop="TRUE")
 merged["HGNC_MV"] = "-"
+
 for hgnc_id in range(len(merged["HGNC (Homo_sapiens_refseq_GRCh38.p14_no_alt_analysis_set_Genes)"])):
-    if len(merged.loc[hgnc_id, "HGNC (Homo_sapiens_refseq_GRCh38.p14_no_alt_analysis_set_Genes)"].split(":")) == 3:
-        tmp_hgnc_0 = merged.loc[hgnc_id, "HGNC (Homo_sapiens_refseq_GRCh38.p14_no_alt_analysis_set_Genes)"]
-        tmp_hgnc_1 =  tmp_hgnc_0.split(":")[1] + ":" +  tmp_hgnc_0.split(":")[2]
-        merged.loc[hgnc_id, "HGNC_MV"] = tmp_hgnc_1
-    elif len(merged.loc[hgnc_id, "HGNC (Homo_sapiens_refseq_GRCh38.p14_no_alt_analysis_set_Genes)"].split(",")) == 2:
-        tmp_hgnc_2 = merged.loc[hgnc_id, "HGNC (Homo_sapiens_refseq_GRCh38.p14_no_alt_analysis_set_Genes)"].split(",")[0]
-        tmp_hgnc_2_1 = tmp_hgnc_2.split(":")[1] + ":" + tmp_hgnc_2.split(":")[2]
-        tmp_hgnc_3 = merged.loc[hgnc_id, "HGNC (Homo_sapiens_refseq_GRCh38.p14_no_alt_analysis_set_Genes)"].split(",")[1]
-        tmp_hgnc_3_1 = tmp_hgnc_3.split(":")[1] + ":" + tmp_hgnc_3.split(":")[2]
-        merged.loc[hgnc_id, "HGNC_MV"] = tmp_hgnc_2_1 + ", " + tmp_hgnc_3_1
+    hgnc_value = merged.loc[hgnc_id, "HGNC (Homo_sapiens_refseq_GRCh38.p14_no_alt_analysis_set_Genes)"]
+    try:
+
+        if len(hgnc_value.split(":")) == 3:
+            tmp_hgnc_0 = merged.loc[hgnc_id, "HGNC (Homo_sapiens_refseq_GRCh38.p14_no_alt_analysis_set_Genes)"]
+            tmp_hgnc_1 =  tmp_hgnc_0.split(":")[1] + ":" +  tmp_hgnc_0.split(":")[2]
+            merged.loc[hgnc_id, "HGNC_MV"] = tmp_hgnc_1
+        elif len(hgnc_value.split(",")) == 2:
+            tmp_hgnc_2 = merged.loc[hgnc_id, "HGNC (Homo_sapiens_refseq_GRCh38.p14_no_alt_analysis_set_Genes)"].split(",")[0]
+            tmp_hgnc_2_1 = tmp_hgnc_2.split(":")[1] + ":" + tmp_hgnc_2.split(":")[2]
+            tmp_hgnc_3 = merged.loc[hgnc_id, "HGNC (Homo_sapiens_refseq_GRCh38.p14_no_alt_analysis_set_Genes)"].split(",")[1]
+            tmp_hgnc_3_1 = tmp_hgnc_3.split(":")[1] + ":" + tmp_hgnc_3.split(":")[2]
+            merged.loc[hgnc_id, "HGNC_MV"] = tmp_hgnc_2_1 + ", " + tmp_hgnc_3_1
+        else:
+            raise Exception('failed to split hgnc field')
+
+    except Exception as e:
+        print(f"warning, invalid HGNC value {hgnc_value} in row {hgnc_id}, HGNC value will not be merged. failed with error {e}")
 
 # Get comprehensive output format
 processed_data_final = merged[["Chromosome", "Position", "End Position", \
