@@ -26,7 +26,6 @@ process gatk_mutect {
       path("${tumor_bam.getSimpleName()}_f1r2_data.shards.tar"), emit: f1r2_data
 
     script:
-    n_cpus = Runtime.runtime.availableProcessors()
     def normal_samplename = "${normal_bam.getSimpleName()}"
     """
 
@@ -132,13 +131,12 @@ process gatk_mutect_single {
       path("${tumor_bam.getSimpleName()}_f1r2_data.tar.gz"), emit: f1r2_data
 
     script:
-    n_cpus = Runtime.runtime.availableProcessors()
     def normal_samplename = "${normal_bam.getSimpleName()}"
     """
     mkdir -p tmp
     gatk Mutect2 \\
 	--java-options "-Djava.io.tmpdir=tmp -Xms50G -Xmx50G" \\
-	--native-pair-hmm-threads ${n_cpus} \\
+	--native-pair-hmm-threads ${task.cpus} \\
 	--tmp-dir tmp \\
 	--input ${tumor_bam} \\
 	--input ${normal_bam} \\

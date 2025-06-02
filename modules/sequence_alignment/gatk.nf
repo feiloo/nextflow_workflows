@@ -58,11 +58,11 @@ process gatk_markduplicates {
     conda "bioconda::gatk4=4.4.0.0"
     container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
 
-    cpus { Math.max(1, Math.round(Runtime.runtime.availableProcessors() * (1 - ((1/4)*(task.attempt-1))))) }
+    cpus { Math.max(1, Math.round(26 * (1 - ((1/4)*(task.attempt-1))))) }
     errorStrategy 'retry'
     maxRetries 4
 
-    memory {Math.min(80, 80+(80 * (task.attempt-1))).GB}
+    memory {(80+(80 * (task.attempt-1))).GB}
 
     input:
         path(bam)
@@ -131,7 +131,7 @@ process gatk_baserecalibrator {
     conda "bioconda::gatk4=4.4.0.0"
     container "quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0"
 
-    cpus { Math.max(1, Math.round(Runtime.runtime.availableProcessors() * (1 - ((1/4)*(task.attempt-1))))) }
+    cpus { Math.max(1, Math.round(12 * (1 - ((1/4)*(task.attempt-1))))) }
     errorStrategy 'retry'
     maxRetries 4
 
@@ -169,7 +169,7 @@ process gatk_apply_bqsr {
 
     memory {Math.min(96, 20+(14 * (task.attempt-1))).GB}
 
-    cpus { Math.max(1, Math.round(Runtime.runtime.availableProcessors() * (1 - ((1/4)*(task.attempt-1))))) }
+    cpus { Math.max(1, Math.round(12 * (1 - ((1/4)*(task.attempt-1))))) }
     errorStrategy 'retry'
     maxRetries 4
 

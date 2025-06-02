@@ -3,7 +3,14 @@ install_subdir('../biomarker',
 	exclude_files:['meson.build'], 
 	install_tag : 'nextflow')
 
-nextflow_files = ['main.nf']
+nextflow_files = [
+  'main.nf',
+  'manta.nf',
+  'msisensor_pro.nf',
+  'picard.nf',
+  'sequenza_scarhrd.nf',
+  'sigprofiler.nf',
+  ]
 
 biomarker = custom_target('biomarker',
 	input : nextflow_files,
