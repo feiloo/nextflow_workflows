@@ -28,6 +28,24 @@ process bcftools_get_tumor {
     """
 }
 
+process bgzip_vcf {
+    conda "bioconda::bcftools=1.17"
+    container "quay.io/biocontainers/bcftools:1.17--haef29d1_0"
+    cpus 4
+
+    input:
+    path(vcf)
+
+    output:
+    path("out/${vcf.getSimpleName()}.vcf.gz"), emit: vcf
+ 
+    script:
+    """
+    mkdir out
+    bgzip -@ ${task.cpus} "${vcf}" -c >"out/${vcf.getSimpleName()}.vcf.gz"
+    """
+}
+
 process rename_clcad_to_ad {
     conda "bioconda::bcftools=1.17"
     container "quay.io/biocontainers/bcftools:1.17--haef29d1_0"
@@ -216,9 +234,9 @@ workflow {
 
 	pub = pub.mix(msi_csv).mix(hs_metrics).mix(bam_indices)
 
-	tumor_vcf = bcftools_get_tumor(output.vcf).vcf.map{it -> [it.getSimpleName(), it]}
+	matched_vcf = bgzip_vcf(output.vcf).vcf.map{it -> [it.getSimpleName(), it]}
 
-	chr_fixed_vcf = rename_chromosomes_vcf(tumor_vcf).vcf
+	chr_fixed_vcf = rename_chromosomes_vcf(matched_vcf).vcf
 	fixed_vcfs = rename_clcad_to_ad(chr_fixed_vcf).vcf
 	new_rows = Channel.of("sample,vcf").concat((fixed_vcfs.map{it -> "${it[0]},${it[1]}"})).collect()
 	//.collectFile(name: "fixed_samplesheet.csv", newLine: true)
