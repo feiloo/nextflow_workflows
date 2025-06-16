@@ -251,7 +251,7 @@ workflow {
 
 	untared_vep = untar_file(args.vep_cache)
 
-  	VARIANTINTERPRETATION(
+  	interpretation = VARIANTINTERPRETATION(
 	  new_csv_channel, //new_samplesheet,
 	  fasta,
 	  untared_vep,
@@ -267,6 +267,7 @@ workflow {
 	  args.custom_filters,
 	  )
 	
+	pub = pub.mix(interpretation)
 
 	publish(pub, args.output_dir)
   }
