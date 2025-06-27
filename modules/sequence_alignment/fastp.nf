@@ -1,6 +1,6 @@
 process fastp {
-    conda "bioconda::fastp=0.24.0"
-    container 'quay.io/biocontainers/fastp:0.24.0--heae3180_1'
+    conda "bioconda::fastp=1.0.1"
+    container 'quay.io/biocontainers/fastp:1.0.1--heae3180_0'
 
     memory = { Math.max(16, (task.attempt * read1.size() * 0.2 / 1000000000).toDouble()) .GB }
     cache 'lenient'
