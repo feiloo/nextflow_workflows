@@ -37,3 +37,76 @@ process fastp {
 	2> ${output_file_prefix}.fastp.log
     """
 }
+
+/*
+// prototype for separate integrity check process
+
+process integrity_check {
+    conda "bioconda::bcftools=1.17"
+    container "quay.io/biocontainers/bcftools:1.17--haef29d1_0"
+
+    // check gzip and bgzip archive intergrity
+
+    cache 'lenient'
+    cpu 10
+    memory '1 GB'
+
+    // set to "ignore" to filter out broken files
+    // or to "terminate" to kill the whole run
+    errorStrategy "ignore"
+
+    input: 
+    tuple path(fastq), val(expected_sha256sum)
+
+    output:
+    tuple path("${fastq}_check_process_results")
+
+    script:
+    """
+    # could optimize to read data only once
+    # cat ${fastq} | tee >(gzip -t --keep > gzip_result) | tee >(bgzip -@ 2 -t > bgzip_result) | tee >(sha256sum > sample_sha256sum) | md5sum > sample_md5sum
+
+    # but filesystem cache could be good enough
+    sha256sum ${fastq} | awk '{print \$1}' > sha256sum_result
+    SHA256SUM_PID=\$!
+
+    #md5sum ${fastq} > md5sum
+
+    gzip -t --keep ${fastq} > gzip_result &
+    GZIP_PID=\$!
+    bgzip -t -@ 8 --keep ${fastq} > bgzip_result
+    BGZIP_PID=\$!
+
+    wait \$SHA256SUM_PID
+
+    SHA256SUM=\$(cat sha256sum_result)
+    if [ "\$SHA256SUM" != "${expected_sha256sum}" ]; then
+        echo "error, sha256sum doesnt match"
+        exit 1
+
+    if 
+    #MD5SUM_PID=\$!
+    wait \$GZIP_PID
+
+    if grep -qw 'trailing' gzip_result && grep -qw 'garbage' gzip_result; then
+        echo "error, found trailing garbage according to gzip. the file is possibly truncated"
+	exit 2
+    fi
+
+    # todo add verficiation of bgzip too here
+    wait \$BGZIP_PID
+
+    echo -e "check process results:\n" >> check_process_results.txt
+    cat sha256sum_result >> check_process_results
+    echo -e "\ngzip check results:\n" >> check_process_results.txt
+    cat gzip_result >> check_process_results
+    echo -e "\nbgzip check results:\n" >> check_process_results.txt
+    cat bgzip_result >> check_process_results
+
+    mv check_process_results ${fastq}_check_process_results
+
+    #wait $MD5SUM_PID
+    """
+
+}
+*/
