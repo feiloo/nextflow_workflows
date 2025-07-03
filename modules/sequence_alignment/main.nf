@@ -1,6 +1,6 @@
 nextflow.enable.dsl=2
 
-include { fastqc } from "$NEXTFLOW_MODULES/sequence_alignment/fastqc.nf"
+//include { fastqc } from "$NEXTFLOW_MODULES/sequence_alignment/fastqc.nf"
 include { fastp } from "$NEXTFLOW_MODULES/sequence_alignment/fastp.nf"
 
 include { bwamem2_index_refgenome; bwamem2_align } from "$NEXTFLOW_MODULES/sequence_alignment/bwamem2.nf"
@@ -21,10 +21,10 @@ process stage_fastq {
     cache 'lenient'
 
     input:
-    tuple val(sample_id), path(normal_read1), path(normal_read2), path(tumor_read1), path(tumor_read2)
+    tuple val(sample_id), path(normal_read1), path(normal_read2), path(tumor_read1), path(tumor_read2), val(normal_read1_hash), val(normal_read2_hash),  val(tumor_read1_hash),  val(tumor_read2_hash)
 
     output:
-    tuple val(sample_id), path(normal_read1), path(normal_read2), path(tumor_read1), path(tumor_read2)
+    tuple val(sample_id), path(normal_read1), path(normal_read2), path(tumor_read1), path(tumor_read2), val(normal_read1_hash), val(normal_read2_hash),  val(tumor_read1_hash),  val(tumor_read2_hash)
 
     script:
     assert normal_read1.exists()
@@ -58,7 +58,7 @@ workflow sequence_alignment {
     samplesheet = args.samplesheet
     // we require both samples to run the analysis
     // therefore 1 row requires/contains both, so its easier to read the samplesheet
-    header = ['sample_id', 'normal_read1', 'normal_read2', 'tumor_read1', 'tumor_read2']
+    header = ['sample_id', 'normal_read1', 'normal_read2', 'tumor_read1', 'tumor_read2', 'normal_read1_hash', 'normal_read2_hash', 'tumor_read1_hash', 'tumor_read2_hash']
 
     csv_channel = Channel.fromPath(samplesheet, checkIfExists: true, type: 'file').splitCsv(header: header, skip: 1)
 
@@ -69,14 +69,18 @@ workflow sequence_alignment {
 	normal_read1:file(row.normal_read1),
 	normal_read2:file(row.normal_read2),
 	tumor_read1:file(row.tumor_read1),
-	tumor_read2:file(row.tumor_read2)
+	tumor_read2:file(row.tumor_read2),
+	normal_read1_hash:row.normal_read1_hash,
+	normal_read2_hash:row.normal_read2_hash,
+	tumor_read1_hash:row.tumor_read1_hash,
+	tumor_read2_hash:row.tumor_read2_hash,
 	]
     }
 
     // explicitely stage inputs
     staged_sample_pairs = stage_fastq(sample_pairs)
 
-    // still check the rows for the naming scheme
+    // still check the rows for the naming scheme, ignoring the hashes
     def check_row = { row ->
         def sid = row[0]
 	def expected_row = [
@@ -84,7 +88,7 @@ workflow sequence_alignment {
 		"${sid}_N_1.fq.gz",
 		"${sid}_N_2.fq.gz",
 		"${sid}_T_1.fq.gz",
-		"${sid}_T_2.fq.gz"
+		"${sid}_T_2.fq.gz",
 		]
 	def actual_row = [
 		"${sid}",
@@ -103,7 +107,7 @@ workflow sequence_alignment {
 	}
     }
     
-    // a flat channel of [sample_id, read] tuples
+    // a flat channel of [sample_id, read] tuples, for maximum parallelism
     all_reads = staged_sample_pairs.flatMap{
 	row -> [[row[0], row[1]],
 		[row[0], row[2]],
@@ -117,8 +121,8 @@ workflow sequence_alignment {
 
     // a flat channel of [sample_id, read1, read2, file_prefix] tuples
     sample_reads_w_prefix = staged_sample_pairs.flatMap{
-	row -> [[row[0], row[1], row[2], "${row[0]}_N", "testhash", "testhash"],
-		[row[0], row[3], row[4], "${row[0]}_T", "testhash", "testhash"]
+	row -> [[row[0], row[1], row[2], "${row[0]}_N", row[5], row[6]],
+		[row[0], row[3], row[4], "${row[0]}_T", row[7], row[8]]
 		]
 	}
     
