@@ -6,26 +6,30 @@ process fastp {
     cache 'lenient'
 
     //cpus { Math.max(1, Math.round(Runtime.runtime.availableProcessors() * (1 - ((1/4)*(task.attempt-1))))) }
-    cpus 8
-    errorStrategy 'retry'
+    cpus 12
+    errorStrategy { task.exitStatus in 250..253 ? 'terminate' : 'retry' }
     maxRetries 4
 
     input:
-    tuple val(sample_id), path(read1), path(read2), val(output_file_prefix)
+    tuple val(sample_id), path(read1), path(read2), val(output_file_prefix), val(expected_sha256sum1), val(expected_sha256sum2)
 
     output:
     tuple val(sample_id), path("${output_file_prefix}_fastp.html"), emit: html
     tuple val(sample_id), path("${output_file_prefix}_fastp.json"), emit: json
     tuple val(sample_id), path("out/${read1.getSimpleName()}.fq.gz"), path("out/${read2.getSimpleName()}.fq.gz"), emit: preprocessed_reads
+    path("${output_file_prefix}_check_process_results.txt"), emit: integrity_check
 
     script:
 
     def gz_compressionlevel = 9 // out of 1 to 9
 
     """
+    set -euo pipefail
+
     mkdir -p out
 
-    fastp \\
+    fastp_preprocessing() {
+      fastp \\
 	--in1 ${read1} \\
 	--in2 ${read2} \\
 	--out1  out/${read1.getSimpleName()}.fq.gz \\
@@ -35,6 +39,68 @@ process fastp {
 	--json ${output_file_prefix}_fastp.json \\
 	--html ${output_file_prefix}_fastp.html \\
 	2> ${output_file_prefix}.fastp.log
+	}
+
+
+    check_integrity() {
+	    NAME=\$1
+	    NAMEOUT="\$NAME"_out
+	    expected_sha256sum=\$2
+
+	    mkdir "\$NAME"_out
+	    sha256sum \$NAME | awk '{print \$1}' > \$NAMEOUT/sha256sum_result &
+	    SHA256SUM_PID=\$!
+
+	    #md5sum \$NAME > \$NAMEOUT/md5sum_result
+
+	    gzip -t --keep \$NAME > \$NAMEOUT/gzip_result &
+	    GZIP_PID=\$!
+	    bgzip -t -@ 8 --keep \$NAME > \$NAMEOUT/bgzip_result
+	    BGZIP_PID=\$!
+
+
+	    wait \$SHA256SUM_PID
+
+	    SHA256SUM=\$(cat \$NAMEOUT/sha256sum_result)
+	    if [ "\$SHA256SUM" != "\${expected_sha256sum}" ]; then
+		echo "error, sha256sum of \$NAME doesnt match"
+		exit 250
+
+	    fi 
+	    #MD5SUM_PID=\$!
+	    wait \$GZIP_PID
+
+	    if grep -qw 'trailing' gzip_result && grep -qw 'garbage' gzip_result; then
+		echo "error, found trailing garbage in \$NAME according to gzip. the file is possibly truncated"
+		exit 251
+	    fi
+
+	    # todo add verficiation of bgzip too here
+	    wait \$BGZIP_PID
+
+	    echo -e "check process results:\n" >> \$NAMEOUT/check_process_results.txt
+	    cat \$NAMEOUT/sha256sum_result >> \$NAMEOUT/check_process_results
+	    echo -e "\ngzip check results:\n" >> \$NAMEOUT/check_process_results.txt
+	    cat \$NAMEOUT/gzip_result >> \$NAMEOUT/check_process_results
+	    echo -e "\nbgzip check results:\n" >> \$NAMEOUT/check_process_results.txt
+	    cat \$NAMEOUT/bgzip_result >> \$NAMEOUT/check_process_results
+
+    }
+
+    fastp_preprocessing &
+    FASTP_PID=\$!
+
+    check_integrity "${read1}" "${expected_sha256sum1}" &
+    CHECK1=\$!
+    check_integrity "${read2}" "${expected_sha256sum2}" &
+    CHECK2=\$!
+
+    wait \$CHECK1
+    wait \$CHECK2
+    wait \$FASTP_PID
+
+    cat ${read1}_out/check_process_results ${read2}_out/check_process_results > ${output_file_prefix}_check_process_results.txt
+
     """
 }
 

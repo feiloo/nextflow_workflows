@@ -40,6 +40,7 @@ process stage_fastq {
     """
 }
 
+
 workflow sequence_alignment {
   take:
     args
@@ -116,8 +117,8 @@ workflow sequence_alignment {
 
     // a flat channel of [sample_id, read1, read2, file_prefix] tuples
     sample_reads_w_prefix = staged_sample_pairs.flatMap{
-	row -> [[row[0], row[1], row[2], "${row[0]}_N"],
-		[row[0], row[3], row[4], "${row[0]}_T"]
+	row -> [[row[0], row[1], row[2], "${row[0]}_N", "testhash", "testhash"],
+		[row[0], row[3], row[4], "${row[0]}_T", "testhash", "testhash"]
 		]
 	}
     
