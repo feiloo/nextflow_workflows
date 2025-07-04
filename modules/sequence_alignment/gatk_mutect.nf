@@ -316,7 +316,13 @@ process create_pon_db {
     """
 }
 
-
+def filename_to_dict(filename){
+        // split filename to its extensions
+        def filename_extensions = filename.tokenize(".")
+        // split to its naming-scheme parts
+        def parts = filename_extensions[0].tokenize("_")
+        return [sampleid:parts[0], sampletype:parts[1], modality:parts[2], readnr:parts[3], suffix:parts[4]]
+}
 
 
 workflow variant_call {
@@ -337,24 +343,26 @@ workflow variant_call {
     sample_bams_w_key = sample_bams.map{ it -> ["${it.getSimpleName()}", it]}
     sample_bams_idx_w_key = index_bam(sample_bams).map{ it -> ["${it.getSimpleName()}", it] }
     // SAMPLENAME, [XX.bam, XX.bai]
-    sample_bams_w_indices = sample_bams_w_key.join(sample_bams_idx_w_key).map{ it -> [it[0].split('_')[0], [it[1], it[2]]] }
+    sample_bams_w_indices = sample_bams_w_key.join(sample_bams_idx_w_key).map{ it -> [filename_to_dict(it[0]).sampleid, [it[1], it[2]]] }
 
     // warning, whatever the path type is for bam1 and bam2, 
     // the strings and .endsWith() methods do not work as expected
     def pair_bams_fn = { it ->
-        def key = it[0]
-	def bam1 = it[1][0]
-	def bam2 = it[1][1]
-
-	if(bam1[0].name.endsWith("T_1.bam") and bam2[0].name.endsWith("N_1.bam")){
-	    return [bam2[0], bam2[1], bam1[0], bam1[1]]
-	} 
-	else if(bam2[0].name.endsWith("T_1.bam") and bam1[0].name.endsWith("N_1.bam")){
-	    return [bam1[0], bam1[1], bam2[0], bam2[1]]
-	}
-	else {
-	  throw new Exception("error ordering bam pair: ${it}")
-	}
+        def bam1_p = filename_to_dict(it[1][0][0].name)
+        def bam1 = it[1][0][0]
+        def bam1_idx = it[1][0][1]
+        def bam2_p = filename_to_dict(it[1][1][0].name)
+        def bam2 = it[1][1][0]
+        def bam2_idx = it[1][1][1]
+ 
+        if(bam1_p.sampletype == "T" && bam2_p.sampletype == "N"){
+            return [bam2, bam2_idx, bam1, bam1_idx]
+        } else if(bam2_p.sampletype == "T" && bam1_p.sampletype == "N"){
+            return [bam1, bam1_idx, bam2, bam2_idx]
+        } else {
+          throw new Exception("error ordering bam pair: ${it}")
+        }
+ 
     }
 
     bam_pairs = sample_bams_w_indices.groupTuple(by: 0, size:2).map{ it -> pair_bams_fn(it) }
@@ -385,23 +393,23 @@ workflow variant_call {
     all_pileups = gatk_getpileupsummaries(sample_bams_w_indices_no_key, intervals, germline_resource, germline_resource_index).table
 
     def pair_pileups = { it ->
+        def pu1_p = filename_to_dict(it[1][0].name)
         def pu1 = it[1][0]
+        def pu2_p = filename_to_dict(it[1][1].name)
         def pu2 = it[1][1]
 
-	if(pu1.name.endsWith("T_1_pileup.table") and pu2.name.endsWith("N_1_pileup.table")){
-	    return [pu2, pu1]
-	} 
-	else if(pu2.name.endsWith("T_1_pileup.table") and pu1.name.endsWith("N_1_pileup.table")){
-	    return [pu1, pu2]
-	} 
-	else {
-	  throw new Exception("error ordering pileups pair: ${it}")
-	}
+        if(pu1_p.sampletype == "T" && pu2_p.sampletype == "N" ){
+            return [pu2, pu1]
+        } else if(pu2_p.sampletype == "T" && pu1_p.sampletype == "N" ){
+            return [pu1, pu2]
+        } else {
+          throw new Exception("error ordering pileups pair: ${it}")
+        }
 
     }
 
     // group pileups by samplename
-    matched_pileups = all_pileups.map{it -> ["${it.getSimpleName().split('_')[0]}", it]}.groupTuple(size: 2, sort: true).map{it -> pair_pileups(it)}
+    matched_pileups = all_pileups.map{it -> ["${filename_to_dict(it.getSimpleName()).sampleid}", it]}.groupTuple(size: 2, sort: true).map{it -> pair_pileups(it)}
 
     contamination_table_and_segments = gatk_calculate_contamination(matched_pileups).contamination_table_and_segments
     c_w_key = contamination_table_and_segments.map{it -> ["${it[0].getSimpleName().split('_')[0]}", it]}
