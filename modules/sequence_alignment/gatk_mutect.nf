@@ -29,26 +29,6 @@ process gatk_mutect {
     def normal_samplename = "${normal_bam.getSimpleName()}"
     """
 
-if [[ ${normal_bam} != *N_1.bam ]] 
-then
-  exit 1
-fi
-  
-if [[ ${normal_bam_index} != *N_1.bam.bai ]] 
-then
-  exit 1
-fi
-
-if [[ ${tumor_bam} != *T_1.bam ]] 
-then
-  exit 1
-fi
-
-if [[ ${tumor_bam_index} != *T_1.bam.bai ]] 
-then
-  exit 1
-fi
-
 mkdir -p beds
 
 script="
@@ -241,16 +221,6 @@ process gatk_calculate_contamination {
     script:
     """
 
-if [[ ${normal_pileups} != *N_1_pileup.table ]] 
-then
-  exit 1
-fi
-
-if [[ ${tumor_pileups} != *T_1_pileup.table ]] 
-then
-  exit 1
-fi
-
     mkdir -p tmp
     gatk CalculateContamination \\
 	--java-options "-Djava.io.tmpdir=tmp -Xms50G -Xmx50G" \\
@@ -355,9 +325,11 @@ workflow variant_call {
         def bam2 = it[1][1][0]
         def bam2_idx = it[1][1][1]
  
+        // mutect takes the normal bam first
+        // switch if the order is wrong
         if(bam1_p.sampletype == "T" && bam2_p.sampletype == "N"){
             return [bam2, bam2_idx, bam1, bam1_idx]
-        } else if(bam2_p.sampletype == "T" && bam1_p.sampletype == "N"){
+        } else if(bam1_p.sampletype == "N" && bam2_p.sampletype == "T"){
             return [bam1, bam1_idx, bam2, bam2_idx]
         } else {
           throw new Exception("error ordering bam pair: ${it}")
