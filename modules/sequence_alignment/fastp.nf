@@ -63,7 +63,7 @@ process fastp {
 
 	    SHA256SUM=\$(cat \$NAMEOUT/sha256sum_result)
 	    if [ "\$SHA256SUM" != "\${expected_sha256sum}" ]; then
-		echo "error, sha256sum of \$NAME doesnt match"
+		echo "error, sha256sum of \$NAME doesnt match: \$SHA256SUM  \$expected_sha256sum"
 		exit 250
 
 	    fi 
