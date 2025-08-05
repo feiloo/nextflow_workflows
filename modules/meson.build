@@ -183,6 +183,7 @@ test('nextflow_workflow_sequence_alignment',
 	'-profile', 'standard',
 	'--workflow_variation', 'sequence_alignment',
 	'--samplesheet', test_datadir/'test_sequence_alignment_samplesheet.csv',
+        '--hash_db', test_datadir/'md5sum.txt',
 	],
 	depends: [copy_main_sources, variantinterpretation, sequence_alignment_nextflow, ukb_main_workflow],
 	timeout: 360000
