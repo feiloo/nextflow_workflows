@@ -227,7 +227,7 @@ workflow {
 	pub = output.bam.mix(output.vcf).mix(output.bam_coverage).mix(output.bam_stats)
 
 	bams = output.bam
-	biomarkers = analyse_biomarkers(bams, args.refgenome, output.refgenome_index, output.refgenome_dict, args.intervals)
+	biomarkers = analyse_biomarkers(bams, args.refgenome, output.refgenome_index, output.refgenome_dict, args.wes_intervals, args.scar_hrd_header)
 	msi_csv = biomarkers.msi_csv
 	hs_metrics = biomarkers.hs_metrics
 	bam_indices = biomarkers.indices

@@ -65,7 +65,8 @@ process gatk_markduplicates {
     memory {(80+(80 * (task.attempt-1))).GB}
 
     input:
-        path(bam)
+        tuple path(bam), path(bai)
+        path(intervals)
 
     output:
       path("out/${bam}"), emit: marked_bams
@@ -80,6 +81,7 @@ process gatk_markduplicates {
     mkdir tmp
     gatk MarkDuplicatesSpark \\
         --input ${bam} \\
+        --intervals ${intervals} \\
 	--java-options "-Djava.io.tmpdir=tmp -Xms24G -Xmx24G" \\
 	--conf 'spark.local.dir=tmp' \\
 	--conf 'spark.executor.cores=${task.cpus}' \\
@@ -140,12 +142,13 @@ process gatk_baserecalibrator {
 
 
     input:
-        path(bamfile)
+        tuple path(bamfile), path(bamfile_bai)
 	path(refgenome)
 	path(refgenome_index)
 	path(refgenome_dict)
 	path(known_sites)
 	path(known_sites_index)
+        path(intervals)
 
     output:
         path("${bamfile.getSimpleName()}_recal_data.table")
@@ -158,6 +161,7 @@ process gatk_baserecalibrator {
         --input ${bamfile} \\
 	--reference ${refgenome} \\
 	--known-sites ${known_sites} \\
+        --intervals ${intervals} \\
 	--output ${bamfile.getSimpleName()}_recal_data.table
     """
 
@@ -175,10 +179,11 @@ process gatk_apply_bqsr {
 
 
     input:
-        tuple path(bamfile), path(bam_recal_data)
+        tuple path(bamfile), path(bamfile_bai), path(bam_recal_data)
 	path(refgenome)
 	path(refgenome_index)
 	path(refgenome_dict)
+        path(intervals)
 
     output:
         path("out/${bamfile.getSimpleName()}.bam")
@@ -192,6 +197,7 @@ process gatk_apply_bqsr {
         --input ${bamfile} \\
 	--reference ${refgenome} \\
 	--bqsr-recal-file ${bam_recal_data} \\
+        --intervals ${intervals} \\
 	--output out/${bamfile.getSimpleName()}.bam
     """
 

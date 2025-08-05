@@ -19,8 +19,8 @@ process collect_hs_metrics {
     script:
     """
     mkdir tmp
-    picard BedToIntervalList I=${mappable_38_IntervalList} \
-	    O=list.interval_list SD=Homo_sapiens_assembly38.dict
+    picard BedToIntervalList -I ${mappable_38_IntervalList} \
+	    -O list.interval_list -SD Homo_sapiens_assembly38.dict
 
     picard -Xmx256g CollectHsMetrics \
      -I ${bamfile} \

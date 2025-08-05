@@ -205,7 +205,7 @@ process gatk_getpileupsummaries {
 
     input:
         tuple path(sample_bam), path(sample_bam_index)
-        path(genomic_intervals)
+        path(intervals)
 	// prepared from like gnomAD with pop-freqs in the info field
         path(variant_frequency_vcf)
         path(variant_frequency_vcf_index)
@@ -220,7 +220,7 @@ process gatk_getpileupsummaries {
     gatk GetPileupSummaries \\
 	--java-options "-Djava.io.tmpdir=tmp -Xms50G -Xmx50G" \\
 	-I ${sample_bam} \\
-	-L ${genomic_intervals} \\
+	-L ${intervals} \\
 	-V ${variant_frequency_vcf} \\
 	-O "${sample_bam.getSimpleName()}_pileup.table"
     """
@@ -271,6 +271,7 @@ process gatk_filter_calls {
 	path(refgenome)
 	path(refgenome_index)
 	path(refgenome_dict)
+        path(intervals)
 
     output:
       path("${outputfile}"), emit: vcf
@@ -282,12 +283,16 @@ process gatk_filter_calls {
     """
     mkdir -p tmp
 
+    gatk IndexFeatureFile \\
+        --input ${sample_vcf} 
+
     gatk FilterMutectCalls \\
 	--java-options "-Djava.io.tmpdir=tmp -Xms50G -Xmx50G" \\
 	--variant ${sample_vcf} \\
 	--ob-priors ${orientation_model} \\
 	--contamination-table ${contamination_table} \\
 	--tumor-segmentation ${tumor_segments} \\
+        -L ${intervals} \\
 	--output "${outputfile}" \\
 	-R "${refgenome}"
     """
@@ -312,7 +317,8 @@ process create_pon_db {
     mkdir -p tmp
     gatk GenomicsDBImport \\
         -R ${refgenome} \\
-        --genomicsdb-workspace-path pon_genomics_db \\
+        -L ${intervals} \\
+        --genomicsdb-workspace-path pon_genomics_db
     """
 }
 
@@ -409,7 +415,7 @@ workflow variant_call {
     om_w_key = om.map{it -> ["${it.getSimpleName().split('_')[0]}", it]}
     vcf_w_filter_data = vcf_w_key.join(c_w_key).join(om_w_key).map{it -> [it[1][0], it[1][1], it[2][0], it[2][1], it[3]]}
 
-    filtered_vcf = gatk_filter_calls(vcf_w_filter_data, args.refgenome, refgenome_index, refgenome_dict).vcf
+    filtered_vcf = gatk_filter_calls(vcf_w_filter_data, args.refgenome, refgenome_index, refgenome_dict, intervals).vcf
 
   emit:
     vcf = filtered_vcf
