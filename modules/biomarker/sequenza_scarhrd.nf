@@ -155,7 +155,7 @@ process scar_hrd {
     awk 'NR>1 {print}' tmp2_${sample_id}.txt > tmp3_${sample_id}.txt
     cat ${scar_hrd_header} tmp3_${sample_id}.txt > ${sample_id}_scarHRD_input.txt
 
-    scar_hrd.R "${sample_id}_scarHRD_input.txt"
+    scar_hrd.R ${sample_id}_scarHRD_input.txt
     """  
 }
 
