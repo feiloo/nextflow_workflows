@@ -143,7 +143,7 @@ process scar_hrd {
       val(scar_hrd_header)
 
     output:
-       tuple val(sample_id), path("${sample_id}_HRDresults.txt"), emit: scar_hrd_results
+      path("${sample_id}_HRDresults.txt"), emit: scar_hrd_results
 
     script:
     """

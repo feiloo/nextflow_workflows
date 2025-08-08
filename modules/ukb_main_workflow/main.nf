@@ -229,10 +229,12 @@ workflow {
 	bams = output.bam
 	biomarkers = analyse_biomarkers(bams, args.refgenome, output.refgenome_index, output.refgenome_dict, args.wes_intervals, args.scar_hrd_header)
 	msi_csv = biomarkers.msi_csv
-	hs_metrics = biomarkers.hs_metrics
-	bam_indices = biomarkers.indices
-
-	pub = pub.mix(msi_csv).mix(hs_metrics).mix(bam_indices)
+        hs_metrics = biomarkers.hs_metrics
+        bam_indices = biomarkers.indices
+        sequenza_results = biomarkers.sequenza_results
+        hrd_results = biomarkers.hrd_results
+        
+	pub = pub.mix(msi_csv).mix(hs_metrics).mix(bam_indices).mix(sequenza_results).mix(hrd_results)
 
 	matched_vcf = bgzip_vcf(output.vcf).vcf.map{it -> [it.getSimpleName(), it]}
 
