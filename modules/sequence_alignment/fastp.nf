@@ -11,7 +11,7 @@ process fastp {
     maxRetries 4
 
     input:
-    tuple val(sample_id), path(read1), path(read2), val(output_file_prefix), val(expected_sha256sum1), val(expected_sha256sum2)
+    tuple val(sample_id), path(read1), path(read2), val(output_file_prefix), val(expected_checksum1), val(expected_checksum2)
 
     output:
     tuple val(sample_id), path("${output_file_prefix}_fastp.html"), emit: html
@@ -27,6 +27,7 @@ process fastp {
     set -euo pipefail
 
     mkdir -p out
+    CHECKSUM_TYPE="md5sum"
 
     fastp_preprocessing() {
       fastp \\
@@ -45,32 +46,29 @@ process fastp {
     check_integrity() {
 	    NAME=\$1
 	    NAMEOUT="\$NAME"_out
-	    expected_sha256sum=\$2
+	    EXPECTED_CHECKSUM=\$2
 
 	    mkdir "\$NAME"_out
-	    sha256sum \$NAME | awk '{print \$1}' > \$NAMEOUT/sha256sum_result &
-	    SHA256SUM_PID=\$!
-
-	    #md5sum \$NAME > \$NAMEOUT/md5sum_result
+            \$CHECKSUM_TYPE \$NAME | awk '{print \$1}' > \$NAMEOUT/"\$CHECKSUM_TYPE"_result &
+	    CHECKSUM_PID=\$!
 
 	    gzip -t --keep \$NAME > \$NAMEOUT/gzip_result &
 	    GZIP_PID=\$!
 	    bgzip -t -@ 8 --keep \$NAME > \$NAMEOUT/bgzip_result
 	    BGZIP_PID=\$!
 
+	    wait \$CHECKSUM_PID
 
-	    wait \$SHA256SUM_PID
-
-	    SHA256SUM=\$(cat \$NAMEOUT/sha256sum_result)
-	    if [ "\$SHA256SUM" != "\${expected_sha256sum}" ]; then
-		echo "error, sha256sum of \$NAME doesnt match: \$SHA256SUM  \$expected_sha256sum"
+	    CHECKSUM_RESULT=\$(cat \$NAMEOUT/"\$CHECKSUM_TYPE"_result)
+	    if [ "\$CHECKSUM_RESULT" != "\$EXPECTED_CHECKSUM" ]; then
+		echo "error, \$CHECKSUM_TYPE of \$NAME doesnt match: \$CHECKSUM_RESULT  \$EXPECTED_CHECKSUM"
 		exit 250
 
 	    fi 
 	    #MD5SUM_PID=\$!
 	    wait \$GZIP_PID
 
-	    if grep -qw 'trailing' gzip_result && grep -qw 'garbage' gzip_result; then
+	    if grep -qw 'trailing' \$NAMEOUT/gzip_result && grep -qw 'garbage' \$NAMEOUT/gzip_result; then
 		echo "error, found trailing garbage in \$NAME according to gzip. the file is possibly truncated"
 		exit 251
 	    fi
@@ -79,7 +77,7 @@ process fastp {
 	    wait \$BGZIP_PID
 
 	    echo -e "check process results:\n" >> \$NAMEOUT/check_process_results.txt
-	    cat \$NAMEOUT/sha256sum_result >> \$NAMEOUT/check_process_results
+	    cat \$NAMEOUT/"\$CHECKSUM_TYPE"_result >> \$NAMEOUT/check_process_results
 	    echo -e "\ngzip check results:\n" >> \$NAMEOUT/check_process_results.txt
 	    cat \$NAMEOUT/gzip_result >> \$NAMEOUT/check_process_results
 	    echo -e "\nbgzip check results:\n" >> \$NAMEOUT/check_process_results.txt
@@ -90,9 +88,9 @@ process fastp {
     fastp_preprocessing &
     FASTP_PID=\$!
 
-    check_integrity "${read1}" "${expected_sha256sum1}" &
+    check_integrity "${read1}" "${expected_checksum1}" &
     CHECK1=\$!
-    check_integrity "${read2}" "${expected_sha256sum2}" &
+    check_integrity "${read2}" "${expected_checksum2}" &
     CHECK2=\$!
 
     wait \$CHECK1
