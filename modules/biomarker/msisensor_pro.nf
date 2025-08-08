@@ -34,10 +34,10 @@ process eval_msi {
     path(refgenome_microsatellites)
 
     output:
-    path("${normal_bam.getSimpleName()}_msi.csv"), emit: csv
-    path("${normal_bam.getSimpleName()}_msi.csv_dis")
-    path("${normal_bam.getSimpleName()}_msi.csv_germline")
-    path("${normal_bam.getSimpleName()}_msi.csv_somatic")
+    path("${tumor_bam.getSimpleName()}_msi.csv"), emit: csv
+    path("${tumor_bam.getSimpleName()}_msi.csv_dis")
+    path("${tumor_bam.getSimpleName()}_msi.csv_germline")
+    path("${tumor_bam.getSimpleName()}_msi.csv_somatic")
     
 
     script:
@@ -46,7 +46,7 @@ process eval_msi {
         -d ${refgenome_microsatellites} \\
 	-n ${normal_bam} \\
 	-t ${tumor_bam} \\
-	-o ${normal_bam.getSimpleName()}_msi.csv
+	-o ${tumor_bam.getSimpleName()}_msi.csv
     """
 }
 
