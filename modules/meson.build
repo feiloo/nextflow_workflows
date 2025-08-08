@@ -50,7 +50,8 @@ copy_main_sources = custom_target('copy_main_sources',
 	input : sources + testdata,
 	output : 'user.config',
 	command : ['cp', '-r', '@INPUT@', '@OUTDIR@/ukb_main_workflow'],
-	install : false
+	install : false,
+        depends : [biomarker]
 	)
 
 # collected by running "find" for .nf environment.yml meta.yml .sh .py and .config files
@@ -183,6 +184,7 @@ test('nextflow_workflow_sequence_alignment',
 	'-profile', 'standard',
 	'--workflow_variation', 'sequence_alignment',
 	'--samplesheet', test_datadir/'test_sequence_alignment_samplesheet.csv',
+        '--samplesheet_flavor', 'modal',
         '--hash_db', test_datadir/'md5sum.txt',
 	],
 	depends: [copy_main_sources, variantinterpretation, sequence_alignment_nextflow, ukb_main_workflow],
@@ -235,6 +237,7 @@ test('nextflow_workflow_sequence_align_interpret',
 	'-profile', 'standard',
 	'--workflow_variation', 'align_interpret',
 	'--samplesheet', test_datadir/'test_sequence_alignment_samplesheet.csv',
+        '--hash_db', test_datadir/'md5sum.txt'
 	],
 	depends: [copy_main_sources, variantinterpretation, sequence_alignment_nextflow, biomarker, ukb_main_workflow],
 	timeout: 360000
