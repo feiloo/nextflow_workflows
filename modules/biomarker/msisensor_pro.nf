@@ -54,12 +54,15 @@ process eval_msi {
 workflow msisensor_pro {
   take:
     bams
+    bam_pairings
     refgenome
   main:
     sites = scan(refgenome).refgenome_microsatellites
 
     all_bams = bams.flatten()
     sorted = sort_bam(all_bams)
+
+    /*
     indices = index_bam(sorted)
     // add filename based key, group and remove key
     preproc_bams = sorted.mix(indices).map{it -> [it.getSimpleName().split('_')[0], it]}
@@ -69,10 +72,51 @@ workflow msisensor_pro {
     // assert that the pattern order and names match:
     // _N_1.bam, _N_1.bam.bai, _T_1.bam, _T_1.bam.bai
     matched_preproc_bams.subscribe{ it -> 
-    	assert it.join(",") ==~ /.*_N_1\.bam.*_N_1\.bam\.bai.*_T_1\.bam.*_T_1\.bam\.bai/
+    	assert it.join(",") ==~ /.*_N_.*_1\.bam.*_N_.*_1\.bam\.bai.*_T_.*_1\.bam.*_T_.*_1\.bam\.bai/
+	}
+    */
+
+    sample_bams = sorted
+
+    // key is XXX_T_[FFPE|BLOOD|FF]_1
+    sample_bams_w_key = sample_bams.map{ it -> ["${it.getSimpleName()}", it]}
+    sample_bams_idx_w_key = index_bam(sample_bams).map{ it -> ["${it.getSimpleName()}", it] }
+    // join bams and bai files
+    sample_bams_w_indices_w_key = sample_bams_w_key.join(sample_bams_idx_w_key)
+    sample_bams_w_indices_w_key.view()
+    sample_bams_w_indices = sample_bams_w_indices_w_key.map{it -> it[1..-1]}
+    
+    indices = sample_bams_w_indices.flatMap{ bam, bai -> [bai] }.unique()
+
+
+    bams_split = sample_bams_w_indices_w_key.branch { key, bam, bai ->
+	// Match pattern: <alphanum>-<2-digit>_<N or T>_
+	def normal = key ==~ /^[a-zA-Z0-9]+-[0-9]{2}_N_.+/
+	def tumor  = key ==~ /^[a-zA-Z0-9]+-[0-9]{2}_T_.+/
+
+	// Output channels
+	normal: normal
+	tumor:  tumor
+    }
+
+    // Join with normal bams: match normal_key == key
+    with_normal = bam_pairings
+	.join(bams_split.normal)  // emits [normal_key, tumor_key, normal_bam, normal_bai]
+	.map { normal_key, tumor_key, normal_bam, normal_bai ->
+	    [tumor_key, normal_bam, normal_bai]  // prepare for tumor join
 	}
 
-    msi_csv = eval_msi(matched_preproc_bams, sites).csv
+    // Join with tumor bams: match tumor_key == key
+    bam_pairs_w_idx = with_normal
+	.join(bams_split.tumor)  // finds matching tumor
+	.map { tumor_key, normal_bam, normal_bai, tumor_bam, tumor_bai ->
+	    [normal_bam, normal_bai, tumor_bam, tumor_bai]
+	}
+
+
+    msi_csv = eval_msi(bam_pairs_w_idx, sites).csv
+
+    matched_preproc_bams = bam_pairs_w_idx.unique()
 
     emit:
       matched_preproc_bams

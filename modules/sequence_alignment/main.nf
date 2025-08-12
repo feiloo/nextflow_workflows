@@ -50,7 +50,7 @@ def hash_db_to_dict( hash_db ){
 	    throw new RuntimeException("Path 'md5sum.txt' is not a regular file.")
 	}
 	def hashMap = [:]
-	new File(hash_db).eachLine { line ->
+	file.eachLine { line ->
 	    def parts = line.split(/\s+/).findAll { it.trim() != '' }
 	    if (parts.size() >= 2) {
 		def hash = parts[0]
@@ -60,6 +60,11 @@ def hash_db_to_dict( hash_db ){
 	}
 	return hashMap
 }
+
+def removeSuffix(String str, String suffix) {
+    if (str == null || suffix == null) return str
+        return str.endsWith(suffix) ? str[0..<str.length() - suffix.length()] : str
+        }
 
 workflow sequence_alignment {
   take:
@@ -158,6 +163,7 @@ workflow sequence_alignment {
                         ]
                 }
     } else if(samplesheet_flavor == 'modal'){
+
         csv_channel.subscribe{ row ->
           if (!(row.normal_modality in ["FFPE","BLOOD"])){
                 throw new Exception("unknown modality ${row.tumor_modality} in row: ${row}")
@@ -167,9 +173,13 @@ workflow sequence_alignment {
         }
 
 
+        assert hashes != null : "hashdb argument cant be null when running samplesheet_flavor: modal"
         def hashes_map = hash_db_to_dict(hashes)
+	println "hashes map: ${hashes_map}"
+        //throw new Exception("hashes map: ${hashes_map}")
+
         
-        sample_reads_w_prefix = csv_channel.flatMap{ row -> 
+        sample_reads_w_prefix = csv_channel.map{ row -> 
         [[ row.sample_id, 
                 file("${row.sample_id}_N_${row.normal_modality}_1.fq.gz"),
                 file("${row.sample_id}_N_${row.normal_modality}_2.fq.gz"),
@@ -185,7 +195,12 @@ workflow sequence_alignment {
                 hashes_map["${row.sample_id}_T_${row.tumor_modality}_2.fq.gz"],
                 ]
         ]
-        }
+        }.flatMap{ it -> [it[0], it[1]] }
+
+        bam_pairings = csv_channel.map{ row -> 
+                ["${row.sample_id}_N_${row.normal_modality}_1",
+                "${row.sample_id}_T_${row.tumor_modality}_1"
+                ]}
 
     } else {
         throw new Exception("unsupported samplesheet flavor: ${samplesheet_flavor}")
@@ -194,7 +209,7 @@ workflow sequence_alignment {
 
     // output_file_prefix has to be calculated here, 
     // because it has to be known before starting the process as it it an output thereof
-    preprocessed_reads = fastp(sample_reads_w_prefix).preprocessed_reads
+    preprocessed_reads = fastp(sample_reads_w_prefix.unique()).preprocessed_reads
 
     // low_mem uses more memory efficient tools
     // for example bwa-mem instead of bwamem2
@@ -240,7 +255,9 @@ workflow sequence_alignment {
     bam_coverage = bam_coverage(bam_recalibrated)
     bams_w_stats = bam_stats(bam_recalibrated, args.refgenome)
 
+
     vcfs = variant_call(
+            bam_pairings,
 	    bam_recalibrated,
 	    args.intervals,
 	    args.panel_of_normals,
@@ -250,6 +267,7 @@ workflow sequence_alignment {
 	    )
 
   emit:
+    bam_pairings = bam_pairings
     bam = bam_recalibrated
     vcf = vcfs
     //bam_depth = bam_w_depth

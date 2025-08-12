@@ -2,8 +2,8 @@ include { arriba_nextflow } from "$NEXTFLOW_MODULES/arriba_nextflow"
 
 if(params.workflow_variation == 'clc'){
 include { pancancer_dna_only; pancancer_dna_rna } from "$NEXTFLOW_MODULES/clc_nextflow"
-}
 include { pancancer_analyse } from "$NEXTFLOW_MODULES/nextpipe"
+}
 
 include { VARIANTINTERPRETATION } from "$NEXTFLOW_MODULES/variantinterpretation/workflows/variantinterpretation.nf"
 include { sequence_alignment } from "$NEXTFLOW_MODULES/sequence_alignment"
@@ -224,15 +224,18 @@ workflow {
   }
   else if (args.workflow_variation == 'align_interpret'){
 	output = sequence_alignment(args)
+        /*
+        bam_pairings = output.bam_pairings
 	pub = output.bam.mix(output.vcf).mix(output.bam_coverage).mix(output.bam_stats)
 
 	bams = output.bam
-	biomarkers = analyse_biomarkers(bams, args.refgenome, output.refgenome_index, output.refgenome_dict, args.intervals)
+	biomarkers = analyse_biomarkers(bams, bam_pairings, args.refgenome, output.refgenome_index, output.refgenome_dict, args.intervals)
 	msi_csv = biomarkers.msi_csv
 	hs_metrics = biomarkers.hs_metrics
 	bam_indices = biomarkers.indices
 
 	pub = pub.mix(msi_csv).mix(hs_metrics).mix(bam_indices)
+        */
 
 	matched_vcf = bgzip_vcf(output.vcf).vcf.map{it -> [it.getSimpleName(), it]}
 
@@ -267,9 +270,9 @@ workflow {
 	  args.custom_filters,
 	  )
 	
-	pub = pub.mix(interpretation)
+	//pub = pub.mix(interpretation)
 
-	publish(pub, args.output_dir)
+	//publish(pub, args.output_dir)
   }
   else {
     println "invalid value for parameter workflow_variation " + args.workflow_variation
