@@ -444,6 +444,7 @@ workflow variant_call {
     filtered_vcf = gatk_filter_calls(vcf_w_filter_data, args.refgenome, refgenome_index, refgenome_dict).vcf
 
   emit:
+    bam_pairs_w_idx = bam_pairs_w_idx
     vcf = filtered_vcf
 }
 

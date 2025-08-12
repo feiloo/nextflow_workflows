@@ -53,16 +53,15 @@ process eval_msi {
 
 workflow msisensor_pro {
   take:
-    bams
-    bam_pairings
+    bam_pairs_w_idx
     refgenome
   main:
     sites = scan(refgenome).refgenome_microsatellites
 
+    /*
     all_bams = bams.flatten()
     sorted = sort_bam(all_bams)
 
-    /*
     indices = index_bam(sorted)
     // add filename based key, group and remove key
     preproc_bams = sorted.mix(indices).map{it -> [it.getSimpleName().split('_')[0], it]}
@@ -74,7 +73,6 @@ workflow msisensor_pro {
     matched_preproc_bams.subscribe{ it -> 
     	assert it.join(",") ==~ /.*_N_.*_1\.bam.*_N_.*_1\.bam\.bai.*_T_.*_1\.bam.*_T_.*_1\.bam\.bai/
 	}
-    */
 
     sample_bams = sorted
 
@@ -112,6 +110,7 @@ workflow msisensor_pro {
 	.map { tumor_key, normal_bam, normal_bai, tumor_bam, tumor_bai ->
 	    [normal_bam, normal_bai, tumor_bam, tumor_bai]
 	}
+    */
 
 
     msi_csv = eval_msi(bam_pairs_w_idx, sites).csv
@@ -120,7 +119,7 @@ workflow msisensor_pro {
 
     emit:
       matched_preproc_bams
-      indices
+      //indices
       msi_csv
 }
 

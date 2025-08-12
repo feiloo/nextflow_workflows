@@ -256,7 +256,7 @@ workflow sequence_alignment {
     bams_w_stats = bam_stats(bam_recalibrated, args.refgenome)
 
 
-    vcfs = variant_call(
+    variant_out = variant_call(
             bam_pairings,
 	    bam_recalibrated,
 	    args.intervals,
@@ -267,9 +267,8 @@ workflow sequence_alignment {
 	    )
 
   emit:
-    bam_pairings = bam_pairings
-    bam = bam_recalibrated
-    vcf = vcfs
+    bam_pairs_w_idx = variant_out.bam_pairs_w_idx
+    vcf = variant_out.vcf
     //bam_depth = bam_w_depth
     bam_coverage = bam_coverage
     bam_stats = bams_w_stats

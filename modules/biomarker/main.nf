@@ -4,23 +4,22 @@ include { collect_hs_metrics } from "$NEXTFLOW_MODULES/biomarker/picard.nf"
 
 workflow analyse_biomarkers {
   take:
-    bams
-    bam_pairings
+    bam_pairs_w_idx
     refgenome
     refgenome_index
     refgenome_dict
     intervals
   main:
-    out = msisensor_pro(bams, bam_pairings, refgenome)
-    matched_bams = out.matched_preproc_bams
+    out = msisensor_pro(bam_pairs_w_idx, refgenome)
 
     //seqq = sequenza(matched_bams, refgenome)
 
-    out2 = collect_hs_metrics(bams.flatten(),refgenome,refgenome_index,refgenome_dict, intervals)
+    bams = bam_pairs_w_idx.flatMap{normal_bam, normal_bai, tumor_bam, tumor_bai -> [normal_bam, tumor_bam]}
+    out2 = collect_hs_metrics(bams,refgenome,refgenome_index,refgenome_dict, intervals)
 
     emit:
       matched_preproc_bams = out.matched_preproc_bams
       msi_csv = out.msi_csv
       hs_metrics = out2.hs_metrics
-      indices = out.indices
+      //indices = out.indices
 }

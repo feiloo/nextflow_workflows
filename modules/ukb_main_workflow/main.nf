@@ -223,21 +223,18 @@ workflow {
 	
   }
   else if (args.workflow_variation == 'align_interpret'){
-	output = sequence_alignment(args)
-        /*
-        bam_pairings = output.bam_pairings
-	pub = output.bam.mix(output.vcf).mix(output.bam_coverage).mix(output.bam_stats)
+	seq_output = sequence_alignment(args)
+        //bam_pairings = seq_output.bam_pairings
+	//pub = seq_output.bam.mix(seq_output.vcf).mix(seq_output.bam_coverage).mix(seq_output.bam_stats)
 
-	bams = output.bam
-	biomarkers = analyse_biomarkers(bams, bam_pairings, args.refgenome, output.refgenome_index, output.refgenome_dict, args.intervals)
+	biomarkers = analyse_biomarkers(seq_output.bam_pairs_w_idx, args.refgenome, seq_output.refgenome_index, seq_output.refgenome_dict, args.intervals)
 	msi_csv = biomarkers.msi_csv
 	hs_metrics = biomarkers.hs_metrics
-	bam_indices = biomarkers.indices
+	//bam_indices = biomarkers.indices
 
-	pub = pub.mix(msi_csv).mix(hs_metrics).mix(bam_indices)
-        */
+	//pub = pub.mix(msi_csv).mix(hs_metrics).mix(bam_indices)
 
-	matched_vcf = bgzip_vcf(output.vcf).vcf.map{it -> [it.getSimpleName(), it]}
+	matched_vcf = bgzip_vcf(seq_output.vcf).vcf.map{it -> [it.getSimpleName(), it]}
 
 	chr_fixed_vcf = rename_chromosomes_vcf(matched_vcf).vcf
 	fixed_vcfs = rename_clcad_to_ad(chr_fixed_vcf).vcf
