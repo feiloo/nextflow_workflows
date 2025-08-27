@@ -55,8 +55,8 @@ process gatk_indexfeaturefile {
 
 
 process gatk_markduplicates {
-    conda "bioconda::gatk4=4.4.0.0"
-    container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
+    conda "bioconda::gatk4=4.4.0.0 bioconda::samtools=1.17"
+    container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0 quay.io/biocontainers/samtools:1.17--h00cdaf9_0'
 
     cpus { Math.max(1, Math.round(26 * (1 - ((1/4)*(task.attempt-1))))) }
     errorStrategy 'retry'
@@ -65,8 +65,9 @@ process gatk_markduplicates {
     memory {(80+(80 * (task.attempt-1))).GB}
 
     input:
-        tuple path(bam), path(bai)
+        path(bam)
         path(intervals)
+        val(library_type)
 
     output:
       path("out/${bam}"), emit: marked_bams
@@ -75,13 +76,22 @@ process gatk_markduplicates {
     script:
     // write to output directory to avoid filename collision but keeping the filename in the channels the same
     //--METRICS_FILE ${bam.getSimpleName()}_metrics.txt
-
     """
     mkdir out
     mkdir tmp
+
+    if [[ "${library_type}" == "wes" ]]
+    then
+        genomic_region="${intervals}"
+        samtools index "${bam}" -@ ${task.cpus} -o "${bam}.bai"
+    elif [[ "${library_type}" == "wgs" ]]
+    then
+        genomic_region="[]"
+    fi
+
     gatk MarkDuplicatesSpark \\
         --input ${bam} \\
-        --intervals ${intervals} \\
+        --intervals \$genomic_region \\
 	--java-options "-Djava.io.tmpdir=tmp -Xms24G -Xmx24G" \\
 	--conf 'spark.local.dir=tmp' \\
 	--conf 'spark.executor.cores=${task.cpus}' \\
@@ -130,8 +140,8 @@ process gatk_set_tags {
 }
 
 process gatk_baserecalibrator {
-    conda "bioconda::gatk4=4.4.0.0"
-    container "quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0"
+    conda "bioconda::gatk4=4.4.0.0 bioconda::samtools=1.17"
+    container "quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0 quay.io/biocontainers/samtools:1.17--h00cdaf9_0"
 
     cpus { Math.max(1, Math.round(12 * (1 - ((1/4)*(task.attempt-1))))) }
     errorStrategy 'retry'
@@ -142,13 +152,14 @@ process gatk_baserecalibrator {
 
 
     input:
-        tuple path(bamfile), path(bamfile_bai)
+        path(bamfile)
 	path(refgenome)
 	path(refgenome_index)
 	path(refgenome_dict)
 	path(known_sites)
 	path(known_sites_index)
         path(intervals)
+        val(library_type)
 
     output:
         path("${bamfile.getSimpleName()}_recal_data.table")
@@ -156,20 +167,30 @@ process gatk_baserecalibrator {
     script:
     """
     mkdir tmp
+
+    if [[ "${library_type}" == "wes" ]]
+    then
+        genomic_region="${intervals}"
+        samtools index "${bamfile}" -@ ${task.cpus} -o "${bamfile}.bai"
+    elif [[ "${library_type}" == "wgs" ]]
+    then
+        genomic_region="[]"
+    fi
+
     gatk BaseRecalibrator \\
 	--java-options "-Djava.io.tmpdir=tmp -Xms24G -Xmx24G -XX:ParallelGCThreads=2" \\
         --input ${bamfile} \\
 	--reference ${refgenome} \\
 	--known-sites ${known_sites} \\
-        --intervals ${intervals} \\
+        --intervals \$genomic_region \\
 	--output ${bamfile.getSimpleName()}_recal_data.table
     """
 
 }
 
 process gatk_apply_bqsr {
-    conda "bioconda::gatk4=4.4.0.0"
-    container "quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0"
+    conda "bioconda::gatk4=4.4.0.0 bioconda::samtools=1.17"
+    container "quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0 quay.io/biocontainers/samtools:1.17--h00cdaf9_0"
 
     memory {Math.min(96, 20+(14 * (task.attempt-1))).GB}
 
@@ -179,11 +200,12 @@ process gatk_apply_bqsr {
 
 
     input:
-        tuple path(bamfile), path(bamfile_bai), path(bam_recal_data)
+        tuple path(bamfile), path(bam_recal_data)
 	path(refgenome)
 	path(refgenome_index)
 	path(refgenome_dict)
         path(intervals)
+        val(library_type)
 
     output:
         path("out/${bamfile.getSimpleName()}.bam")
@@ -192,12 +214,22 @@ process gatk_apply_bqsr {
     """
     mkdir out
     mkdir tmp
+
+    if [[ "${library_type}" == "wes" ]]
+    then
+        genomic_region="${intervals}"
+        samtools index "${bamfile}" -@ ${task.cpus} -o "${bamfile}.bai"
+    elif [[ "${library_type}" == "wgs" ]]
+    then
+        genomic_region="[]"
+    fi
+
     gatk ApplyBQSR \\
         --java-options "-Djava.io.tmpdir=tmp -Xms24G -Xmx24G -XX:ParallelGCThreads=2" \\
         --input ${bamfile} \\
 	--reference ${refgenome} \\
 	--bqsr-recal-file ${bam_recal_data} \\
-        --intervals ${intervals} \\
+        --intervals \$genomic_region \\
 	--output out/${bamfile.getSimpleName()}.bam
     """
 

@@ -51,6 +51,7 @@ process seqz_proc {
 
     input:
         tuple val(sample_id), path(seqzfiles)
+        val(library_type)
 
     output:
         tuple val(sample_id), path("${sample_id}_bin.seqz.gz"), emit: smallbinfile
@@ -66,10 +67,18 @@ process seqz_proc {
     echo $header_seqz > header_${sample_id}.txt
     cat header_${sample_id}.txt merged_${sample_id}.seqz | bgzip -@ ${task.cpus} > all_${sample_id}.seqz.gz  
     tabix -f -s 1 -b 2 -e 2 -S 1 all_${sample_id}.seqz.gz
+    
+    if [[ "${library_type}" == "wes" ]]
+    then
+        windowsize=50
+    elif [[  "${library_type}" == "wgs" ]]
+    then
+        windowsize=200
+    fi
 
     sequenza-utils seqz_binning \\
               --seqz all_${sample_id}.seqz.gz \\
-              --window 50 \\
+              --window \$windowsize \\
               -o ${sample_id}_bin.seqz.gz
     """
 }
@@ -210,18 +219,26 @@ process generate_sequenza_wig {
 
   input:
       path(refgenome)
+      val(library_type)
 
   output:
      //path("${refgenome}.gz"), emit: fasta_gz 
-     path("${refgenome}_gc50.wig.gz"), emit: wig
+     path("${refgenome}_gc_${library_type}.wig.gz"), emit: wig
 
   script:
   // 200 for wgs
   // 50 for wes
-  def windowsize = 50
   """
+  if [[ "${library_type}" == "wes" ]]
+  then
+      windowsize=50
+  elif [[  "${library_type}" == "wgs" ]]
+  then
+      windowsize=200
+  fi
+
   bgzip -c ${refgenome} > ${refgenome}.gz
-  sequenza-utils gc_wiggle --fasta ${refgenome}.gz -w $windowsize -o "${refgenome}_gc50.wig.gz"
+  sequenza-utils gc_wiggle --fasta ${refgenome}.gz -w \$windowsize -o "${refgenome}_gc_${library_type}.wig.gz"
   """
 }
 
@@ -231,11 +248,12 @@ workflow sequenza {
        matched_bams
        refgenome
        scar_hrd_header
+       library_type
 
    main:
-       gc_wig_file = generate_sequenza_wig(refgenome)
+       gc_wig_file = generate_sequenza_wig(refgenome,library_type)
        bam_proc(matched_bams, refgenome, gc_wig_file.wig)
-       out = seqz_proc(bam_proc.out.seqzfiles)
+       out = seqz_proc(bam_proc.out.seqzfiles,library_type)
        sex = determine_sex(matched_bams)
        smallbin_sex = out.smallbinfile.join(sex)
        seq_out = r_sequenza(smallbin_sex)

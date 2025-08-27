@@ -137,7 +137,7 @@ workflow {
   //def args = params
   def args = [:]
   for (param in params) { args[param.key] = param.value }
-
+  
   if(args.workflow_variation == 'sequence_alignment'){
 	output = sequence_alignment(args)
 	pub = output.bam.mix(output.vcf).mix(output.bam_coverage).mix(output.bam_stats)
@@ -222,12 +222,20 @@ workflow {
 	  )
 	
   }
-  else if (args.workflow_variation == 'align_interpret'){
+  else if (args.workflow_variation == 'align_interpret' && (args.library_type == 'wes' || args.library_type == 'wgs')){
+        
+        if (args.library_type == 'wes'){
+            args = [ args, [intervals: args.wes_intervals] ].collectEntries()
+        } 
+        else if (args.library_type == 'wgs'){
+            args = [ args, [intervals: args.wgs_intervals] ].collectEntries()
+        }
+             
 	output = sequence_alignment(args)
 	pub = output.bam.mix(output.vcf).mix(output.bam_coverage).mix(output.bam_stats)
 
 	bams = output.bam
-	biomarkers = analyse_biomarkers(bams, args.refgenome, output.refgenome_index, output.refgenome_dict, args.wes_intervals, args.scar_hrd_header)
+	biomarkers = analyse_biomarkers(bams, args.refgenome, output.refgenome_index, output.refgenome_dict, args.intervals, args.scar_hrd_header, args.library_type)
 	msi_csv = biomarkers.msi_csv
         hs_metrics = biomarkers.hs_metrics
         bam_indices = biomarkers.indices
@@ -267,6 +275,7 @@ workflow {
 	  annotation_colinfo,
 	  args.bedfile,
 	  args.custom_filters,
+          args.library_type
 	  )
 	
 	pub = pub.mix(interpretation)

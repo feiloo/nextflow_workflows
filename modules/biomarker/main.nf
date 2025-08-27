@@ -10,12 +10,13 @@ workflow analyse_biomarkers {
     refgenome_dict
     intervals
     scar_hrd_header
+    library_type
     
   main:
     out = msisensor_pro(bams, refgenome)
     matched_bams = out.matched_preproc_bams
 
-    seqz = sequenza(matched_bams, refgenome, scar_hrd_header)
+    seqz = sequenza(matched_bams, refgenome, scar_hrd_header, library_type)
 
     out2 = collect_hs_metrics(bams.flatten(),refgenome,refgenome_index,refgenome_dict, intervals)
 

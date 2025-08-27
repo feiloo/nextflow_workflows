@@ -20,7 +20,7 @@ process gatk_mutect {
 	path(refgenome)
 	path(refgenome_index)
 	path(refgenome_dict)
-
+        
     output:
       tuple path("${tumor_bam.getSimpleName()}_unfiltered.vcf"), path("${tumor_bam.getSimpleName()}_unfiltered.vcf.stats"), emit: vcf
       path("${tumor_bam.getSimpleName()}_f1r2_data.shards.tar"), emit: f1r2_data
@@ -241,15 +241,15 @@ process gatk_calculate_contamination {
     script:
     """
 
-if [[ ${normal_pileups} != *N_1_pileup.table ]] 
-then
-  exit 1
-fi
+    if [[ ${normal_pileups} != *N_1_pileup.table ]] 
+    then
+      exit 1
+    fi
 
-if [[ ${tumor_pileups} != *T_1_pileup.table ]] 
-then
-  exit 1
-fi
+    if [[ ${tumor_pileups} != *T_1_pileup.table ]] 
+    then
+      exit 1
+    fi
 
     mkdir -p tmp
     gatk CalculateContamination \\
@@ -272,6 +272,7 @@ process gatk_filter_calls {
 	path(refgenome_index)
 	path(refgenome_dict)
         path(intervals)
+        val(library_type)
 
     output:
       path("${outputfile}"), emit: vcf
@@ -282,9 +283,16 @@ process gatk_filter_calls {
 
     """
     mkdir -p tmp
-
-    gatk IndexFeatureFile \\
-        --input ${sample_vcf} 
+    
+    if [[ "${library_type}" == "wes" ]]
+    then
+        genomic_region="${intervals}"
+        gatk IndexFeatureFile \\
+            --input ${sample_vcf}
+    elif [[ "${library_type}" == "wgs" ]]
+    then
+        genomic_region="[]"
+    fi 
 
     gatk FilterMutectCalls \\
 	--java-options "-Djava.io.tmpdir=tmp -Xms50G -Xmx50G" \\
@@ -292,7 +300,7 @@ process gatk_filter_calls {
 	--ob-priors ${orientation_model} \\
 	--contamination-table ${contamination_table} \\
 	--tumor-segmentation ${tumor_segments} \\
-        -L ${intervals} \\
+        -L \$genomic_region \\
 	--output "${outputfile}" \\
 	-R "${refgenome}"
     """
@@ -332,6 +340,7 @@ workflow variant_call {
     panel_of_normals
     germline_resource
     refgenome
+    library_type
     args
 
   main:
@@ -415,7 +424,7 @@ workflow variant_call {
     om_w_key = om.map{it -> ["${it.getSimpleName().split('_')[0]}", it]}
     vcf_w_filter_data = vcf_w_key.join(c_w_key).join(om_w_key).map{it -> [it[1][0], it[1][1], it[2][0], it[2][1], it[3]]}
 
-    filtered_vcf = gatk_filter_calls(vcf_w_filter_data, args.refgenome, refgenome_index, refgenome_dict, intervals).vcf
+    filtered_vcf = gatk_filter_calls(vcf_w_filter_data, args.refgenome, refgenome_index, refgenome_dict, intervals, library_type).vcf
 
   emit:
     vcf = filtered_vcf
