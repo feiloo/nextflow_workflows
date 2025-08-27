@@ -224,21 +224,29 @@ workflow {
   }
   else if (args.workflow_variation == 'align_interpret'){
 	seq_output = sequence_alignment(args)
-        //bam_pairings = seq_output.bam_pairings
-	//pub = seq_output.bam.mix(seq_output.vcf).mix(seq_output.bam_coverage).mix(seq_output.bam_stats)
+	// preprocessing output
+
+	// fastp report currently broken, skipping it
+
+	//pub = seq_output.integrity_check.mix(seq_output.samplesheet).mix(seq_output.fastp_report)
+	//pub = seq_output.samplesheet.mix(seq_output.fastp_report)
+
+	pub = seq_output.samplesheet.mix(seq_output.integrity_check).mix(seq_output.samplesheet)
+
+	//pub = pub.mix(seq_output.bam_pairs_w_idx.flatten())//.mix(seq_output.vcf).mix(seq_output.bam_coverage).mix(seq_output.bam_stats)
 
 	biomarkers = analyse_biomarkers(seq_output.bam_pairs_w_idx, args.refgenome, seq_output.refgenome_index, seq_output.refgenome_dict, args.intervals)
 	msi_csv = biomarkers.msi_csv
 	hs_metrics = biomarkers.hs_metrics
-	//bam_indices = biomarkers.indices
+	matched_bams_w_idx = biomarkers.matched_preproc_bams
 
-	//pub = pub.mix(msi_csv).mix(hs_metrics).mix(bam_indices)
+	pub = pub.mix(msi_csv).mix(hs_metrics).mix(matched_bams_w_idx.flatten())
 
 	matched_vcf = bgzip_vcf(seq_output.vcf).vcf.map{it -> [it.getSimpleName(), it]}
 
 	chr_fixed_vcf = rename_chromosomes_vcf(matched_vcf).vcf
 	fixed_vcfs = rename_clcad_to_ad(chr_fixed_vcf).vcf
-	new_rows = Channel.of("sample,vcf").concat((fixed_vcfs.map{it -> "${it[0]},${it[1]}"})).collect()
+	new_rows = Channel.of("sample,vcf").concat(fixed_vcfs.map{it -> "${it[0]},${it[1]}"}).collect()
 	//.collectFile(name: "fixed_samplesheet.csv", newLine: true)
 	new_samplesheet = write_samplesheet(new_rows).samplesheet
 	fasta = rename_chromosomes_refgenome(args.refgenome)
@@ -267,9 +275,20 @@ workflow {
 	  args.custom_filters,
 	  )
 	
-	//pub = pub.mix(interpretation)
+	pub = pub.mix(interpretation)
 
-	//publish(pub, args.output_dir)
+	println args.skip_publishing.getClass()
+
+	def skip = args.skip_publishing?.toString()?.toLowerCase() ?: 'false'
+	if (skip == 'false' || skip == '') {
+		publish(pub, args.output_dir)
+	} else if (skip == 'true'){
+		// do not publish anything
+		println "skipping publishing"
+	} else {
+	    println "invalid value for parameter skip_publishing " + args.workflow_variation
+	    System.exit(1)
+	}
   }
   else {
     println "invalid value for parameter workflow_variation " + args.workflow_variation
