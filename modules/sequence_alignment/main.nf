@@ -276,7 +276,8 @@ workflow sequence_alignment {
     bam_stats = bams_w_stats
     refgenome_index = refgenome_index
     refgenome_dict = refgenome_dict
-    samplesheet = samplesheet
+    samplesheet = Channel.of(args.samplesheet)
+    hash_db = Channel.of(args.hash_db)
     integrity_check = integrity_check
     fastp_report = fastp_out.html
 }
