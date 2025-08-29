@@ -82,24 +82,25 @@ process gatk_markduplicates {
 
     if [[ "${library_type}" == "wes" ]]
     then
-        genomic_region="${intervals}"
+        genomic_region="--intervals ${intervals}"
         samtools index "${bam}" -@ ${task.cpus} -o "${bam}.bai"
     elif [[ "${library_type}" == "wgs" ]]
     then
-        genomic_region="[]"
+        genomic_region=""
     fi
 
     gatk MarkDuplicatesSpark \\
         --input ${bam} \\
-        --intervals \$genomic_region \\
-	--java-options "-Djava.io.tmpdir=tmp -Xms24G -Xmx24G" \\
+        --java-options "-Djava.io.tmpdir=tmp -Xms24G -Xmx24G" \\
 	--conf 'spark.local.dir=tmp' \\
 	--conf 'spark.executor.cores=${task.cpus}' \\
 	--conf 'spark.executor.memory=24g' \\
 	--conf 'spark.driver.memory=2g' \\
 	--tmp-dir tmp \\
     	--spark-master local[${task.cpus}] \\
-	--output out/${bam}
+	--output out/${bam} \\
+        \$genomic_region 
+        
 
     """
 }
@@ -170,11 +171,11 @@ process gatk_baserecalibrator {
 
     if [[ "${library_type}" == "wes" ]]
     then
-        genomic_region="${intervals}"
+        genomic_region="--intervals ${intervals}"
         samtools index "${bamfile}" -@ ${task.cpus} -o "${bamfile}.bai"
     elif [[ "${library_type}" == "wgs" ]]
     then
-        genomic_region="[]"
+        genomic_region=""
     fi
 
     gatk BaseRecalibrator \\
@@ -182,8 +183,8 @@ process gatk_baserecalibrator {
         --input ${bamfile} \\
 	--reference ${refgenome} \\
 	--known-sites ${known_sites} \\
-        --intervals \$genomic_region \\
-	--output ${bamfile.getSimpleName()}_recal_data.table
+	--output ${bamfile.getSimpleName()}_recal_data.table \\
+        \$genomic_region
     """
 
 }
@@ -217,11 +218,11 @@ process gatk_apply_bqsr {
 
     if [[ "${library_type}" == "wes" ]]
     then
-        genomic_region="${intervals}"
+        genomic_region="--intervals ${intervals}"
         samtools index "${bamfile}" -@ ${task.cpus} -o "${bamfile}.bai"
     elif [[ "${library_type}" == "wgs" ]]
     then
-        genomic_region="[]"
+        genomic_region=""
     fi
 
     gatk ApplyBQSR \\
@@ -229,8 +230,8 @@ process gatk_apply_bqsr {
         --input ${bamfile} \\
 	--reference ${refgenome} \\
 	--bqsr-recal-file ${bam_recal_data} \\
-        --intervals \$genomic_region \\
-	--output out/${bamfile.getSimpleName()}.bam
+	--output out/${bamfile.getSimpleName()}.bam \\
+        \$genomic_region
     """
 
 }

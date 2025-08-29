@@ -286,12 +286,12 @@ process gatk_filter_calls {
     
     if [[ "${library_type}" == "wes" ]]
     then
-        genomic_region="${intervals}"
+        genomic_region="--intervals ${intervals}"
         gatk IndexFeatureFile \\
             --input ${sample_vcf}
     elif [[ "${library_type}" == "wgs" ]]
     then
-        genomic_region="[]"
+        genomic_region=""
     fi 
 
     gatk FilterMutectCalls \\
@@ -300,9 +300,9 @@ process gatk_filter_calls {
 	--ob-priors ${orientation_model} \\
 	--contamination-table ${contamination_table} \\
 	--tumor-segmentation ${tumor_segments} \\
-        -L \$genomic_region \\
-	--output "${outputfile}" \\
-	-R "${refgenome}"
+        --output "${outputfile}" \\
+	-R "${refgenome}" \\
+        \$genomic_region
     """
 }
 
