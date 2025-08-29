@@ -81,7 +81,7 @@ workflow sequence_alignment {
 	}
 
     samplesheet = args.samplesheet
-    hashes = args.hash_db
+    def hashes = args.hash_db
 
     // we require both samples to run the analysis
     // therefore 1 row requires/contains both, so its easier to read the samplesheet
