@@ -14,7 +14,7 @@ process collect_hs_metrics {
         path(mappable_38_IntervalList)
 
     output:
-        path("${bamfile.getSimpleName()}_bam_mertics.csv"), emit: hs_metrics
+        path("${bamfile.getSimpleName()}_bam_metrics.csv"), emit: hs_metrics
 
     script:
     """
@@ -24,7 +24,7 @@ process collect_hs_metrics {
 
     picard -Xmx256g CollectHsMetrics \
      -I ${bamfile} \
-     -O ${bamfile.getSimpleName()}_bam_mertics.csv \
+     -O ${bamfile.getSimpleName()}_bam_metrics.csv \
      -R ${ref_gatk38_fasta} \
      -TARGET_INTERVALS list.interval_list \
      -BAIT_INTERVALS list.interval_list \

@@ -15,11 +15,12 @@ workflow analyse_biomarkers {
     //seqq = sequenza(matched_bams, refgenome)
 
     bams = bam_pairs_w_idx.flatMap{normal_bam, normal_bai, tumor_bam, tumor_bai -> [normal_bam, tumor_bam]}
-    out2 = collect_hs_metrics(bams,refgenome,refgenome_index,refgenome_dict, intervals)
+    //hs_metrics = collect_hs_metrics(bams,refgenome,refgenome_index,refgenome_dict, intervals).hs_metrics
+    hs_metrics = Channel.empty()
 
     emit:
       matched_preproc_bams = out.matched_preproc_bams
       msi_csv = out.msi_csv
-      hs_metrics = out2.hs_metrics
+      hs_metrics = hs_metrics
       //indices = out.indices
 }

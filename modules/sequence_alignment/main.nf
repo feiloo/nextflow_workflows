@@ -209,7 +209,9 @@ workflow sequence_alignment {
 
     // output_file_prefix has to be calculated here, 
     // because it has to be known before starting the process as it it an output thereof
-    preprocessed_reads = fastp(sample_reads_w_prefix.unique()).preprocessed_reads
+    fastp_out = fastp(sample_reads_w_prefix.unique())
+    preprocessed_reads = fastp_out.preprocessed_reads
+    integrity_check = fastp_out.integrity_check
 
     // low_mem uses more memory efficient tools
     // for example bwa-mem instead of bwamem2
@@ -274,6 +276,9 @@ workflow sequence_alignment {
     bam_stats = bams_w_stats
     refgenome_index = refgenome_index
     refgenome_dict = refgenome_dict
+    samplesheet = samplesheet
+    integrity_check = integrity_check
+    fastp_report = fastp_out.html
 }
 
 workflow {
