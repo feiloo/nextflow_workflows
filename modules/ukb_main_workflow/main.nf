@@ -225,13 +225,11 @@ workflow {
   else if (args.workflow_variation == 'align_interpret'){
 	seq_output = sequence_alignment(args)
 	// preprocessing output
-
+	pub = seq_output.integrity_check.mix(seq_output.samplesheet)
+	pub = seq_output.samplesheet.mix(seq_output.hash_db).mix(seq_output.integrity_check)
 	// fastp report currently broken, skipping it
-
-	//pub = seq_output.integrity_check.mix(seq_output.samplesheet).mix(seq_output.fastp_report)
-	//pub = seq_output.samplesheet.mix(seq_output.fastp_report)
-
-	pub = seq_output.samplesheet.mix(seq_output.hash_db).mix(seq_output.integrity_check).mix(seq_output.samplesheet)
+	//pub = pub.mix(seq_output.fastp_report)
+	pub = pub.mix(seq_output.vcf).mix(seq_output.bam_coverage).mix(seq_output.bam_stats)
 
 	//pub = pub.mix(seq_output.bam_pairs_w_idx.flatten())//.mix(seq_output.vcf).mix(seq_output.bam_coverage).mix(seq_output.bam_stats)
 
