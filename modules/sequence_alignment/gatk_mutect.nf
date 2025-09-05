@@ -312,6 +312,207 @@ def removeSuffix(String str, String suffix) {
     return str[0..<str.length()-suffix.length()]
 }
 
+def create_interval_shards(intervals_file) {
+    def chromosomes = ['chr1', 'chr2', 'chr3', 'chr4', 'chr5', 'chr6', 'chr7', 'chr8', 'chr9', 'chr10', 
+                      'chr11', 'chr12', 'chr13', 'chr14', 'chr15', 'chr16', 'chr17', 'chr18', 'chr19', 
+                      'chr20', 'chr21', 'chr22', 'chrX', 'chrY', 'chrM']
+    
+    def chromosomes_data = [:]
+    def unknown_chroms = []
+    
+    intervals_file.eachLine { line ->
+        if (!line.startsWith('#') && line.trim()) {
+            def parts = line.split('\t')
+            def chrom = parts[0]
+            if (!chromosomes.contains(chrom)) {
+                unknown_chroms.add(chrom)
+            }
+            if (!chromosomes_data.containsKey(chrom)) {
+                chromosomes_data[chrom] = []
+            }
+            chromosomes_data[chrom].add(line)
+        }
+    }
+    
+    if (!unknown_chroms.empty) {
+        throw new Exception("Unknown chromosomes found in intervals: ${unknown_chroms.unique().join(', ')}")
+    }
+    
+    def shards = []
+    chromosomes.each { chrom ->
+        if (chromosomes_data.containsKey(chrom)) {
+            def shard_file = file("${chrom}.bed")
+            shard_file.write(chromosomes_data[chrom].join('\n') + '\n')
+            shards.add([chrom, shard_file])
+        }
+    }
+    return shards
+}
+
+
+process gatk_mutect_shard {
+    conda "bioconda::gatk4=4.4.0.0"
+    container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
+
+    memory {Math.min(56, 36+(10 * (task.attempt-1))).GB}
+    cpus 12
+
+    input:
+        tuple val(sample_pair_key), val(shard_id), path(normal_bam), path(normal_bam_index), path(tumor_bam), path(tumor_bam_index), path(interval_bed)
+        path(panel_of_normals)
+        path(panel_of_normals_index)
+        path(germline_resource)
+        path(germline_resource_index)
+        path(refgenome)
+        path(refgenome_index)
+        path(refgenome_dict)
+
+    output:
+        tuple val(sample_pair_key), val(shard_id), path("${sample_pair_key}_unfiltered_${shard_id}.vcf"), path("${sample_pair_key}_unfiltered_${shard_id}.vcf.stats"), emit: vcf_shard
+        tuple val(sample_pair_key), val(shard_id), path("${sample_pair_key}_f1r2_data_${shard_id}.tar.gz"), emit: f1r2_shard
+
+    script:
+    def out_prefix = "${sample_pair_key}_${shard_id}"
+    """
+    mkdir -p tmp
+    
+    gatk Mutect2 \\
+        --java-options "-Djava.io.tmpdir=tmp -Xms45G -Xmx45G" \\
+        --native-pair-hmm-threads ${task.cpus} \\
+        --tmp-dir tmp \\
+        --input ${tumor_bam} \\
+        --input ${normal_bam} \\
+        -normal ${normal_bam.getSimpleName()} \\
+        -L ${interval_bed} \\
+        -pon ${panel_of_normals} \\
+        -germline-resource ${germline_resource} \\
+        --reference ${refgenome} \\
+        --f1r2-tar-gz "${sample_pair_key}_f1r2_data_${shard_id}.tar.gz" \\
+        --output "${sample_pair_key}_unfiltered_${shard_id}.vcf"
+    """
+}
+
+
+process gatk_merge_mutect_shards {
+    conda "bioconda::gatk4=4.4.0.0"
+    container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
+
+    memory '32 GB'
+
+    input:
+        tuple val(sample_pair_key), path(vcf_shards), path(stats_shards), path(f1r2_shards)
+
+    output:
+        tuple path("${sample_pair_key}_unfiltered.vcf"), 
+              path("${sample_pair_key}_unfiltered.vcf.stats"), emit: merged_vcf
+        path("${sample_pair_key}_f1r2_data.shards.tar"), emit: merged_f1r2
+
+    script:
+    def vcf_names = vcf_shards.collect { it.getName() }.join('\n')
+    def stats_names = stats_shards.collect { it.getName() }.join('\n')
+    def f1r2_names = f1r2_shards.collect { it.getName() }.join(' ')
+    """
+    echo -e "${vcf_names}" > vcf_inputs.list
+    echo -e "${stats_names}" > stats_inputs.list
+    
+    gatk MergeVcfs -I vcf_inputs.list -O "${sample_pair_key}_unfiltered.vcf"
+    gatk MergeMutectStats --stats stats_inputs.list -O "${sample_pair_key}_unfiltered.vcf.stats"
+    
+    tar -cf "${sample_pair_key}_f1r2_data.shards.tar" ${f1r2_names}
+    """
+}
+
+
+workflow variant_call_sharded {
+  take:
+    bam_pairs_w_idx
+    intervals
+    panel_of_normals
+    panel_of_normals_index
+    germline_resource
+    germline_resource_index
+    refgenome
+    refgenome_index
+    refgenome_dict
+
+  main:
+    // Create interval shards using the function
+    interval_shards = Channel.fromPath(intervals)
+        .map{ interval_file -> create_interval_shards(interval_file) }
+        .flatMap{ it }
+        .map{ chrom, shard_file -> [chrom, shard_file] }
+
+
+bam_interval_combinations = bam_pairs_w_idx
+        .combine(interval_shards)
+        .map{ it ->
+            // BAM data is elements 0-3, interval data is elements 4-5
+            if (it.size() < 6) {
+                throw new Exception("Invalid data structure: expected at least 6 elements, got ${it.size()}")
+            }
+            
+            def normal_bam = it[0]
+            def normal_bai = it[1] 
+            def tumor_bam = it[2]
+            def tumor_bai = it[3]
+            def shard_id = it[4]
+            def interval_bed = it[5]
+            
+            def sample_pair_key = vcf_name_from_pair(normal_bam, tumor_bam)
+            
+            [sample_pair_key, shard_id, normal_bam, normal_bai, tumor_bam, tumor_bai, interval_bed]
+        }
+    bam_interval_combinations.view()
+
+    // Run Mutect2 shards
+    mutect_shards = gatk_mutect_shard(
+        bam_interval_combinations,
+        panel_of_normals,
+        panel_of_normals_index,
+        germline_resource,
+        germline_resource_index,
+        refgenome,
+        refgenome_index,
+        refgenome_dict
+    )
+
+    // Group shards by sample pair key using groupTuple with size
+    def expected_chromosome_count = 25 // chr1-chr22, chrX, chrY, chrM
+    
+    grouped_vcf_shards = mutect_shards.vcf_shard
+        .groupTuple(by: 0, size: expected_chromosome_count)
+        .map{ key, files -> 
+            def vcfs = files.collect{ it[2] }
+            def stats = files.collect{ it[3] }
+            [key, vcfs, stats]
+        }
+
+    grouped_f1r2_shards = mutect_shards.f1r2_shard
+        .groupTuple(by: 0, size: expected_chromosome_count)
+        .map{ key, files -> 
+            def f1r2_files = files.collect{ it[2] }
+            [key, f1r2_files]
+        }
+
+    // Combine VCF and F1R2 shards
+    combined_shards = grouped_vcf_shards
+        .join(grouped_f1r2_shards)
+        .map{ key, vcf_data, f1r2_data ->
+            def vcfs = vcf_data[1]
+            def stats = vcf_data[2]
+            def f1r2_files = f1r2_data[1]
+            [key, vcfs, stats, f1r2_files]
+        }
+
+    // Merge shards
+    merged_results = gatk_merge_mutect_shards(combined_shards)
+
+  emit:
+    vcf = merged_results.merged_vcf
+    f1r2_data = merged_results.merged_f1r2
+}
+
+
 workflow variant_call {
   take:
     bam_pairings
@@ -380,10 +581,19 @@ workflow variant_call {
     germline_resource_index = indices_mid.first{ it -> "${file(it).getSimpleName()}" == "${file(germline_resource).getSimpleName()}" }
 
 
+    def shard_mutect = false
+    if(shard_mutect){
+    mut = variant_call_sharded(bam_pairs_w_idx, intervals, 
+            panel_of_normals, panel_of_normals_index,
+            germline_resource,  germline_resource_index,  
+            refgenome, refgenome_index, refgenome_dict)
+    else {
     mut = gatk_mutect(bam_pairs_w_idx, intervals, 
 	    panel_of_normals, panel_of_normals_index,
 	    germline_resource,  germline_resource_index,  
 	    refgenome, refgenome_index, refgenome_dict)
+    }
+
 
     vcf = mut.vcf.map{vcf, stats -> vcf}
     om = gatk_learn_readorientationmodel(mut.f1r2_data).orientation_model
