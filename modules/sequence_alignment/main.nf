@@ -177,19 +177,40 @@ workflow sequence_alignment {
         def hashes_map = hash_db_to_dict(hashes)
 	println "hashes map: ${hashes_map}"
         //throw new Exception("hashes map: ${hashes_map}")
+        
+        def input_dir_ = ''
+        def input_dir = ''
+
+	// Validate and normalize directory path
+        if (!args.containsKey('input_dir')){
+          input_dir_ = "${launchDir}"
+        } else {
+	  input_dir_ = args.input_dir ?: "${launchDir}"
+	}
+
+	if (input_dir_) {
+	    def dirObj = new File(input_dir_)
+	    if (!dirObj.exists()) {
+		throw new IllegalArgumentException("Directory does not exist: ${dir}")
+	    }
+	    if (!dirObj.isDirectory()) {
+		throw new IllegalArgumentException("Path is not a directory: ${dir}")
+	    }
+	    input_dir = dirObj.absolutePath
+	}
 
         
         sample_reads_w_prefix = csv_channel.map{ row -> 
         [[ row.sample_id, 
-                file("${row.sample_id}_N_${row.normal_modality}_1.fq.gz"),
-                file("${row.sample_id}_N_${row.normal_modality}_2.fq.gz"),
+                file("${input_dir}/${row.sample_id}_N_${row.normal_modality}_1.fq.gz"),
+                file("${input_dir}/${row.sample_id}_N_${row.normal_modality}_2.fq.gz"),
                 "${row.sample_id}_N",
                 hashes_map["${row.sample_id}_N_${row.normal_modality}_1.fq.gz"],
                 hashes_map["${row.sample_id}_N_${row.normal_modality}_2.fq.gz"],
                 ],
         [ row.sample_id, 
-                file("${row.sample_id}_T_${row.tumor_modality}_1.fq.gz"),
-                file("${row.sample_id}_T_${row.tumor_modality}_2.fq.gz"),
+                file("${input_dir}/${row.sample_id}_T_${row.tumor_modality}_1.fq.gz"),
+                file("${input_dir}/${row.sample_id}_T_${row.tumor_modality}_2.fq.gz"),
                 "${row.sample_id}_T",
                 hashes_map["${row.sample_id}_T_${row.tumor_modality}_1.fq.gz"],
                 hashes_map["${row.sample_id}_T_${row.tumor_modality}_2.fq.gz"],

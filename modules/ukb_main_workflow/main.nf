@@ -271,7 +271,7 @@ workflow {
 	  annotation_colinfo,
 	  args.bedfile,
 	  args.custom_filters,
-	  )
+	  ).ukb_results
 	
 	pub = pub.mix(interpretation)
 
