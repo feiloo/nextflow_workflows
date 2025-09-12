@@ -293,3 +293,7 @@ workflow {
     System.exit(1)
   }
 }
+
+workflow.onComplete {
+    println "Pipeline successful, outputs at: $params.output_dir"
+}

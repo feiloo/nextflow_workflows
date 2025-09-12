@@ -81,7 +81,7 @@ workflow sequence_alignment {
 	}
 
     samplesheet = args.samplesheet
-    def hashes = args.hash_db
+    //def hashes = '' //args.hash_db
 
     // we require both samples to run the analysis
     // therefore 1 row requires/contains both, so its easier to read the samplesheet
@@ -172,11 +172,6 @@ workflow sequence_alignment {
           }
         }
 
-
-        assert hashes != null : "hashdb argument cant be null when running samplesheet_flavor: modal"
-        def hashes_map = hash_db_to_dict(hashes)
-	println "hashes map: ${hashes_map}"
-        //throw new Exception("hashes map: ${hashes_map}")
         
         def input_dir_ = ''
         def input_dir = ''
@@ -198,6 +193,14 @@ workflow sequence_alignment {
 	    }
 	    input_dir = dirObj.absolutePath
 	}
+
+	def hashes = args.hash_db
+
+
+        assert hashes != null : "hashdb argument cant be null when running samplesheet_flavor: modal"
+        def hashes_map = hash_db_to_dict(hashes)
+	println "hashes map: ${hashes_map}"
+        //throw new Exception("hashes map: ${hashes_map}")
 
         
         sample_reads_w_prefix = csv_channel.map{ row -> 
