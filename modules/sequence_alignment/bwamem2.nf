@@ -77,6 +77,8 @@ process bwamem2_align {
 
     def read_group_info = "@RG\\tID:${read_group_identifier}\\tPL:${platform_technology}\\tLB:${library_prep_identifier}\\tPU:${platform_unit}\\tSM:${sample_name}"
 
+    // todo: remove trailing read-numbers like "T_1.bam" from bam since bams combine both reads here
+
     """
     bwa-mem2 mem -R "${read_group_info}" -t ${task.cpus} ${refgenome} ${read1} ${read2} | samtools view --bam --threads ${task.cpus} -o ${read1.getSimpleName()}.bam
     """

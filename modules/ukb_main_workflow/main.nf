@@ -2,8 +2,8 @@ include { arriba_nextflow } from "$NEXTFLOW_MODULES/arriba_nextflow"
 
 if(params.workflow_variation == 'clc'){
 include { pancancer_dna_only; pancancer_dna_rna } from "$NEXTFLOW_MODULES/clc_nextflow"
-}
 include { pancancer_analyse } from "$NEXTFLOW_MODULES/nextpipe"
+}
 
 include { VARIANTINTERPRETATION } from "$NEXTFLOW_MODULES/variantinterpretation/workflows/variantinterpretation.nf"
 include { sequence_alignment } from "$NEXTFLOW_MODULES/sequence_alignment"
@@ -223,22 +223,28 @@ workflow {
 	
   }
   else if (args.workflow_variation == 'align_interpret'){
-	output = sequence_alignment(args)
-	pub = output.bam.mix(output.vcf).mix(output.bam_coverage).mix(output.bam_stats)
+	seq_output = sequence_alignment(args)
+	// preprocessing output
+	pub = seq_output.integrity_check.mix(seq_output.samplesheet)
+	pub = seq_output.samplesheet.mix(seq_output.hash_db).mix(seq_output.integrity_check)
+	// fastp report currently broken, skipping it
+	//pub = pub.mix(seq_output.fastp_report)
+	pub = pub.mix(seq_output.vcf).mix(seq_output.bam_coverage).mix(seq_output.bam_stats)
 
-	bams = output.bam
-	biomarkers = analyse_biomarkers(bams, args.refgenome, output.refgenome_index, output.refgenome_dict, args.intervals)
+	//pub = pub.mix(seq_output.bam_pairs_w_idx.flatten())//.mix(seq_output.vcf).mix(seq_output.bam_coverage).mix(seq_output.bam_stats)
+
+	biomarkers = analyse_biomarkers(seq_output.bam_pairs_w_idx, args.refgenome, seq_output.refgenome_index, seq_output.refgenome_dict, args.intervals)
 	msi_csv = biomarkers.msi_csv
 	hs_metrics = biomarkers.hs_metrics
-	bam_indices = biomarkers.indices
+	matched_bams_w_idx = biomarkers.matched_preproc_bams
 
-	pub = pub.mix(msi_csv).mix(hs_metrics).mix(bam_indices)
+	pub = pub.mix(msi_csv).mix(hs_metrics).mix(matched_bams_w_idx.flatten())
 
-	matched_vcf = bgzip_vcf(output.vcf).vcf.map{it -> [it.getSimpleName(), it]}
+	matched_vcf = bgzip_vcf(seq_output.vcf).vcf.map{it -> [it.getSimpleName(), it]}
 
 	chr_fixed_vcf = rename_chromosomes_vcf(matched_vcf).vcf
 	fixed_vcfs = rename_clcad_to_ad(chr_fixed_vcf).vcf
-	new_rows = Channel.of("sample,vcf").concat((fixed_vcfs.map{it -> "${it[0]},${it[1]}"})).collect()
+	new_rows = Channel.of("sample,vcf").concat(fixed_vcfs.map{it -> "${it[0]},${it[1]}"}).collect()
 	//.collectFile(name: "fixed_samplesheet.csv", newLine: true)
 	new_samplesheet = write_samplesheet(new_rows).samplesheet
 	fasta = rename_chromosomes_refgenome(args.refgenome)
@@ -265,14 +271,29 @@ workflow {
 	  annotation_colinfo,
 	  args.bedfile,
 	  args.custom_filters,
-	  )
+	  ).ukb_results
 	
 	pub = pub.mix(interpretation)
 
-	publish(pub, args.output_dir)
+	println args.skip_publishing.getClass()
+
+	def skip = args.skip_publishing?.toString()?.toLowerCase() ?: 'false'
+	if (skip == 'false' || skip == '') {
+		publish(pub, args.output_dir)
+	} else if (skip == 'true'){
+		// do not publish anything
+		println "skipping publishing"
+	} else {
+	    println "invalid value for parameter skip_publishing " + args.workflow_variation
+	    System.exit(1)
+	}
   }
   else {
     println "invalid value for parameter workflow_variation " + args.workflow_variation
     System.exit(1)
   }
+}
+
+workflow.onComplete {
+    println "Pipeline successful, outputs at: $params.output_dir"
 }
