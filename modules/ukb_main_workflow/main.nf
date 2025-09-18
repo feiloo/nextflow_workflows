@@ -233,7 +233,7 @@ workflow {
 
 	//pub = pub.mix(seq_output.bam_pairs_w_idx.flatten())//.mix(seq_output.vcf).mix(seq_output.bam_coverage).mix(seq_output.bam_stats)
 
-	biomarkers = analyse_biomarkers(seq_output.bam_pairs_w_idx, args.refgenome, seq_output.refgenome_index, seq_output.refgenome_dict, args.intervals)
+	biomarkers = analyse_biomarkers(seq_output.bam_pairs_w_idx, args.refgenome, seq_output.refgenome_index, seq_output.refgenome_dict, args)
 	msi_csv = biomarkers.msi_csv
 	hs_metrics = biomarkers.hs_metrics
 	matched_bams_w_idx = biomarkers.matched_preproc_bams

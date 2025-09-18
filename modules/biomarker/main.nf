@@ -8,15 +8,16 @@ workflow analyse_biomarkers {
     refgenome
     refgenome_index
     refgenome_dict
-    intervals
+    args
   main:
     out = msisensor_pro(bam_pairs_w_idx, refgenome)
 
     //seqq = sequenza(matched_bams, refgenome)
 
     bams = bam_pairs_w_idx.flatMap{normal_bam, normal_bai, tumor_bam, tumor_bai -> [normal_bam, tumor_bam]}
-    if(!args.hs_metrics){
-	    hs_metrics = collect_hs_metrics(bams,refgenome,refgenome_index,refgenome_dict, intervals).hs_metrics
+    def hs = args && args.containsKey('hs_metrics') && args['hs_metrics'].toLowerCase() == 'true'
+    if(hs){
+	    hs_metrics = collect_hs_metrics(bams,refgenome,refgenome_index,refgenome_dict, args.intervals).hs_metrics
     } else{
 	    hs_metrics = Channel.empty()
 	    }
