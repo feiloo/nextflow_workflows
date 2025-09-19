@@ -219,6 +219,7 @@ workflow {
 	  annotation_colinfo,
 	  args.bedfile,
 	  args.custom_filters,
+	  args.library_type,
 	  )
 	
   }
@@ -271,6 +272,7 @@ workflow {
 	  annotation_colinfo,
 	  args.bedfile,
 	  args.custom_filters,
+	  args.library_type,
 	  ).ukb_results
 	
 	pub = pub.mix(interpretation)
