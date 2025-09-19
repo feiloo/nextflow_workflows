@@ -297,5 +297,5 @@ workflow {
 }
 
 workflow.onComplete {
-    println "Pipeline successful, outputs at: $params.output_dir"
+    println "Pipeline outputs at: $params.output_dir"
 }
