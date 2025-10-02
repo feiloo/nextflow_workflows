@@ -17,11 +17,11 @@ process publish {
   mkdir -p ${output_dir}/outputs/
   # ensure that files are fully staged out, by rereading, and make it neary-atomic by writing to a tmp file and renaming
 
-  echo published ${inputfile} to ${output_dir}/outputs/${inputfile.getName()}
-  cp --no-clobber ${inputfile} ${output_dir}/outputs/tmp.${inputfile.getName()}
+  echo published "${inputfile}" to "${output_dir}/outputs/${inputfile.getName()}"
+  cp --no-clobber "${inputfile}" "${output_dir}/outputs/tmp.${inputfile.getName()}"
   # cmp is better than checksums because it fails earlier
-  cmp ${inputfile} ${output_dir}/outputs/tmp.${inputfile.getName()}
-  mv ${output_dir}/outputs/tmp.${inputfile.getName()} ${output_dir}/outputs/${inputfile.getName()}
+  cmp ${inputfile} "${output_dir}/outputs/tmp.${inputfile.getName()}"
+  mv --no-clobber "${output_dir}/outputs/tmp.${inputfile.getName()}" "${output_dir}/outputs/${inputfile.getName()}"
   """
 }
 
