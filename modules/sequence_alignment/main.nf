@@ -236,6 +236,8 @@ workflow sequence_alignment {
     fastp_out = fastp(sample_reads_w_prefix.unique())
     preprocessed_reads = fastp_out.preprocessed_reads
     integrity_check = fastp_out.integrity_check
+    fastp_report_h = fastp_out.html
+    fastp_report_j = fastp_out.json
 
     // low_mem uses more memory efficient tools
     // for example bwa-mem instead of bwamem2
@@ -252,13 +254,11 @@ workflow sequence_alignment {
     refgenome_index = index_fasta(args.refgenome).fasta_index
     refgenome_dict = gatk_createsequencedictionary(args.refgenome).refgenome_dict
 
-    preprocessed_reads_no_id = preprocessed_reads.map{it -> [it[1], it[2]]} 
-
     if(args.bwa_tool == 'bwa'){
-    	bams = bwa_align(preprocessed_reads_no_id, args.refgenome, bwa_idx.amb, bwa_idx.ann, bwa_idx.bwt, bwa_idx.pac, bwa_idx.sa, args.cleanup_intermediate_files)
+    	bams = bwa_align(preprocessed_reads, args.refgenome, bwa_idx.amb, bwa_idx.ann, bwa_idx.bwt, bwa_idx.pac, bwa_idx.sa, args.cleanup_intermediate_files)
     } else if(args.bwa_tool == 'bwa2'){
         // bwa_idx.f0123 was has an f prefixed so, the file ending starts with a non-numeral
-        bams = bwamem2_align(preprocessed_reads_no_id, args.refgenome, bwa_idx.f0123, bwa_idx.amb, bwa_idx.ann, bwa_idx.bwt_2bit_64, bwa_idx.pac, args.cleanup_intermediate_files)
+        bams = bwamem2_align(preprocessed_reads, args.refgenome, bwa_idx.f0123, bwa_idx.amb, bwa_idx.ann, bwa_idx.bwt_2bit_64, bwa_idx.pac, args.cleanup_intermediate_files)
     	//bams = sam_to_bam(sams, args.cleanup_intermediate_files)
     } else {
 	throw new Exception("unknown bwa_tool ${args.bwa_tool}")
@@ -303,7 +303,8 @@ workflow sequence_alignment {
     samplesheet = Channel.of(args.samplesheet)
     hash_db = Channel.of(args.hash_db)
     integrity_check = integrity_check
-    fastp_report = fastp_out.html
+    fastp_report_h = fastp_report_h
+    fastp_report_j = fastp_report_j
 }
 
 workflow {

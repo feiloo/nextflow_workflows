@@ -9,22 +9,25 @@ process fastp {
     cpus 12
     errorStrategy { task.exitStatus in 250..253 ? 'terminate' : 'retry' }
     maxRetries 4
+    // highest compression by default
+    ext compression_level: "9"
 
     input:
     tuple val(sample_id), path(read1), path(read2), val(output_file_prefix), val(expected_checksum1), val(expected_checksum2)
 
     output:
-    tuple val(sample_id), path("${output_file_prefix}_fastp.html"), emit: html
-    tuple val(sample_id), path("${output_file_prefix}_fastp.json"), emit: json
-    tuple val(sample_id), path("out/${read1.getSimpleName()}.fq.gz"), path("out/${read2.getSimpleName()}.fq.gz"), emit: preprocessed_reads
+    tuple path("out/${read1.getSimpleName()}.fq.gz"), path("out/${read2.getSimpleName()}.fq.gz"), emit: preprocessed_reads
+    path("${output_file_prefix}_fastp.html"), emit: html
+    path("${output_file_prefix}_fastp.json"), emit: json
     path("${output_file_prefix}_check_process_results.txt"), emit: integrity_check
 
     script:
 
-    def gz_compressionlevel = 9 // out of 1 to 9
 
     """
     set -euo pipefail
+
+    GZ_COMPRESSION_LEVEL=${task.ext.compression_level ?: "9"} # out of 1 to 9
 
     mkdir -p out
     CHECKSUM_TYPE="md5sum"
@@ -35,7 +38,7 @@ process fastp {
 	--in2 ${read2} \\
 	--out1  out/${read1.getSimpleName()}.fq.gz \\
 	--out2  out/${read2.getSimpleName()}.fq.gz \\
-	-z ${gz_compressionlevel} \\
+	-z \$GZ_COMPRESSION_LEVEL \\
 	--thread ${task.cpus} \\
 	--json ${output_file_prefix}_fastp.json \\
 	--html ${output_file_prefix}_fastp.html \\

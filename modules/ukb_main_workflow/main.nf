@@ -227,9 +227,9 @@ workflow {
 	seq_output = sequence_alignment(args)
 	// preprocessing output
 	pub = seq_output.integrity_check.mix(seq_output.samplesheet)
-	pub = seq_output.samplesheet.mix(seq_output.hash_db).mix(seq_output.integrity_check)
+	pub = seq_output.samplesheet.mix(seq_output.hash_db)
 	// fastp report currently broken, skipping it
-	//pub = pub.mix(seq_output.fastp_report)
+	pub = pub.mix(seq_output.fastp_report_h).mix(seq_output.fastp_report_j)
 	pub = pub.mix(seq_output.vcf).mix(seq_output.bam_coverage).mix(seq_output.bam_stats)
 
 	//pub = pub.mix(seq_output.bam_pairs_w_idx.flatten())//.mix(seq_output.vcf).mix(seq_output.bam_coverage).mix(seq_output.bam_stats)
@@ -277,8 +277,6 @@ workflow {
 	
 	pub = pub.mix(interpretation)
 
-	println args.skip_publishing.getClass()
-
 	def skip = args.skip_publishing?.toString()?.toLowerCase() ?: 'false'
 	if (skip == 'false' || skip == '') {
 		publish(pub, args.output_dir)
@@ -297,5 +295,6 @@ workflow {
 }
 
 workflow.onComplete {
-    println "Pipeline outputs at: $params.output_dir"
+    println "Pipeline for samplesheet $params.samplesheet finished with outputs at: $params.output_dir"
+    println "Pipeline used workdir $params.workdir"
 }

@@ -25,3 +25,21 @@ process publish {
   """
 }
 
+process create_report {
+  memory '1 GB'
+
+  //publishDir "${output_dir}/outputs", mode: 'copy', overwrite: false
+  maxForks 4
+  cache false
+
+  input:
+    path("*.json")
+  output:
+    path("combined_report")
+
+
+  script:
+  """
+  cat *.json >> combined_report
+  """
+}
