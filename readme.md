@@ -45,20 +45,48 @@ python scripts/download_data.py reference $NGS_REFERENCE_DIR
 
 the pipeline has multiple variations, the main variation is "align_interpret"
 
-it requires a samplesheet.csv like this:
+this version requires fastq input files with naming that matches this example:
 
 ```
-sample_id,normal_read1,normal_read2,tumor_read1,tumor_read2
-SAMPLENAME-24,/data/testdata/SAMPLENAME-24_N_1.fq.gz,/data/testdata/SAMPLENAME-24_N_2.fq.gz,/data/testdata/SAMPLENAME-24_T_1.fq.gz,/data/testdata/SAMPLENAME-24_T_2.fq.gz
+X123-25_N_FFPE_1.fq.gz
+X123-25_N_FFPE_2.fq.gz
+X123-25_T_FFPE_1.fq.gz
+X123-25_T_FFPE_2.fq.gz
 ```
+
+where X123-YY is the samplename and 25 is the year.
+N or T stands for normal or tumor.
+FFPE or FF or BLOOD stands for formalin fixed paraffin embedded, fresh frozen, or blood source material respectively.
+1 or 2 are the read direction and .fq.gz stands for bgzf/bgzip compressed fastq files.
+
+it also requires a samplesheet.csv like this:
+
+```
+sample_id,normal_modality,tumor_modality
+X123-25,FFPE,FFPE
+X123-25,BLOOD,FFPE
+```
+
+a md5sum.txt that includes the hashes for the input
+
+the pipeline takes the fastq samplesheet.csv and md5sum.txt files from the --input_dir.
 
 now start the pipeline.
 
 ```
-cd $NEXTFLOW_CALLDIR && nextflow run $NEXTFLOW_MODULES/ukb_main_workflow/main.nf \
-    -profile standard \
-    --workflow_variation align_interpret \
-    --samplesheet test_sequence_alignment_samplesheet.csv
+cd $NEXTFLOW_CALLDIR && nextflow \
+        -log nextflow.log \
+        run $NEXTFLOW_MODULES/ukb_main_workflow/ \
+        --workflow_variation align_interpret \
+        --samplesheet samplesheet.csv \
+        --hash_db md5sum.txt \
+        -c $NEXTFLOW_MODULES/ukb_main_workflow/user.config \
+        --library_type wgs \
+        --input_dir $NEXTFLOW_CALLDIR \
+        -profile standard \
+        -offline \
+        -resume \
+        --tag routine_establish,wgs
 ```
 
 ## configuration
