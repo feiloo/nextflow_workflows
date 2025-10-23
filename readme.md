@@ -1,19 +1,20 @@
-# Nextflow modules for NGS
+# OncoScanner NGS pipeline
 
-this repo contains multiple nextflow workflows for somatic NGS analysis.
-
-we focus on modularity and simplicity.
+this repo contains the OncoScanner pipeline for somatic WGS and WES analysis.
 
 the implementation is inspired by various nf-core modules and the nf-core/sarek pipeline.
 
-## Setup
+Computing WGS samples have high resources requirements, see below.
 
-there are multiple ways of running the workflow. 
-the simplest way is to run (portable) from a single folder, but WARNING this pipeline requires a few terabytes of free storage.
+## Software Setup
 
 for now we recommend running on a single host with conda.
 
-Dependencies:
+there are multiple ways of running the workflow. 
+
+the simplest way is to run (portable) from a single folder, 
+
+dependencies:
 
 * nextflow
 * conda
@@ -55,8 +56,11 @@ X123-25_T_FFPE_2.fq.gz
 ```
 
 where X123-YY is the samplename and 25 is the year.
+
 N or T stands for normal or tumor.
+
 FFPE or FF or BLOOD stands for formalin fixed paraffin embedded, fresh frozen, or blood source material respectively.
+
 1 or 2 are the read direction and .fq.gz stands for bgzf/bgzip compressed fastq files.
 
 it also requires a samplesheet.csv like this:
@@ -67,9 +71,9 @@ X123-25,FFPE,FFPE
 X123-25,BLOOD,FFPE
 ```
 
-a md5sum.txt that includes the hashes for the input
+a md5sum.txt that includes the hashes for the input files.
 
-the pipeline takes the fastq samplesheet.csv and md5sum.txt files from the --input_dir.
+the pipeline takes the fastq samplesheet.csv and md5sum.txt files from the specified `--input_dir`.
 
 now start the pipeline.
 
@@ -93,6 +97,17 @@ cd $NEXTFLOW_CALLDIR && nextflow \
 
 see the environment variables and nextflow-configs like `modules/ukb_main_workflow/user.config`
 
+### Resource Requirements, recommended
+
+this pipeline requires about 5TB of temporary (workdir) storage per WGS sample.
+
+256 GB of ram are recommended.
+
+a WGS sample is estimated to take about 1800 cpu-hours (epyc milan).
+
+a batch of 4 wgs samples takes about 5 days to calculate.
+
+note: its possible to run with lower resources, but it would slow development and research.
 
 ## development
 
