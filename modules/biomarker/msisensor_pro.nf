@@ -34,10 +34,10 @@ process eval_msi {
     path(refgenome_microsatellites)
 
     output:
-    path("${normal_bam.getSimpleName()}_msi.csv"), emit: csv
-    path("${normal_bam.getSimpleName()}_msi.csv_dis")
-    path("${normal_bam.getSimpleName()}_msi.csv_germline")
-    path("${normal_bam.getSimpleName()}_msi.csv_somatic")
+    path("${normal_bam.getSimpleName()}_${tumor_bam.getSimpleName()}_msi.csv"), emit: csv
+    path("${normal_bam.getSimpleName()}_${tumor_bam.getSimpleName()}_msi.csv_dis")
+    path("${normal_bam.getSimpleName()}_${tumor_bam.getSimpleName()}_msi.csv_germline")
+    path("${normal_bam.getSimpleName()}_${tumor_bam.getSimpleName()}_msi.csv_somatic")
     
 
     script:
@@ -46,7 +46,7 @@ process eval_msi {
         -d ${refgenome_microsatellites} \\
 	-n ${normal_bam} \\
 	-t ${tumor_bam} \\
-	-o ${normal_bam.getSimpleName()}_msi.csv
+	-o ${normal_bam.getSimpleName()}_${tumor_bam.getSimpleName()}_msi.csv
     """
 }
 
@@ -115,7 +115,7 @@ workflow msisensor_pro {
 
     msi_csv = eval_msi(bam_pairs_w_idx, sites).csv
 
-    matched_preproc_bams = bam_pairs_w_idx.unique()
+    matched_preproc_bams = bam_pairs_w_idx
 
     emit:
       matched_preproc_bams

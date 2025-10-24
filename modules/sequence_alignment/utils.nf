@@ -2,7 +2,7 @@ process publish {
   memory '1 GB'
 
   //publishDir "${output_dir}/outputs", mode: 'copy', overwrite: false
-  maxForks 4
+  maxForks 1
   cache false
 
   input:
@@ -19,9 +19,12 @@ process publish {
 
   echo published "${inputfile}" to "${output_dir}/outputs/${inputfile.getName()}"
   cp --no-clobber "${inputfile}" "${output_dir}/outputs/tmp.${inputfile.getName()}"
+  sync
   # cmp is better than checksums because it fails earlier
   cmp ${inputfile} "${output_dir}/outputs/tmp.${inputfile.getName()}"
+  sync
   mv --no-clobber "${output_dir}/outputs/tmp.${inputfile.getName()}" "${output_dir}/outputs/${inputfile.getName()}"
+  sync
   """
 }
 

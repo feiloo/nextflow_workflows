@@ -658,6 +658,7 @@ def shard_mutect = true
 
   emit:
     bam_pairs_w_idx = bam_pairs_w_idx
+    bam_w_idx = sample_bams_w_indices
     vcf = filtered_vcf
 }
 

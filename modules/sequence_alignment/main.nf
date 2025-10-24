@@ -207,14 +207,14 @@ workflow sequence_alignment {
         [[ row.sample_id, 
                 file("${input_dir}/${row.sample_id}_N_${row.normal_modality}_1.fq.gz"),
                 file("${input_dir}/${row.sample_id}_N_${row.normal_modality}_2.fq.gz"),
-                "${row.sample_id}_N",
+                "${row.sample_id}_N_${row.normal_modality}",
                 hashes_map["${row.sample_id}_N_${row.normal_modality}_1.fq.gz"],
                 hashes_map["${row.sample_id}_N_${row.normal_modality}_2.fq.gz"],
                 ],
         [ row.sample_id, 
                 file("${input_dir}/${row.sample_id}_T_${row.tumor_modality}_1.fq.gz"),
                 file("${input_dir}/${row.sample_id}_T_${row.tumor_modality}_2.fq.gz"),
-                "${row.sample_id}_T",
+                "${row.sample_id}_T_${row.tumor_modality}",
                 hashes_map["${row.sample_id}_T_${row.tumor_modality}_1.fq.gz"],
                 hashes_map["${row.sample_id}_T_${row.tumor_modality}_2.fq.gz"],
                 ]
@@ -298,6 +298,7 @@ workflow sequence_alignment {
     //bam_depth = bam_w_depth
     bam_coverage = bam_coverage
     bam_stats = bams_w_stats
+    bam_w_idx = variant_out.bam_w_idx
     refgenome_index = refgenome_index
     refgenome_dict = refgenome_dict
     samplesheet = Channel.of(args.samplesheet)
