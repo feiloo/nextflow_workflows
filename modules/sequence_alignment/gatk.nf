@@ -97,7 +97,7 @@ process gatk_set_tags {
     container 'quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0'
 
 
-    cpus { Math.max(1, Math.round(8 * (1 - ((1/4)*(task.attempt-1))))) }
+    cpus 4
     errorStrategy 'retry'
     maxRetries 4
 
@@ -131,10 +131,9 @@ process gatk_baserecalibrator {
     conda "bioconda::gatk4=4.4.0.0"
     container "quay.io/biocontainers/gatk4:4.4.0.0--py36hdfd78af_0"
 
-    cpus { Math.max(1, Math.round(12 * (1 - ((1/4)*(task.attempt-1))))) }
+    cpus 4
     errorStrategy 'retry'
     maxRetries 4
-
 
     memory {Math.min(96, 20+(14 * (task.attempt-1))).GB}
 
@@ -169,7 +168,7 @@ process gatk_apply_bqsr {
 
     memory {Math.min(96, 20+(14 * (task.attempt-1))).GB}
 
-    cpus { Math.max(1, Math.round(12 * (1 - ((1/4)*(task.attempt-1))))) }
+    cpus 4
     errorStrategy 'retry'
     maxRetries 4
 

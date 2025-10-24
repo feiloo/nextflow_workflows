@@ -85,7 +85,7 @@ process bam_stats {
     conda "bioconda::samtools=1.17"
     container 'quay.io/biocontainers/samtools:1.17--h00cdaf9_0'
 
-    cpus 8
+    cpus 4
 
     memory "1 GB"
 
@@ -97,7 +97,7 @@ process bam_stats {
     path("${bamfile.getSimpleName()}_samstats")
 
     script:
-    n_cpus = 8
+    n_cpus = 4
     """
     samtools stats "${bamfile}" \\
     	--reference ${refgenome} \\
