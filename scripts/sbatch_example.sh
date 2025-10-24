@@ -18,11 +18,11 @@ git diff --quiet && git diff --cached --quiet
 popd
 
 # use exec to propagate kill-signals, see: https://dhruveshp.com/blog/2021/signal-propagation-on-slurm/
-exec nextflow-25.04.3 run $NEXTFLOW_MODULES/ukb_main_workflow/ \
+exec nextflow-25.04.3 run $NEXTFLOW_MODULES/oncoscanner/ \
         --workflow_variation align_interpret \
 	--samplesheet $RUNDIR_CUSTOM/samplesheet.csv \
 	--hash_db $RUNDIR_CUSTOM/md5sums.txt \
-	-c $NEXTFLOW_MODULES/ukb_main_workflow/user.config \
+	-c $NEXTFLOW_MODULES/oncoscanner/user.config \
 	-profile standard \
 	-offline \
 	-resume \

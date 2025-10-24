@@ -80,11 +80,11 @@ now start the pipeline.
 ```
 cd $NEXTFLOW_CALLDIR && nextflow \
         -log nextflow.log \
-        run $NEXTFLOW_MODULES/ukb_main_workflow/ \
+        run $NEXTFLOW_MODULES/oncoscanner/ \
         --workflow_variation align_interpret \
         --samplesheet samplesheet.csv \
         --hash_db md5sum.txt \
-        -c $NEXTFLOW_MODULES/ukb_main_workflow/user.config \
+        -c $NEXTFLOW_MODULES/oncoscanner/user.config \
         --library_type wgs \
         --input_dir $NEXTFLOW_CALLDIR \
         -profile standard \
@@ -95,7 +95,7 @@ cd $NEXTFLOW_CALLDIR && nextflow \
 
 ## configuration
 
-see the environment variables and nextflow-configs like `modules/ukb_main_workflow/user.config`
+see the environment variables and nextflow-configs like `modules/oncoscanner/user.config`
 
 ### Resource Requirements, recommended
 

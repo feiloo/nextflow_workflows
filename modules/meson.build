@@ -18,7 +18,7 @@ endif
 subdir('sequence_alignment')
 subdir('biomarker')
 
-sources = ['ukb_main_workflow'/'user.config']
+sources = ['oncoscanner'/'user.config']
 testdata = []
 
 create_nextpipe_dir = custom_target('create_nextpipe_dir',
@@ -49,7 +49,7 @@ copy_nextpipe_sources = custom_target('copy_nextpipe_main',
 copy_main_sources = custom_target('copy_main_sources',
 	input : sources + testdata,
 	output : 'user.config',
-	command : ['cp', '-r', '@INPUT@', '@OUTDIR@/ukb_main_workflow'],
+	command : ['cp', '-r', '@INPUT@', '@OUTDIR@/oncoscanner'],
 	install : false,
         depends : [biomarker]
 	)
@@ -133,7 +133,7 @@ variantinterpretation = custom_target('variantinterpretation',
 	)
 
 # need to include here, so that variantinterpretation is defined
-subdir('ukb_main_workflow')
+subdir('oncoscanner')
 
 env_vars = ['NEXTFLOW_MODULES='+meson.current_build_dir(), 
               'NAS_IMPORT_DIR='+meson.current_build_dir()/'nas_import', 
@@ -146,12 +146,12 @@ test('nextflow_workflow_variantinterpretation',
 	env: env_vars,
 	args : [
 	'run',
-	meson.current_build_dir()+'/ukb_main_workflow/main.nf',
-	'-c', meson.current_build_dir()/ 'ukb_main_workflow' / 'user.config',
+	meson.current_build_dir()+'/oncoscanner/main.nf',
+	'-c', meson.current_build_dir()/ 'oncoscanner' / 'user.config',
 	'--workflow_variation', 'variantinterpretation',
 	'--samplesheet', test_datadir / 'test_variantinterpretation_samplesheet.csv',
 	],
-	depends: [copy_main_sources, variantinterpretation, ukb_main_workflow],
+	depends: [copy_main_sources, variantinterpretation, oncoscanner],
 	timeout: 6000
 	)
 
@@ -162,12 +162,12 @@ test('nextflow_workflow_arriba',
 	env: env_vars,
 	args : [
 	'run',
-	meson.current_build_dir()+'/ukb_main_workflow/main.nf',
-	'-c', meson.current_build_dir()/ 'ukb_main_workflow' / 'user.config',
+	meson.current_build_dir()+'/oncoscanner/main.nf',
+	'-c', meson.current_build_dir()/ 'oncoscanner' / 'user.config',
 	'--workflow_variation', 'arriba',
 	'--samplesheet', test_datadir / 'test_arriba_samplesheet.csv',
 	],
-	depends: [copy_main_sources, arriba_nextflow, ukb_main_workflow],
+	depends: [copy_main_sources, arriba_nextflow, oncoscanner],
 	timeout: 600
 	)
 
@@ -179,15 +179,15 @@ test('nextflow_workflow_sequence_alignment',
 	env: env_vars,
 	args : [
 	'run',
-	meson.current_build_dir()+'/ukb_main_workflow/main.nf',
-	'-c', meson.current_build_dir()/'ukb_main_workflow' / 'user.config',
+	meson.current_build_dir()+'/oncoscanner/main.nf',
+	'-c', meson.current_build_dir()/'oncoscanner' / 'user.config',
 	'-profile', 'standard',
 	'--workflow_variation', 'sequence_alignment',
 	'--samplesheet', test_datadir/'test_sequence_alignment_samplesheet.csv',
         '--samplesheet_flavor','modal',
         '--hash_db', test_datadir/'md5sum.txt',
 	],
-	depends: [copy_main_sources, variantinterpretation, sequence_alignment_nextflow, ukb_main_workflow],
+	depends: [copy_main_sources, variantinterpretation, sequence_alignment_nextflow, oncoscanner],
 	timeout: 360000
 	)
 
@@ -198,15 +198,15 @@ test('nextflow_workflow_sequence_alignment_local',
 	env: env_vars,
 	args : [
 	'run',
-	meson.current_build_dir()+'/ukb_main_workflow/main.nf',
-	'-c', meson.current_build_dir()/'ukb_main_workflow' / 'user.config',
+	meson.current_build_dir()+'/oncoscanner/main.nf',
+	'-c', meson.current_build_dir()/'oncoscanner' / 'user.config',
 	'-profile', 'local_nas_workdir',
 	'--workflow_variation', 'sequence_alignment',
 	'--samplesheet', test_datadir/'test_sequence_alignment_samplesheet.csv',
         '--samplesheet_flavor','modal',
         '--hash_db', test_datadir/'md5sum.txt',
 	],
-	depends: [copy_main_sources, variantinterpretation, sequence_alignment_nextflow, ukb_main_workflow],
+	depends: [copy_main_sources, variantinterpretation, sequence_alignment_nextflow, oncoscanner],
 	timeout: 360000
 	)
 
@@ -217,15 +217,15 @@ test('nextflow_workflow_sequence_alignment_hpc',
 	env: env_vars,
 	args : [
 	'run',
-	meson.current_build_dir()+'/ukb_main_workflow/main.nf',
-	'-c', meson.current_build_dir()/'ukb_main_workflow' / 'user.config',
+	meson.current_build_dir()+'/oncoscanner/main.nf',
+	'-c', meson.current_build_dir()/'oncoscanner' / 'user.config',
 	'-profile', 'hpc',
 	'--workflow_variation', 'sequence_alignment',
 	'--samplesheet', test_datadir/'test_sequence_alignment_samplesheet.csv',
         '--samplesheet_flavor','modal',
         '--hash_db', test_datadir/'md5sum.txt',
 	],
-	depends: [copy_main_sources, variantinterpretation, sequence_alignment_nextflow, ukb_main_workflow],
+	depends: [copy_main_sources, variantinterpretation, sequence_alignment_nextflow, oncoscanner],
 	timeout: 360000
 	)
 
@@ -236,8 +236,8 @@ test('nextflow_workflow_sequence_align_interpret',
 	env: env_vars,
 	args : [
 	'run',
-	meson.current_build_dir()+'/ukb_main_workflow/main.nf',
-	'-c', meson.current_build_dir()/'ukb_main_workflow' / 'user.config',
+	meson.current_build_dir()+'/oncoscanner/main.nf',
+	'-c', meson.current_build_dir()/'oncoscanner' / 'user.config',
 	'-profile', 'standard',
 	'--workflow_variation', 'align_interpret',
         '--library_type', 'wgs',
@@ -246,7 +246,7 @@ test('nextflow_workflow_sequence_align_interpret',
         '--input_dir', test_datadir,
         '--hash_db', test_datadir/'md5sum.txt',
 	],
-	depends: [copy_main_sources, variantinterpretation, sequence_alignment_nextflow, biomarker, ukb_main_workflow],
+	depends: [copy_main_sources, variantinterpretation, sequence_alignment_nextflow, biomarker, oncoscanner],
 	timeout: 360000
 	)
 
@@ -268,14 +268,14 @@ if enable_proprietary
           env : env_vars,
           args : [
           'run',
-          meson.current_build_dir()+'/ukb_main_workflow/main.nf',
-          '-c', meson.current_build_dir() / 'ukb_main_workflow' / 'user.config',
+          meson.current_build_dir()+'/oncoscanner/main.nf',
+          '-c', meson.current_build_dir() / 'oncoscanner' / 'user.config',
           '--workflow_variation', 'clc',
           '--samplesheet', test_datadir/'test_clc_samplesheet.csv',
           '-with-conda',
           '-stub'
           ],
-          depends: [clc_nextflow, ukb_main_workflow, create_testdirs, copy_sources, copy_nextpipe_sources, sequence_alignment_nextflow, variantinterpretation],
+          depends: [clc_nextflow, oncoscanner, create_testdirs, copy_sources, copy_nextpipe_sources, sequence_alignment_nextflow, variantinterpretation],
           timeout: 6000
           )
 
@@ -286,13 +286,13 @@ if enable_proprietary
           env : env_vars,
           args : [
           'run',
-          meson.current_build_dir()+'/ukb_main_workflow/main.nf',
-          '-c', meson.current_build_dir() / 'ukb_main_workflow' / 'user.config',
+          meson.current_build_dir()+'/oncoscanner/main.nf',
+          '-c', meson.current_build_dir() / 'oncoscanner' / 'user.config',
           '--workflow_variation', 'clc',
           '--samplesheet', test_datadir/'test_clc_dna_only_samplesheet.csv',
           '-with-conda',
           ],
-          depends: [clc_nextflow, ukb_main_workflow, create_testdirs, copy_sources, copy_nextpipe_sources, sequence_alignment_nextflow, variantinterpretation],
+          depends: [clc_nextflow, oncoscanner, create_testdirs, copy_sources, copy_nextpipe_sources, sequence_alignment_nextflow, variantinterpretation],
           timeout: 172800 # 2 days
           )
 
@@ -303,14 +303,14 @@ if enable_proprietary
           env : env_vars,
           args : [
           'run',
-          meson.current_build_dir()+'/ukb_main_workflow/main.nf',
-          '-c', meson.current_build_dir() / 'ukb_main_workflow' / 'user.config',
+          meson.current_build_dir()+'/oncoscanner/main.nf',
+          '-c', meson.current_build_dir() / 'oncoscanner' / 'user.config',
           '--workflow_variation', 'clc',
           '--samplesheet', test_datadir/'test_clc_dna_rna_samplesheet.csv',
           '--has_rna true',
           '-with-conda',
           ],
-          depends: [clc_nextflow, ukb_main_workflow, create_testdirs, copy_sources, copy_nextpipe_sources, sequence_alignment_nextflow, variantinterpretation],
+          depends: [clc_nextflow, oncoscanner, create_testdirs, copy_sources, copy_nextpipe_sources, sequence_alignment_nextflow, variantinterpretation],
           timeout: 172800 # 2 days
           )
 endif
