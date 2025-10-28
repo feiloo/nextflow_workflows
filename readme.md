@@ -33,13 +33,15 @@ export NEXTFLOW_CALLDIR="$(pwd)/nextflow_calldir"
 export NEXTFLOW_WORKDIR_CUSTOM="$(pwd)/nextflow_workdir"
 export NEXTFLOW_OUTPUTDIR_CUSTOM="$(pwd)/nextflow_outputdir"
 export NEXTFLOW_STOREDIR="$(pwd)/cache"
+export NAS_IMPORT_DIR=''
+export NAS_EXPORT_DIR=''
 ```
 
 #### Download required reference data
 
 ```
 # requires boto3
-python scripts/download_data.py reference $NGS_REFERENCE_DIR
+python nextflow_workflows/scripts/download_data.py reference $NGS_REFERENCE_DIR/oncoscanner_reference
 ```
 
 ## usage

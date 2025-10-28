@@ -1,5 +1,5 @@
 process fastp {
-    conda "bioconda::fastp=1.0.1"
+    conda "bioconda::fastp=1.0.1 bioconda::bcftools=1.17"
     container 'quay.io/biocontainers/fastp:1.0.1--heae3180_0'
 
     memory = { Math.max(16, (task.attempt * read1.size() * 0.2 / 1000000000).toDouble()) .GB }

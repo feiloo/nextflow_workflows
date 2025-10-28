@@ -301,8 +301,8 @@ workflow sequence_alignment {
     bam_w_idx = variant_out.bam_w_idx
     refgenome_index = refgenome_index
     refgenome_dict = refgenome_dict
-    samplesheet = Channel.of(args.samplesheet)
-    hash_db = Channel.of(args.hash_db)
+    samplesheet = Channel.of(file(args.samplesheet))
+    hash_db = Channel.of(file(args.hash_db))
     integrity_check = integrity_check
     fastp_report_h = fastp_report_h
     fastp_report_j = fastp_report_j

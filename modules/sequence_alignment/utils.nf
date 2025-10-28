@@ -17,7 +17,13 @@ process publish {
   mkdir -p ${output_dir}/outputs/
   # ensure that files are fully staged out, by rereading, and make it neary-atomic by writing to a tmp file and renaming
 
-  echo published "${inputfile}" to "${output_dir}/outputs/${inputfile.getName()}"
+  echo publishing "${inputfile}" to "${output_dir}/outputs/${inputfile.getName()}"
+
+  if [ -f "${output_dir}/outputs/${inputfile.getName()}" ]; then
+      echo error, file already exists
+      exit 1
+  fi
+
   cp --no-clobber "${inputfile}" "${output_dir}/outputs/tmp.${inputfile.getName()}"
   sync
   # cmp is better than checksums because it fails earlier
@@ -25,6 +31,7 @@ process publish {
   sync
   mv --no-clobber "${output_dir}/outputs/tmp.${inputfile.getName()}" "${output_dir}/outputs/${inputfile.getName()}"
   sync
+  echo successfully published "${inputfile}" to "${output_dir}/outputs/${inputfile.getName()}"
   """
 }
 
