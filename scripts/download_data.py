@@ -48,9 +48,8 @@ sra_testdata = [
 vep_cache_version = '113'
 merged_vep=True
 if merged_vep:
-    vep_cache = f'https://ftp.ensembl.org/pub/release-{vep_cache_version}/variation/vep/homo_sapiens_merged_vep_{vep_cache_version}_GRCh38.tar.gz'
+    vep_cache = f'https://ftp.ensembl.org/pub/release-{vep_cache_version}/variation/indexed_vep_cache/homo_sapiens_merged_vep_{vep_cache_version}_GRCh38.tar.gz'
 else:
-    #vep_cache = 'https://ftp.ensembl.org/pub/release-113/variation/indexed_vep_cache/homo_sapiens_vep_113_GRCh38.tar.gz'
     vep_cache = f'https://ftp.ensembl.org/pub/release-{vep_cache_version}/variation/indexed_vep_cache/homo_sapiens_vep_{vep_cache_version}_GRCh38.tar.gz'
 
 bucket_name = 'ngi-igenomes' # replace with your bucket name

@@ -6,7 +6,21 @@ the implementation is inspired by various nf-core modules and the nf-core/sarek 
 
 Computing WGS samples have high resources requirements, see below.
 
-## Software Setup
+## full scale WGS example
+
+### ressource requirements, recommended
+
+this pipeline requires about 5TB of temporary (workdir) storage per WGS sample.
+
+more than 256 GB of ram are recommended.
+
+a WGS sample is estimated to take about 1800 cpu-hours (epyc milan).
+
+a batch of 4 wgs samples takes about 5 days to calculate.
+
+note: its possible to run with lower resources, but it would slow development and research.
+
+### software setup
 
 for now we recommend running on a single host with conda.
 
@@ -19,11 +33,13 @@ dependencies:
 * nextflow
 * conda
 
+then clone the pipeline:
+
 ```
 git clone --recursive https://github.com/feiloo/nextflow_workflows.git
 ```
 
-#### Set required environment variables
+#### set required environment variables
 
 ```
 mkdir reference nextflow_calldir nextflow_workdir nextflow_outputdir cache
@@ -37,14 +53,18 @@ export NAS_IMPORT_DIR=''
 export NAS_EXPORT_DIR=''
 ```
 
-#### Download required reference data
+### configuration
+
+see the environment variables and nextflow-configs like `modules/oncoscanner/user.config`
+
+#### download required reference data
 
 ```
-# requires boto3
+pip install boto3
 python nextflow_workflows/scripts/download_data.py reference $NGS_REFERENCE_DIR/oncoscanner_reference
 ```
 
-## usage
+### usage
 
 the pipeline has multiple variations, the main variation is "align_interpret"
 
@@ -73,9 +93,9 @@ X123-25,FFPE,FFPE
 X123-25,BLOOD,FFPE
 ```
 
-a md5sum.txt that includes the hashes for the input files.
+lastly, a md5sum.txt that includes the hashes for the input files is required.
 
-the pipeline takes the fastq samplesheet.csv and md5sum.txt files from the specified `--input_dir`.
+the pipeline uses the fastq samplesheet.csv and md5sum.txt files relative from the specified `--input_dir`.
 
 now start the pipeline.
 
@@ -95,21 +115,7 @@ cd $NEXTFLOW_CALLDIR && nextflow \
         --tag routine_establish,wgs
 ```
 
-## configuration
 
-see the environment variables and nextflow-configs like `modules/oncoscanner/user.config`
-
-### Resource Requirements, recommended
-
-this pipeline requires about 5TB of temporary (workdir) storage per WGS sample.
-
-256 GB of ram are recommended.
-
-a WGS sample is estimated to take about 1800 cpu-hours (epyc milan).
-
-a batch of 4 wgs samples takes about 5 days to calculate.
-
-note: its possible to run with lower resources, but it would slow development and research.
 
 ## development
 
@@ -175,19 +181,4 @@ another way is to use a single container for all processes or for the whole pipe
 
 ```
 scripts/gen_container.sh
-```
-
-
-## Other notes and hints
-
-### useful nextflow environment variables:
-
-```
-export NXF_HOME='$HOME/.nextflow'
-export NXF_ASSETS='$NXF_HOME/assets'
-export NXF_OPTS='-Dlog=/path/nextflow_logs'
-export NXF_TEMP=/path/nextflow_temp/
-export NXF_LOG_FILE='/path/nextflow_logs'
-export NXF_PLUGINS_DIR='/path/nextflow_plugins'
-export NEXTFLOW_MODULES="$(pwd)/modules"
 ```

@@ -1,0 +1,4 @@
+39cd89baeff48aa3d9480c7f40b2a692	HG008-T_Illumina_R1.fastq.gz  
+2664aee4d9cec9d096cc6b9729fe4512	HG008-T_Illumina_R2.fastq.gz  
+470889b7bfbbea7180b119eafa30bb47	HG008-N_Illumina_R1.fastq.gz  
+1c1f0e602129d2eb38dea86770733dd6	HG008-N_Illumina_R2.fastq.gz  
