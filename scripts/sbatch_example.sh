@@ -12,8 +12,8 @@
 set -euo pipefail
 
 export RUNDIR_CUSTOM=$1 
-export NXF_CACHE_DIR=$RUNDIR/nxf_cachedir 
-export NEXTFLOW_SCRATCH_DIR=$RUNDIR/scratch
+export NXF_CACHE_DIR=$RUNDIR_CUSTOM/nxf_cachedir 
+export NEXTFLOW_SCRATCH_DIR=$RUNDIR_CUSTOM/scratch
 
 # usage hint: sbatch run_routine.sh $(pwd)/rundir8 samplesheet.csv md5sum_renamed.txt 'wgs'
 # use this instead of nextflow versions (nextflow run -r), because nextflow versioning doesnt work with local git repos
@@ -37,14 +37,14 @@ fi
 
 mkdir -p $TARGET_DIR
 cp --no-clobber -r $NEXTFLOW_MODULES/../ $TARGET_DIR
-export NEXTFLOW_MODULES=$TARGET_DIR/nextflow_workflows/modules
+export NEXTFLOW_MODULES=$TARGET_DIR/modules
 
 SAMPLESHEET=$RUNDIR_CUSTOM/$2
 MD5SUMS=$RUNDIR_CUSTOM/$3
 LIBRARY_TYPE=$4
 
-export TMPDIR=$RUNDIR/tmpdir/
-export NEXTFLOW_WORKDIR_CUSTOM=$RUNDIR/nextflow_workdir
+export TMPDIR=$RUNDIR_CUSTOM/tmpdir/
+export NEXTFLOW_WORKDIR_CUSTOM=$RUNDIR_CUSTOM/nextflow_workdir
 
 echo params are $1 $2 $3 $4
 echo path is $(pwd)
