@@ -274,6 +274,7 @@ workflow {
 	  args.bedfile,
 	  args.custom_filters,
 	  args.library_type,
+	  args.use_proprietary
 	  ).ukb_results
 	
 	pub = pub.mix(interpretation)
