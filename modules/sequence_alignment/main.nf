@@ -8,6 +8,7 @@ include { bwa_index_refgenome; bwa_align } from "$NEXTFLOW_MODULES/sequence_alig
 
 include { bam_coverage; bam_stats; bam_depth; sam_to_bam; sort_bam; index_bam; index_fasta } from "$NEXTFLOW_MODULES/sequence_alignment/samtools.nf"
 include { gatk_indexfeaturefile; gatk_createsequencedictionary; gatk_markduplicates; gatk_set_tags; gatk_baserecalibrator; gatk_apply_bqsr } from "$NEXTFLOW_MODULES/sequence_alignment/gatk.nf"
+include { sambamba_markdup } from "$NEXTFLOW_MODULES/sequence_alignment/sambamba.nf"
 
 include { variant_call } from "$NEXTFLOW_MODULES/sequence_alignment/gatk_mutect.nf"
 
@@ -264,7 +265,13 @@ workflow sequence_alignment {
 	throw new Exception("unknown bwa_tool ${args.bwa_tool}")
     }
 
-    marked_bams = gatk_markduplicates(bams).marked_bams
+    use_fast_path = false
+    if (use_fast_path == true){
+        marked_bams = sambamba_markdup(bams).marked_bams
+    } else {
+        marked_bams = gatk_markduplicates(bams).marked_bams
+    }
+
     tagged_bams = gatk_set_tags(marked_bams, args.refgenome, args.cleanup_intermediate_files).tagged_bams
 
     known_sites_index = gatk_indexfeaturefile(args.known_sites).known_sites_index
