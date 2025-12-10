@@ -4,8 +4,6 @@ this repo contains the OncoScanner pipeline for somatic WGS and WES analysis.
 
 the implementation is inspired by various nf-core modules and the nf-core/sarek pipeline.
 
-Computing WGS samples have high resources requirements, see below.
-
 ## full scale WGS example
 
 ### ressource requirements, recommended
@@ -182,3 +180,17 @@ another way is to use a single container for all processes or for the whole pipe
 ```
 scripts/gen_container.sh
 ```
+
+# References, (generated, see docs/references.bib)
+
+Paolo Di Tommaso, Maria Chatzou, Evan Floden, Pablo Prieto Barja, Emilio Palumbo, Cedric Notredame, "{Nextflow enables reproducible computational workflows}", 2017
+
+Friederike Hanssen, Maxime U. Garcia, Lasse Folkersen, Anders Sune Pedersen, Francesco Lescai, Susanne Jodoin, Edmund Miller, Oskar Wacker, Nicholas Smith, nf-core community, Gisela Gabernet, Sven Nahnsen, "Scalable and efficient DNA sequencing analysis on different compute infrastructures aiding variant discovery", bioRxiv, 2023
+
+Petr Danecek, James K Bonfield, Jennifer Liddle, John Marshall, Valeriu Ohan, Martin O Pollard, Andrew Whitwham, Thomas Keane, Shane A McCarthy, Robert M Davies, Heng Li, "Twelve years of SAMtools and BCFtools", GigaScience, vol. 10, no. 2, pp. giab008, 2021
+
+Mark A. DePristo, Eric Banks, Ryan Poplin, Kiran V. Garimella, Jared R. Maguire, Christopher Hartl, Anthony A. Philippakis, Guillermo del Angel, Manuel A. Rivas, Matt Hanna, Aaron McKenna, Tim J. Fennell, Andrew M. Kernytsky, Andrey Y. Sivachenko, Kristian Cibulskis, Stacey B. Gabriel, David Altshuler, Mark J. Daly, "A framework for variation discovery and genotyping using next-generation DNA sequencing data", Nature genetics, vol. 43, no. 5, pp. 491--498, 2011
+
+Peng Jia, Xiaofei Yang, Li Guo, Bowen Liu, Jiadong Lin, Hao Liang, Jianyong Sun, Chengsheng Zhang, Kai Ye, "MSIsensor-pro: Fast, Accurate, and Matched-normal-sample-free Detection of Microsatellite Instability", Genomics, Proteomics & Bioinformatics, vol. 18, no. 1, pp. 65-71, 2020
+
+Shifu Chen, "fastp 1.0: An ultra-fast all-round tool for FASTQ data quality control and preprocessing", iMeta, vol. 4, no. 5, pp. e70078, 2025
