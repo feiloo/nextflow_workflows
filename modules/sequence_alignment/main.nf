@@ -265,7 +265,7 @@ workflow sequence_alignment {
 	throw new Exception("unknown bwa_tool ${args.bwa_tool}")
     }
 
-    use_fast_path = false
+    use_fast_path = true
     if (use_fast_path == true){
         marked_bams = sambamba_markdup(bams).marked_bams
     } else {
