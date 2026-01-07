@@ -21,7 +21,9 @@ process sambamba_markdup {
 
     """
     mkdir out
+    mkdir mid
     mkdir tmp
-    sambamba markdup --tmpdir tmp -l ${compression_level} -t ${task.cpus} ${bam} out/${bam}
+    sambamba markdup --tmpdir tmp -l ${compression_level} -t ${task.cpus} ${bam} mid/${bam}
+    sambamba sort --tmpdir tmp -l ${compression_level} --memory-limit 180GB -t ${task.cpus} mid/${bam} --out out/${bam}
     """
 }
