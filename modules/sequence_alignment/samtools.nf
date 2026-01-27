@@ -132,7 +132,7 @@ process bam_coverage {
 
     cpus 1
 
-    memory "1 GB"
+    memory "10 GB"
     input:
     path(bamfile)
 

@@ -2,7 +2,7 @@ process publish {
   memory '1 GB'
 
   //publishDir "${output_dir}/outputs", mode: 'copy', overwrite: false
-  maxForks 1
+  maxForks 6
   cache false
 
   input:
