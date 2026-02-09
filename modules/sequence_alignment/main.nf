@@ -240,12 +240,11 @@ workflow sequence_alignment {
         args.refgenome, bwa_idx.f0123, bwa_idx.amb, bwa_idx.ann, bwa_idx.bwt_2bit_64, bwa_idx.pac
     )
 
-    preprocessed_reads = fastp_bwa_out.preprocessed_reads
     integrity_check = fastp_bwa_out.integrity_check
     fastp_report_h = fastp_bwa_out.html
     fastp_report_j = fastp_bwa_out.json
 
-    bams = fastp_bwa_out.bams
+    bams = fastp_bwa_out.bam
 
     use_fast_path = true
     if (use_fast_path == true){

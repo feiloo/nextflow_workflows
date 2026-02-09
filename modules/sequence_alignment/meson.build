@@ -5,7 +5,7 @@ install_subdir('../sequence_alignment',
 
 nextflow_files = [
 	'main.nf','nextflow.config',
-	'preproc_align.nf', 'bwamem2.nf',
+	'preproc_align.nf',
 	'gatk_mutect.nf',
 	'gatk.nf','samtools.nf', 'utils.nf','sambamba.nf']
 

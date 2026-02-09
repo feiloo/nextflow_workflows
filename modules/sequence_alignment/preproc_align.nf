@@ -187,8 +187,8 @@ process fastp_bwa {
 	--json ${output_file_prefix}_fastp.json \\
 	--html ${output_file_prefix}_fastp.html \\
 	2> ${output_file_prefix}.fastp.log \\
-	| bwa-mem2 mem -R "${read_group_info}" -t 20 ${refgenome} \\
-	| samtools view --bam --threads 2 -o ${read1.getSimpleName()}.bam
+	| bwa-mem2 mem -R "${read_group_info}" -t 20 ${refgenome} - \\
+	| samtools view --bam --threads 2 -o ${read1.getSimpleName()}.bam -
 	}
 
 
