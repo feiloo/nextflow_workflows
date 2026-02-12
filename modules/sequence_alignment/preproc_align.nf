@@ -184,6 +184,8 @@ process fastp_bwa {
 	--in2 ${read2} \\
 	--stdout \\
 	--thread 4 \\
+	--dedup \\
+	--dup_calc_accuracy 6 \\
 	--json ${output_file_prefix}_fastp.json \\
 	--html ${output_file_prefix}_fastp.html \\
 	2> ${output_file_prefix}.fastp.log \\
