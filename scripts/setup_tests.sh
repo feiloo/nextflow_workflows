@@ -5,9 +5,12 @@ TESTDIR=$(pwd)/tests/
 mkdir $TESTDIR
 cd $TESTDIR
 
-git clone --recursive git@github.com:nh13/DWGSIM.git
-
+#git clone --recursive git@github.com:nh13/DWGSIM.git
+git clone --recursive https://github.com/nh13/DWGSIM.git
 cd DWGSIM
+
+git checkout 5b1cfc663ed10a6aa8fef4cc62d37f28d996868b
+
 sed -i "s/-lcurses/-lncurses/g" samtools/Makefile
 
 CC=gcc-14 CXX=g++-14 make -j
