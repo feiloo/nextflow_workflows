@@ -1,10 +1,6 @@
 nextflow.enable.dsl=2
 
-//include { fastqc } from "$NEXTFLOW_MODULES/sequence_alignment/fastqc.nf"
-include { fastp } from "$NEXTFLOW_MODULES/sequence_alignment/fastp.nf"
-
-include { bwamem2_index_refgenome; bwamem2_align } from "$NEXTFLOW_MODULES/sequence_alignment/bwamem2.nf"
-include { bwa_index_refgenome; bwa_align } from "$NEXTFLOW_MODULES/sequence_alignment/bwa.nf"
+include { fastp_bwa; bwamem2_index_refgenome } from "$NEXTFLOW_MODULES/sequence_alignment/preproc_align.nf"
 
 include { bam_coverage; bam_stats; bam_depth; sam_to_bam; sort_bam; index_bam; index_fasta } from "$NEXTFLOW_MODULES/sequence_alignment/samtools.nf"
 include { gatk_indexfeaturefile; gatk_createsequencedictionary; gatk_markduplicates; gatk_set_tags; gatk_baserecalibrator; gatk_apply_bqsr } from "$NEXTFLOW_MODULES/sequence_alignment/gatk.nf"
@@ -232,38 +228,23 @@ workflow sequence_alignment {
     }
 
 
-    // output_file_prefix has to be calculated here, 
-    // because it has to be known before starting the process as it it an output thereof
-    fastp_out = fastp(sample_reads_w_prefix.unique())
-    preprocessed_reads = fastp_out.preprocessed_reads
-    integrity_check = fastp_out.integrity_check
-    fastp_report_h = fastp_out.html
-    fastp_report_j = fastp_out.json
-
-    // low_mem uses more memory efficient tools
-    // for example bwa-mem instead of bwamem2
-    // this trades memory for performance here
-
-    if(args.bwa_tool == 'bwa'){
-    	bwa_idx = bwa_index_refgenome(args.refgenome)
-    } else if(args.bwa_tool == 'bwa2'){
-	bwa_idx = bwamem2_index_refgenome(args.refgenome)
-    } else {
-	throw new Exception("unknown bwa_tool ${args.bwa_tool}")
-    }
+    bwa_idx = bwamem2_index_refgenome(args.refgenome)
 
     refgenome_index = index_fasta(args.refgenome).fasta_index
     refgenome_dict = gatk_createsequencedictionary(args.refgenome).refgenome_dict
 
-    if(args.bwa_tool == 'bwa'){
-    	bams = bwa_align(preprocessed_reads, args.refgenome, bwa_idx.amb, bwa_idx.ann, bwa_idx.bwt, bwa_idx.pac, bwa_idx.sa, args.cleanup_intermediate_files)
-    } else if(args.bwa_tool == 'bwa2'){
-        // bwa_idx.f0123 was has an f prefixed so, the file ending starts with a non-numeral
-        bams = bwamem2_align(preprocessed_reads, args.refgenome, bwa_idx.f0123, bwa_idx.amb, bwa_idx.ann, bwa_idx.bwt_2bit_64, bwa_idx.pac, args.cleanup_intermediate_files)
-    	//bams = sam_to_bam(sams, args.cleanup_intermediate_files)
-    } else {
-	throw new Exception("unknown bwa_tool ${args.bwa_tool}")
-    }
+    // output_file_prefix has to be calculated here, 
+    // because it has to be known before starting the process as it it an output thereof
+    // bwa_idx.f0123 was has an f prefixed so, the file ending starts with a non-numeral
+    fastp_bwa_out = fastp_bwa(sample_reads_w_prefix.unique(), 
+        args.refgenome, bwa_idx.f0123, bwa_idx.amb, bwa_idx.ann, bwa_idx.bwt_2bit_64, bwa_idx.pac
+    )
+
+    integrity_check = fastp_bwa_out.integrity_check
+    fastp_report_h = fastp_bwa_out.html
+    fastp_report_j = fastp_bwa_out.json
+
+    bams = fastp_bwa_out.bam
 
     use_fast_path = true
     if (use_fast_path == true){

@@ -8,7 +8,9 @@ the implementation is inspired by various nf-core modules and the nf-core/sarek 
 
 ### ressource requirements, recommended
 
-this pipeline requires about 5TB of temporary (workdir) storage per WGS sample.
+this pipeline requires about 5 times the input (batch) size as temporary (workdir) storage per WGS sample.
+
+the output is normally about 1.2 times the input size (level 5 bgzip compressed fq.gz)
 
 more than 256 GB of ram are recommended.
 
