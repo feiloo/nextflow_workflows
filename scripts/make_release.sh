@@ -47,8 +47,18 @@ git log -1 --pretty=format:"%H" main > metadata/prev_commit_hash.txt
 git describe --always --abbrev=999 > metadata/git_describe.txt
 git add metadata/prev_commit_hash.txt metadata/git_describe.txt
 
-version_line="manifest.version=$version"
-sed -i '' "s/^manifest\.version.*/$version_line/" modules/oncoscanner/user.config
+# count matches
+count=$(sed -n "/version[[:space:]]*=[[:space:]]*'[^']*'/p" modules/oncoscanner/user.config | wc -l)
+if [ "$count" -ne 1 ]; then
+	echo sed found "$count" version strings, failed to replace in user.config
+	exit 1
+fi
+# replace version string in nextflow manifest
+sed -i "s/version[[:space:]]*=[[:space:]]*'[^']*'/version='$version'/" modules/oncoscanner/user.config
+
+
+# version_line="manifest.version=$version"
+# sed -i '' "s/^manifest\.version.*/$version_line/" ../modules/oncoscanner/user.config
 
 git commit -m 'create release'
 
