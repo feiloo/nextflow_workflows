@@ -168,7 +168,7 @@ workflow {
             args.clc_import_dir, 
             args.clc_export_dir,
             args.clc_destdir,
-	    args.clc_dna_only_workflow_name,
+	    args.clc_workflow_name,
             args.nas_import_dir,
             args.nas_export_dir,
             args.workflow_run_id
