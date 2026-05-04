@@ -302,7 +302,7 @@ if enable_proprietary
           '--clc_destdir' ,clc_destdir,
           '-with-conda',
           ],
-          depends: [clc_nextflow, oncoscanner, create_testdirs, copy_sources, copy_nextpipe_sources, sequence_alignment_nextflow, variantinterpretation],
+          depends: [clc_nextflow, oncoscanner, create_testdirs, copy_sources, copy_nextpipe_sources, sequence_alignment_nextflow, variantinterpretation, biomarker],
           timeout: 172800 # 2 days
           )
 
