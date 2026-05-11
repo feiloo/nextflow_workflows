@@ -65,7 +65,7 @@ process organize_variant_table {
   path(transcript_lst)
   // TODO remove variantDBi in favor of  coi-abcd pipeline or integrated variantlist.csv
   // hack, variantDBi is stubbed out, 
-  val(variantDBi)
+  // val(variantDBi)
 
   output:
   path("${ID}_final_processed.xlsx"), emit: final_xlsx
@@ -108,7 +108,7 @@ workflow pancancer_analyse {
     format_vep_outputs(tab)
 
     csv_vcf_ch = clc_csv_ch.join(format_vep_outputs.out.formatted_vep_data)
-    organize_variant_table(csv_vcf_ch, transcript_list, variantlist)
+    organize_variant_table(csv_vcf_ch, transcript_list)
     final_table = organize_variant_table.out.final_xlsx
   emit:
     final_table
