@@ -290,7 +290,7 @@ for i in range(len(merged["HGVSp"])):
 
 # Merge/join internal variantDB (variantDBi) PAN_CANCER_DATA
 # Change to current "Variantenliste" if needed
-variantDBi = pd.read_excel(args.variant_DBi)
+variantDBi = pd.read_excel('Variantenliste22_12_15.xlsx')
 
 merged = pd.merge(merged,\
                   variantDBi,\

@@ -63,7 +63,9 @@ process organize_variant_table {
   input:
   tuple val(ID), path(csv), path(formatted_vep_data)
   path(transcript_lst)
-  path(variantDBi)
+  // TODO remove variantDBi in favor of  coi-abcd pipeline or integrated variantlist.csv
+  // hack, variantDBi is stubbed out, 
+  val(variantDBi)
 
   output:
   path("${ID}_final_processed.xlsx"), emit: final_xlsx
