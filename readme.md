@@ -4,6 +4,12 @@ this repo contains the OncoScanner pipeline for somatic WGS and WES analysis.
 
 the implementation is inspired by various nf-core modules and the nf-core/sarek pipeline.
 
+## AI development disclaimer
+
+before tag 0.3.0 (18.06.2026), this repo contained no llm/agent generated code. 
+
+after this, llm/agent generated code and manipulation thereof is used, but humanly reviewed or tested.
+
 ## full scale WGS example
 
 ### ressource requirements, recommended
