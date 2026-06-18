@@ -4,10 +4,10 @@ install_subdir('../sequence_alignment',
 	install_tag : 'nextflow')
 
 nextflow_files = [
-	'main.nf','nextflow.config', 'fastqc.nf', 
-	'fastp.nf', 'bwamem2.nf', 'bwa.nf', 
+	'main.nf','nextflow.config',
+	'preproc_align.nf',
 	'gatk_mutect.nf',
-	'gatk.nf','samtools.nf', 'utils.nf']
+	'gatk.nf','samtools.nf', 'utils.nf','sambamba.nf']
 
 sequence_alignment_nextflow = custom_target('sequence_alignment_nextflow',
 	input : nextflow_files,

@@ -1,28 +1,45 @@
-# Nextflow modules for NGS
+# OncoScanner NGS pipeline
 
-this repo contains multiple nextflow workflows for somatic NGS analysis.
-
-we focus on modularity and simplicity.
+this repo contains the OncoScanner pipeline for somatic WGS and WES analysis.
 
 the implementation is inspired by various nf-core modules and the nf-core/sarek pipeline.
 
-## Setup
+## full scale WGS example
 
-there are multiple ways of running the workflow. 
-the simplest way is to run (portable) from a single folder, but WARNING this pipeline requires a few terabytes of free storage.
+### ressource requirements, recommended
+
+this pipeline requires about 5 times the input (batch) size as temporary (workdir) storage per WGS sample.
+
+the output is normally about 1.2 times the input size (level 5 bgzip compressed fq.gz)
+
+more than 256 GB of ram are recommended.
+
+a WGS sample is estimated to take about 1800 cpu-hours (epyc milan).
+
+a batch of 4 wgs samples takes about 5 days to calculate.
+
+note: its possible to run with lower resources, but it would slow development and research.
+
+### software setup
 
 for now we recommend running on a single host with conda.
 
-Dependencies:
+there are multiple ways of running the workflow. 
+
+the simplest way is to run (portable) from a single folder, 
+
+dependencies:
 
 * nextflow
 * conda
+
+then clone the pipeline:
 
 ```
 git clone --recursive https://github.com/feiloo/nextflow_workflows.git
 ```
 
-#### Set required environment variables
+#### set required environment variables
 
 ```
 mkdir reference nextflow_calldir nextflow_workdir nextflow_outputdir cache
@@ -32,38 +49,72 @@ export NEXTFLOW_CALLDIR="$(pwd)/nextflow_calldir"
 export NEXTFLOW_WORKDIR_CUSTOM="$(pwd)/nextflow_workdir"
 export NEXTFLOW_OUTPUTDIR_CUSTOM="$(pwd)/nextflow_outputdir"
 export NEXTFLOW_STOREDIR="$(pwd)/cache"
+export NAS_IMPORT_DIR=''
+export NAS_EXPORT_DIR=''
 ```
 
-#### Download required reference data
+### configuration
+
+see the environment variables and nextflow-configs like `modules/oncoscanner/user.config`
+
+#### download required reference data
 
 ```
-# requires boto3
-python scripts/download_data.py reference $NGS_REFERENCE_DIR
+pip install boto3
+python nextflow_workflows/scripts/download_data.py reference $NGS_REFERENCE_DIR/oncoscanner_reference
 ```
 
-## usage
+### usage
 
 the pipeline has multiple variations, the main variation is "align_interpret"
 
-it requires a samplesheet.csv like this:
+this version requires fastq input files with naming that matches this example:
 
 ```
-sample_id,normal_read1,normal_read2,tumor_read1,tumor_read2
-SAMPLENAME-24,/data/testdata/SAMPLENAME-24_N_1.fq.gz,/data/testdata/SAMPLENAME-24_N_2.fq.gz,/data/testdata/SAMPLENAME-24_T_1.fq.gz,/data/testdata/SAMPLENAME-24_T_2.fq.gz
+X123-25_N_FFPE_1.fq.gz
+X123-25_N_FFPE_2.fq.gz
+X123-25_T_FFPE_1.fq.gz
+X123-25_T_FFPE_2.fq.gz
 ```
+
+where X123-YY is the samplename and 25 is the year.
+
+N or T stands for normal or tumor.
+
+FFPE or FF or BLOOD stands for formalin fixed paraffin embedded, fresh frozen, or blood source material respectively.
+
+1 or 2 are the read direction and .fq.gz stands for bgzf/bgzip compressed fastq files.
+
+it also requires a samplesheet.csv like this:
+
+```
+sample_id,normal_modality,tumor_modality
+X123-25,FFPE,FFPE
+X123-25,BLOOD,FFPE
+```
+
+lastly, a md5sum.txt that includes the hashes for the input files is required.
+
+the pipeline uses the fastq samplesheet.csv and md5sum.txt files relative from the specified `--input_dir`.
 
 now start the pipeline.
 
 ```
-cd $NEXTFLOW_CALLDIR && nextflow run $NEXTFLOW_MODULES/ukb_main_workflow/main.nf \
-    -profile standard \
-    --workflow_variation align_interpret \
-    --samplesheet test_sequence_alignment_samplesheet.csv
+cd $NEXTFLOW_CALLDIR && nextflow \
+        -log nextflow.log \
+        run $NEXTFLOW_MODULES/oncoscanner/ \
+        --workflow_variation align_interpret \
+        --samplesheet samplesheet.csv \
+        --hash_db md5sum.txt \
+        -c $NEXTFLOW_MODULES/oncoscanner/user.config \
+        --library_type wgs \
+        --input_dir $NEXTFLOW_CALLDIR \
+        -profile standard \
+        -offline \
+        -resume \
+        --tag routine_establish,wgs
 ```
 
-## configuration
-
-see the environment variables and nextflow-configs like `modules/ukb_main_workflow/user.config`
 
 
 ## development
@@ -132,17 +183,16 @@ another way is to use a single container for all processes or for the whole pipe
 scripts/gen_container.sh
 ```
 
+# References, (generated, see docs/references.bib)
 
-## Other notes and hints
+Paolo Di Tommaso, Maria Chatzou, Evan Floden, Pablo Prieto Barja, Emilio Palumbo, Cedric Notredame, "{Nextflow enables reproducible computational workflows}", 2017
 
-### useful nextflow environment variables:
+Friederike Hanssen, Maxime U. Garcia, Lasse Folkersen, Anders Sune Pedersen, Francesco Lescai, Susanne Jodoin, Edmund Miller, Oskar Wacker, Nicholas Smith, nf-core community, Gisela Gabernet, Sven Nahnsen, "Scalable and efficient DNA sequencing analysis on different compute infrastructures aiding variant discovery", bioRxiv, 2023
 
-```
-export NXF_HOME='$HOME/.nextflow'
-export NXF_ASSETS='$NXF_HOME/assets'
-export NXF_OPTS='-Dlog=/path/nextflow_logs'
-export NXF_TEMP=/path/nextflow_temp/
-export NXF_LOG_FILE='/path/nextflow_logs'
-export NXF_PLUGINS_DIR='/path/nextflow_plugins'
-export NEXTFLOW_MODULES="$(pwd)/modules"
-```
+Petr Danecek, James K Bonfield, Jennifer Liddle, John Marshall, Valeriu Ohan, Martin O Pollard, Andrew Whitwham, Thomas Keane, Shane A McCarthy, Robert M Davies, Heng Li, "Twelve years of SAMtools and BCFtools", GigaScience, vol. 10, no. 2, pp. giab008, 2021
+
+Mark A. DePristo, Eric Banks, Ryan Poplin, Kiran V. Garimella, Jared R. Maguire, Christopher Hartl, Anthony A. Philippakis, Guillermo del Angel, Manuel A. Rivas, Matt Hanna, Aaron McKenna, Tim J. Fennell, Andrew M. Kernytsky, Andrey Y. Sivachenko, Kristian Cibulskis, Stacey B. Gabriel, David Altshuler, Mark J. Daly, "A framework for variation discovery and genotyping using next-generation DNA sequencing data", Nature genetics, vol. 43, no. 5, pp. 491--498, 2011
+
+Peng Jia, Xiaofei Yang, Li Guo, Bowen Liu, Jiadong Lin, Hao Liang, Jianyong Sun, Chengsheng Zhang, Kai Ye, "MSIsensor-pro: Fast, Accurate, and Matched-normal-sample-free Detection of Microsatellite Instability", Genomics, Proteomics & Bioinformatics, vol. 18, no. 1, pp. 65-71, 2020
+
+Shifu Chen, "fastp 1.0: An ultra-fast all-round tool for FASTQ data quality control and preprocessing", iMeta, vol. 4, no. 5, pp. e70078, 2025

@@ -1,4 +1,4 @@
-install_subdir('../ukb_main_workflow', 
+install_subdir('../oncoscanner', 
 	install_dir:nextflow_libdir, 
 	exclude_files:['meson.build'], 
 	install_tag : 'nextflow')
@@ -12,7 +12,7 @@ else
   deps = [arriba_nextflow, sequence_alignment_nextflow, variantinterpretation]
 endif
 
-ukb_main_workflow = custom_target('ukb_main_workflow',
+oncoscanner = custom_target('oncoscanner',
 	input : nextflow_files,
 	output : '.',
 	command : ['cp', '@INPUT@', '@OUTPUT@/'],
