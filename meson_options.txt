@@ -2,3 +2,8 @@ option('test_datadir', type: 'string')
 option('external_deps', type: 'string')
 option('enable_proprietary', type : 'boolean', value : false)
 option('use_private_testdata', type : 'boolean', value : false)
+
+option('clc_workflow_name', type: 'string')
+option('clc_import_dir', type: 'string')
+option('clc_export_dir', type: 'string')
+option('clc_destdir', type: 'string')

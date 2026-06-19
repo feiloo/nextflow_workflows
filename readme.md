@@ -10,7 +10,6 @@ before tag 0.3.0 (18.06.2026), this repo contained no llm/agent generated code.
 
 after this, llm/agent generated code and manipulation thereof is used, but humanly reviewed or tested.
 
-
 ## full scale WGS example
 
 ### ressource requirements, recommended

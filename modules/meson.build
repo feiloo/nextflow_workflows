@@ -3,6 +3,12 @@ nextflow_libdir = '/usr/local/lib/nextflow'
 test_datadir = get_option('test_datadir')
 enable_proprietary = get_option('enable_proprietary')
 
+
+clc_workflow_name = get_option('clc_workflow_name')
+clc_import_dir = get_option('clc_import_dir')
+clc_export_dir = get_option('clc_export_dir')
+clc_destdir = get_option('clc_destdir')
+
 subdir('arriba_nextflow')
 
 nextpipe_sources = [
@@ -290,9 +296,13 @@ if enable_proprietary
           '-c', meson.current_build_dir() / 'oncoscanner' / 'user.config',
           '--workflow_variation', 'clc',
           '--samplesheet', test_datadir/'test_clc_dna_only_samplesheet.csv',
+          '--clc_workflow_name' ,clc_workflow_name,
+          '--clc_import_dir' ,clc_import_dir,
+          '--clc_export_dir' ,clc_export_dir,
+          '--clc_destdir' ,clc_destdir,
           '-with-conda',
           ],
-          depends: [clc_nextflow, oncoscanner, create_testdirs, copy_sources, copy_nextpipe_sources, sequence_alignment_nextflow, variantinterpretation],
+          depends: [clc_nextflow, oncoscanner, create_testdirs, copy_sources, copy_nextpipe_sources, sequence_alignment_nextflow, variantinterpretation, biomarker],
           timeout: 172800 # 2 days
           )
 
