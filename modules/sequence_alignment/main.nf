@@ -164,7 +164,7 @@ workflow sequence_alignment {
         csv_channel.subscribe{ row ->
           if (!(row.normal_modality in ["FFPE","BLOOD"])){
                 throw new Exception("unknown modality ${row.tumor_modality} in row: ${row}")
-          } else if (!(row.tumor_modality in ["FFPE","FF"])){
+          } else if (!(row.tumor_modality in ["FFPE","FF","ZYTO","CFDNA"])){
                 throw new Exception("unknown modality ${row.tumor_modality} in row: ${row}")
           }
         }
