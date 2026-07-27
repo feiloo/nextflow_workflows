@@ -36,7 +36,7 @@ the simplest way is to run (portable) from a single folder,
 
 dependencies:
 
-* nextflow
+* nextflow 25.04
 * conda
 
 then clone the pipeline:
