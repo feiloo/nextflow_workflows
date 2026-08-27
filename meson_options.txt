@@ -1,3 +1,4 @@
+option('reference_dir', type: 'string')
 option('test_datadir', type: 'string')
 option('external_deps', type: 'string')
 option('enable_proprietary', type : 'boolean', value : false)
