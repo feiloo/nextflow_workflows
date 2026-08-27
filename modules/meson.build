@@ -4,10 +4,6 @@ test_datadir = get_option('test_datadir')
 enable_proprietary = get_option('enable_proprietary')
 
 
-clc_workflow_name = get_option('clc_workflow_name')
-clc_import_dir = get_option('clc_import_dir')
-clc_export_dir = get_option('clc_export_dir')
-clc_destdir = get_option('clc_destdir')
 
 subdir('arriba_nextflow')
 
@@ -18,6 +14,10 @@ nextpipe_sources = [
 ]
 
 if enable_proprietary
+  clc_workflow_name = get_option('clc_workflow_name')
+  clc_import_dir = get_option('clc_import_dir')
+  clc_export_dir = get_option('clc_export_dir')
+  clc_destdir = get_option('clc_destdir')
   subdir('clc_nextflow')
 endif
 
