@@ -138,10 +138,41 @@ workflow {
   def args = [:]
   for (param in params) { args[param.key] = param.value }
 
+  pub = Channel.of()
+
   if(args.workflow_variation == 'sequence_alignment'){
-	output = sequence_alignment(args)
-	pub = output.bam.mix(output.vcf).mix(output.bam_coverage).mix(output.bam_stats)
-	publish(pub, args.output_dir)
+	// output = sequence_alignment(args)
+	// pub = output.bam.mix(output.vcf).mix(output.bam_coverage).mix(output.bam_stats)
+	// publish(pub, args.output_dir)
+
+	seq_output = sequence_alignment(args)
+	// preprocessing output
+	pub = seq_output.integrity_check.mix(seq_output.samplesheet)
+	pub = seq_output.samplesheet.mix(seq_output.hash_db)
+	// fastp report currently broken, skipping it
+	pub = pub.mix(seq_output.fastp_report_h).mix(seq_output.fastp_report_j)
+	pub = pub.mix(seq_output.vcf).mix(seq_output.bam_coverage).mix(seq_output.bam_stats)
+
+	//pub = pub.mix(seq_output.bam_pairs_w_idx.flatten())//.mix(seq_output.vcf).mix(seq_output.bam_coverage).mix(seq_output.bam_stats)
+
+	biomarkers = analyse_biomarkers(seq_output.bam_pairs_w_idx, args.refgenome, seq_output.refgenome_index, seq_output.refgenome_dict, args)
+	msi_csv = biomarkers.msi_csv
+	hs_metrics = biomarkers.hs_metrics
+	// matched_bams_w_idx = biomarkers.matched_preproc_bams
+
+	pub = pub.mix(msi_csv).mix(hs_metrics) //.mix(matched_bams_w_idx.flatten())
+	pub = pub.mix(seq_output.bam_w_idx.flatten())
+
+	def skip = args.skip_publishing?.toString()?.toLowerCase() ?: 'false'
+	if (skip == 'false' || skip == '') {
+		publish(pub, args.output_dir)
+	} else if (skip == 'true'){
+		// do not publish anything
+		println "skipping publishing"
+	} else {
+	    println "invalid value for parameter skip_publishing " + args.workflow_variation
+	    System.exit(1)
+	}
   }
   else if(args.workflow_variation == 'arriba'){
   	arriba_nextflow(args)
@@ -205,7 +236,7 @@ workflow {
 
 	untared_vep = untar_file(args.vep_cache)
 
-  	VARIANTINTERPRETATION(
+  	interpretation = VARIANTINTERPRETATION(
 	  new_csv_channel, //new_samplesheet,
 	  fasta,
 	  untared_vep,
@@ -220,8 +251,10 @@ workflow {
 	  args.bedfile,
 	  args.custom_filters,
 	  args.library_type,
+	  args.use_proprietary
 	  )
 	
+	pub = pub.mix(interpretation)
   }
   else if (args.workflow_variation == 'align_interpret'){
 	seq_output = sequence_alignment(args)

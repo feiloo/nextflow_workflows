@@ -55,8 +55,7 @@ export NEXTFLOW_CALLDIR="$(pwd)/nextflow_calldir"
 export NEXTFLOW_WORKDIR_CUSTOM="$(pwd)/nextflow_workdir"
 export NEXTFLOW_OUTPUTDIR_CUSTOM="$(pwd)/nextflow_outputdir"
 export NEXTFLOW_STOREDIR="$(pwd)/cache"
-export NAS_IMPORT_DIR=''
-export NAS_EXPORT_DIR=''
+export MESON_BUILDDIR="$(pwd)/builddir"
 ```
 
 ### configuration
@@ -68,6 +67,13 @@ see the environment variables and nextflow-configs like `modules/oncoscanner/use
 ```
 pip install boto3
 python nextflow_workflows/scripts/download_data.py reference $NGS_REFERENCE_DIR/oncoscanner_reference
+```
+
+#### generate stub data for example
+
+```
+meson setup -Dreference_dir=$NGS_REFERENCE_DIR/oncoscanner_reference $MESON_BUILDDIR
+meson compile -C $MESON_BUILDDIR generate-wgs
 ```
 
 ### usage

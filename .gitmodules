@@ -2,3 +2,6 @@
 	path = modules/variantinterpretation
 	url = https://github.com/cio-abcd/variantinterpretation.git
 	branch = remove_nfcore
+[submodule "third_party/DWGSIM"]
+	path = third_party/DWGSIM
+	url = https://github.com/feiloo/DWGSIM.git

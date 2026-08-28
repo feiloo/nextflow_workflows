@@ -17,24 +17,18 @@ fi
 mkdir -p "$DATA_OUTPUTDIR"
 
 REF_BASENAME="$(basename "$REF_GENOME")"
-REPO_URL='https://github.com/feiloo/DWGSIM.git'
-COMMIT=7ed576b025395c7a376e5f274a6370c529a7500e
+REF_NEWPATH="$DATA_OUTPUTDIR"/"$REF_BASENAME"
 
-pushd "$TMP_DIR" > /dev/null
-git clone --branch fast --recurse-submodules "$REPO_URL" "$TMP_DIR/repo"
-pushd "$TMP_DIR/repo" > /dev/null
-git checkout "$COMMIT"
-sed -i 's/-lcurses/-lncurses/g' samtools/Makefile
-make -j$(nproc)
-popd > /dev/null
-
-ln -s "$(realpath "$REF_GENOME")" "$REF_BASENAME"
-samtools faidx "$REF_BASENAME"
+ln -s "$(realpath "$REF_GENOME")" $REF_NEWPATH || true
+#echo $(pwd)
+samtools faidx $REF_NEWPATH
 
 # Generate matched tumor‑normal reads (prefix = ${SAMPLE_ID}-25)
-"$TMP_DIR/repo/dwgsim" --matched -N 1000000 -z 13 \
+"./third_party/DWGSIM/dwgsim" --matched -N 1000000 -z 13 \
     -r 0.001 --somatic-rate 0.00001 --tumor-vaf 0.25 \
-    "$TMP_DIR/$REF_BASENAME" "$DATA_OUTPUTDIR/${SAMPLE_ID}-25"
+    $REF_NEWPATH "$DATA_OUTPUTDIR/${SAMPLE_ID}-25"
+
+pushd $DATA_OUTPUTDIR
 
 # Rename output files to desired pattern
 for f in "$DATA_OUTPUTDIR"/"${SAMPLE_ID}"-25.*.fastq.gz; do
@@ -52,9 +46,8 @@ EOF
 
 # Generate md5sum.txt for the fastq files
 echo "Generating md5sum.txt"
-cd "$DATA_OUTPUTDIR"
 md5sum *.fq.gz > md5sum.txt
-cd - > /dev/null
+popd
 
 echo "Generated samplesheet.csv, md5sum.txt and fastq files in $DATA_OUTPUTDIR"
 

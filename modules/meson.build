@@ -1,3 +1,4 @@
+# nextflow_bin = find_program('nextflow')
 nextflow_bin = find_program('nextflow')
 nextflow_libdir = '/usr/local/lib/nextflow'
 test_datadir = get_option('test_datadir')
@@ -192,6 +193,25 @@ test('nextflow_workflow_sequence_alignment',
 	'--samplesheet', test_datadir/'test_sequence_alignment_samplesheet.csv',
         '--samplesheet_flavor','modal',
         '--hash_db', test_datadir/'md5sum.txt',
+	],
+	depends: [copy_main_sources, variantinterpretation, sequence_alignment_nextflow, oncoscanner],
+	timeout: 360000
+	)
+
+test('nextflow_workflow_sequence_alignment_smoke',
+	nextflow_bin,
+	is_parallel : false,
+	suite : ['nextflow', 'workflow'],
+	env: env_vars,
+	args : [
+	'run',
+	meson.current_build_dir()+'/oncoscanner/main.nf',
+	'-c', meson.current_build_dir()/'oncoscanner' / 'user.config',
+	'-profile', 'standard',
+	'--workflow_variation', 'sequence_alignment',
+	'--samplesheet', 'test_work' /'samplesheet.csv',
+        '--samplesheet_flavor','modal',
+        '--hash_db', 'test_work' /'md5sum.txt',
 	],
 	depends: [copy_main_sources, variantinterpretation, sequence_alignment_nextflow, oncoscanner],
 	timeout: 360000
