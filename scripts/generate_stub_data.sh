@@ -21,7 +21,11 @@ REF_NEWPATH="$DATA_OUTPUTDIR"/"$REF_BASENAME"
 
 ln -s "$(realpath "$REF_GENOME")" $REF_NEWPATH || true
 #echo $(pwd)
-samtools faidx $REF_NEWPATH
+pushd ./third_party/DWGSIM/samtools
+make 
+popd
+./third_party/DWGSIM/samtools/samtools faidx $REF_NEWPATH
+
 
 # Generate matched tumor‑normal reads (prefix = ${SAMPLE_ID}-25)
 "./third_party/DWGSIM/dwgsim" --matched -N 1000000 -z 13 \
@@ -41,7 +45,6 @@ done
 cat > "$DATA_OUTPUTDIR/samplesheet.csv" << EOF
 sample_id,normal_modality,tumor_modality
 ${SAMPLE_ID}-25,FFPE,FFPE
-${SAMPLE_ID}-25,BLOOD,FFPE
 EOF
 
 # Generate md5sum.txt for the fastq files

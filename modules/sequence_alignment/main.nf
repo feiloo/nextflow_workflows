@@ -41,7 +41,7 @@ def hash_db_to_dict( hash_db ){
 	def file = new File(hash_db)
 
 	if (!file.exists()) {
-	    throw new RuntimeException("File 'md5sum.txt' does not exist.")
+	    throw new RuntimeException("File ${file.getAbsolutePath()} (md5sum.txt) does not exist.")
 	}
 	if (!file.isFile()) {
 	    throw new RuntimeException("Path 'md5sum.txt' is not a regular file.")
