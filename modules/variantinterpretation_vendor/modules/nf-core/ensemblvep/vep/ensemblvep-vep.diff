@@ -1,0 +1,37 @@
+Changes in module 'nf-core/ensemblvep/vep'
+--- modules/nf-core/ensemblvep/vep/main.nf
++++ modules/nf-core/ensemblvep/vep/main.nf
+@@ -36,7 +36,7 @@
+     """
+     vep \\
+         -i $vcf \\
+-        -o ${prefix}.${file_extension}.gz \\
++        -o ${prefix}.ann.${file_extension}.gz \\
+         $args \\
+         $compress_cmd \\
+         $reference \\
+@@ -45,7 +45,8 @@
+         --cache \\
+         --cache_version $cache_version \\
+         --dir_cache $dir_cache \\
+-        --fork $task.cpus
++        --fork $task.cpus \\
++        --stats_file ${prefix}.summary.html
+ 
+ 
+     cat <<-END_VERSIONS > versions.yml
+@@ -57,9 +58,9 @@
+     stub:
+     def prefix = task.ext.prefix ?: "${meta.id}"
+     """
+-    echo "" | gzip > ${prefix}.vcf.gz
+-    echo "" | gzip > ${prefix}.tab.gz
+-    echo "" | gzip > ${prefix}.json.gz
++    echo "" | gzip > ${prefix}.ann.vcf.gz
++    echo "" | gzip > ${prefix}.ann.tab.gz
++    echo "" | gzip > ${prefix}.ann.json.gz
+     touch ${prefix}_summary.html
+ 
+     cat <<-END_VERSIONS > versions.yml
+
+************************************************************

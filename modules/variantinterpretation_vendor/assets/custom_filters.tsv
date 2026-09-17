@@ -1,0 +1,4 @@
+name	filter
+high_qual	any(FORMAT["DP"][s] > 100 for s in SAMPLES)
+pathogenic	not {"pathogenic","likely_pathogenic","drug_response"}.isdisjoint(CSQ["CLIN_SIG"])
+BRCAgenes	CSQ["SYMBOL"] in {"BRCA2","BRCA1"}
