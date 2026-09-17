@@ -39,12 +39,6 @@ workflow VARIANTINTERPRETATION {
     use_proprietary_arg
 
     main:
-    // gather versions of each process
-    ch_versions = Channel.empty()
-    // gather QC reports for multiQC
-    ch_multiqc_files = Channel.empty()
-    // gather warnings
-    ch_warnings = Channel.empty()
 
     // yikes, nextflow type coerces the argument values (true and false, ...) into boolean instead of keeping them strings
 	if (use_proprietary_arg == null) {
@@ -81,15 +75,12 @@ workflow VARIANTINTERPRETATION {
 
     // create tbi index for vcf
     BCFTOOLS_INDEX ( ch_samplesheet )
-    ch_versions = ch_versions.mix(BCFTOOLS_INDEX.out.versions)
     vcf_tbi = ch_samplesheet.join(BCFTOOLS_INDEX.out.tbi)
 
     // create sequence dictionary and faidx index of reference FASTA
     fasta_ref = ch_fasta.map { ch_fasta -> ['ref', ch_fasta] }
     SAMTOOLS_DICT( fasta_ref )
-    ch_versions = ch_versions.mix(SAMTOOLS_DICT.out.versions)
     SAMTOOLS_FAIDX( fasta_ref, [[], []] )
-    ch_versions = ch_versions.mix(SAMTOOLS_FAIDX.out.versions)
 
     CHECKBEDFILE ( ch_bedfile )
 
@@ -99,7 +90,6 @@ workflow VARIANTINTERPRETATION {
     if (params.tag_roi && CHECKBEDFILE.out.bed_valid) {
         TAGROI (    ch_bedfile,
                     vcf_tbi)
-        ch_versions = ch_versions.mix(TAGROI.out.versions)
         tagroi_vcf=TAGROI.out.vcf_tbi
     } else {
         tagroi_vcf=vcf_tbi
@@ -112,7 +102,6 @@ workflow VARIANTINTERPRETATION {
             tagroi_vcf,
             ch_fasta
     )
-    ch_versions = ch_versions.mix(VCFPROC.out.versions)
 
     //
     // Merging VCF files by groups
@@ -122,7 +111,6 @@ workflow VARIANTINTERPRETATION {
         MERGE_VCFS (
             VCFPROC.out.vcf
         )
-        ch_versions = ch_versions.mix(VCFPROC.out.versions)
 
         proc_vcf=MERGE_VCFS.out.vcf
     } else {
@@ -145,8 +133,6 @@ workflow VARIANTINTERPRETATION {
                         fasta_ref,
                         ch_vep_extra_files)
         ch_vcf = ENSEMBLVEP_VEP.out.vcf
-        ch_versions = ch_versions.mix(ENSEMBLVEP_VEP.out.versions)
-        ch_multiqc_files = ch_multiqc_files.mix(ENSEMBLVEP_VEP.out.report)
     } else {
         ch_vcf = proc_vcf
     }
@@ -157,7 +143,6 @@ workflow VARIANTINTERPRETATION {
                             ch_transcriptlist
         )
         ch_vcf_tf = TRANSCRIPT_FILTER.out.output
-        ch_versions = ch_versions.mix(TRANSCRIPT_FILTER.out.versions)
     } else {
         ch_vcf_tf = ch_vcf
     }
@@ -167,7 +152,6 @@ workflow VARIANTINTERPRETATION {
         PRESETS_FILTER_REPORT ( ch_vcf_tf,
                                 ch_custom_filters)
         ch_vcf_tag = PRESETS_FILTER_REPORT.out.vcf
-        ch_versions = ch_versions.mix(PRESETS_FILTER_REPORT.out.versions)
     } else {
         ch_vcf_tag = ch_vcf_tf
     }
@@ -183,7 +167,6 @@ workflow VARIANTINTERPRETATION {
                     ch_annotation_fields
     )
     ch_tsv = TSV_CONVERSION.out.tsv
-    ch_versions = ch_versions.mix(TSV_CONVERSION.out.versions)
 
     //
     // MODULE: TMB calculation
@@ -197,7 +180,6 @@ workflow VARIANTINTERPRETATION {
                     TMB_CALCULATE ( somatic_files,
                                     ch_bedfile
                 )
-                ch_versions = ch_versions.mix(TMB_CALCULATE.out.versions)
         }
     }
 
@@ -208,7 +190,6 @@ workflow VARIANTINTERPRETATION {
 
     if( use_old_filter == true ) {
         UKB_FILTER(ch_tsv, refseq_list, variantDBi, ch_library_type)
-        ch_versions = ch_versions.mix(UKB_FILTER.out.versions)
         ch_filtered_variants = UKB_FILTER.out.variants_filtered_maf
         tmb = UKB_FILTER.out.tmb.map{it -> it[1]}
         ONCOKB_ANNOTATOR_UKB(ch_filtered_variants)
@@ -233,9 +214,6 @@ workflow VARIANTINTERPRETATION {
     }
 
     emit:
-    ch_versions
-    ch_multiqc_files
-    ch_warnings
     ukb_results
 
 }
