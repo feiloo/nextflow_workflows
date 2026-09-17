@@ -22,7 +22,8 @@ REF_NEWPATH="$DATA_OUTPUTDIR"/"$REF_BASENAME"
 ln -s "$(realpath "$REF_GENOME")" $REF_NEWPATH || true
 #echo $(pwd)
 pushd ./third_party/DWGSIM/samtools
-make 
+make clean
+make -j1
 popd
 ./third_party/DWGSIM/samtools/samtools faidx $REF_NEWPATH
 
