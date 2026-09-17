@@ -55,9 +55,7 @@ workflow VARIANTINTERPRETATION {
 		  println 'enabeling proprietary features'
 	}
 
-    //
     // Check parameter combinations and give warnings
-    //
     if (!params.vep) log.warn("WARNING: You deactivated VEP-based annotation. Downstream processes are working properly only with VEP-annotated VCF file as input!")
     if (!params.tsv && params.report) error("ERROR: Needs to create TSV file for generating HTML report.")
     if (!params.tsv && params.calculate_tmb) error("ERROR: Need to create TSV file for calculating TMB.")
@@ -69,9 +67,7 @@ workflow VARIANTINTERPRETATION {
     refseq_list                = params.refseq_list        ? Channel.value(params.refseq_list)                           : []
     variantDBi                 = params.variantDBi         ? Channel.value(params.variantDBi)                            : []
 
-    //
     // Index vcf and reference files
-    //
 
     // create tbi index for vcf
     BCFTOOLS_INDEX ( ch_samplesheet )
@@ -84,58 +80,30 @@ workflow VARIANTINTERPRETATION {
 
     CHECKBEDFILE ( ch_bedfile )
 
-    //
     // ROI-tagging of VCF entries
-    //
-    if (params.tag_roi && CHECKBEDFILE.out.bed_valid) {
-        TAGROI (    ch_bedfile,
-                    vcf_tbi)
-        tagroi_vcf=TAGROI.out.vcf_tbi
-    } else {
-        tagroi_vcf=vcf_tbi
-    }
+    TAGROI (    ch_bedfile,
+                vcf_tbi)
+    tagroi_vcf=TAGROI.out.vcf_tbi
 
-    //
     // VCF filtering and normalization
-    //
     VCFPROC (
             tagroi_vcf,
             ch_fasta
     )
 
-    //
-    // Merging VCF files by groups
-    //
 
-    if (params.merge_vcfs) {
-        MERGE_VCFS (
-            VCFPROC.out.vcf
-        )
-
-        proc_vcf=MERGE_VCFS.out.vcf
-    } else {
-        proc_vcf=VCFPROC.out.vcf
-    }
-
-    //
-    // MODULE: VEP annotation
-    //
-
-    proc_vcf=proc_vcf
+    // TODO: deleted vcf merging, might readd later but then cleaner
+    proc_vcf=VCFPROC.out.vcf
         .map { meta, vcf -> tuple( meta, vcf, []) }
 
-    if (params.vep) {
-        ENSEMBLVEP_VEP( proc_vcf,
-                        ch_vep_genome,
-                        ch_vep_species,
-                        ch_vep_cache_version,
-                        ch_vep_cache,
-                        fasta_ref,
-                        ch_vep_extra_files)
-        ch_vcf = ENSEMBLVEP_VEP.out.vcf
-    } else {
-        ch_vcf = proc_vcf
-    }
+    ENSEMBLVEP_VEP( proc_vcf,
+                    ch_vep_genome,
+                    ch_vep_species,
+                    ch_vep_cache_version,
+                    ch_vep_cache,
+                    fasta_ref,
+                    ch_vep_extra_files)
+    ch_vcf = ENSEMBLVEP_VEP.out.vcf
 
     // Filtering for transcripts
     if ( params.transcriptfilter || (params.transcriptlist!=[]) ) {
@@ -157,61 +125,41 @@ workflow VARIANTINTERPRETATION {
     }
 
 
-    //
     // MODULE: TSV conversion with vembrane table
-    //
-
-    ukb_results = Channel.empty()
 
     TSV_CONVERSION (ch_vcf_tag,
                     ch_annotation_fields
     )
     ch_tsv = TSV_CONVERSION.out.tsv
 
-    //
     // MODULE: TMB calculation
-    //
+    /*
     somatic_files = TSV_CONVERSION.out.tsv.filter { meta, file ->
                          !meta.id.contains('_Tpavegermline')
                     }
 
-    if ( params.bedfile && params.calculate_tmb ) {
-            if ( CHECKBEDFILE.out.bed_valid ) {
-                    TMB_CALCULATE ( somatic_files,
-                                    ch_bedfile
+    TMB_CALCULATE ( somatic_files,
+                    ch_bedfile
                 )
-        }
-    }
+    */
 
-    // MODULE: UKB filter
+    // MODULE: UKB filter and annotation
 
-    def use_old_filter = false
+    ukb_results = Channel.empty()
     use_oncokb_token = use_proprietary
 
-    if( use_old_filter == true ) {
-        UKB_FILTER(ch_tsv, refseq_list, variantDBi, ch_library_type)
-        ch_filtered_variants = UKB_FILTER.out.variants_filtered_maf
-        tmb = UKB_FILTER.out.tmb.map{it -> it[1]}
-        ONCOKB_ANNOTATOR_UKB(ch_filtered_variants)
-        annotated_variants = WXS_ANNOTATION_UKB(ONCOKB_ANNOTATOR_UKB.out.oncokb_out).annotated_variants
-        ukb_results = ukb_results.mix(annotated_variants.map{ it -> it[1] } ).mix(tmb)
-    } else {
-
-        println "using new ukb_tool"
-        //filtout = UKB_TOOL(ch_tsv, refseq_list, variantDBi, ch_library_type)
-        if( use_oncokb_token == true ){
-            println 'using onkokb token'
-            filtout = UKB_TOOL_ONCOKB(ch_tsv, ch_library_type)
+    println "using new ukb_tool"
+    //filtout = UKB_TOOL(ch_tsv, refseq_list, variantDBi, ch_library_type)
+    if( use_oncokb_token == true ){
+        println 'using onkokb token'
+        filtout = UKB_TOOL_ONCOKB(ch_tsv, ch_library_type)
+    }
+    else {
+        filtout = UKB_TOOL(ch_tsv, ch_library_type)
         }
-        else {
-            filtout = UKB_TOOL(ch_tsv, ch_library_type)
-            }
-        tmb = filtout.tmb.map{it -> it[1]}
-        annotated_variants = filtout.annotated_variants
-        ukb_results = ukb_results.mix(annotated_variants.map{ it -> it[1]} ).mix(tmb)
-    }
-
-    }
+    tmb = filtout.tmb.map{it -> it[1]}
+    annotated_variants = filtout.annotated_variants
+    ukb_results = ukb_results.mix(annotated_variants.map{ it -> it[1]} ).mix(tmb)
 
     emit:
     ukb_results
