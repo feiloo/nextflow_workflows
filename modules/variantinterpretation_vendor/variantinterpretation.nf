@@ -1,23 +1,15 @@
-include { CHECKBEDFILE		                        } from '../modules/local/bedfile/checkbedfile/main'
+include { CHECKBEDFILE		                        } from 'bedfile/checkbedfile/main'
 include { TAGROI                                    } from '../subworkflows/local/vcf_roi_tagging/main'
 include { BCFTOOLS_INDEX                            } from '../modules/nf-core/bcftools/index/main'
 include { SAMTOOLS_DICT                             } from '../modules/nf-core/samtools/dict/main'
 include { SAMTOOLS_FAIDX                            } from '../modules/nf-core/samtools/faidx/main'
-include { CHECKVCF                                  } from '../subworkflows/local/check_vcf/main'
 include { VCFPROC                                   } from '../subworkflows/local/process_vcf/main'
-include { MERGE_VCFS                                } from '../subworkflows/local/merge_vcfs/main'
 include { ENSEMBLVEP_FILTERVEP as TRANSCRIPT_FILTER } from '../modules/nf-core/ensemblvep/filtervep/main'
 include { ENSEMBLVEP_VEP                            } from '../modules/nf-core/ensemblvep/vep/main'
 include { TSV_CONVERSION                            } from '../subworkflows/local/tsv_conversion/main'
-include { VARIANTFILTER as PRESETS_FILTER_REPORT    } from '../subworkflows/local/variantfilter/main'
-include { HTML_REPORT                               } from '../subworkflows/local/html_report/main'
-include { TMB_CALCULATE		                    } from '../modules/local/tmbcalculation/main'
-include { UKB_FILTER                                } from '../modules/local/UKB_filter/main'
-include { UKB_TOOL                                } from '../modules/local/UKB_tool/main'
-include { UKB_TOOL_ONCOKB                                } from '../modules/local/UKB_tool/main'
-include { ONCOKB_ANNOTATOR_UKB                      } from '../modules/local/oncokb_annotator_ukb/main'
-include { WXS_ANNOTATION_UKB                        } from '../modules/local/wxs_annotation_ukb/main'
-
+include { TMB_CALCULATE		                        } from 'tmbcalculation/main'
+include { UKB_TOOL                                  } from 'UKB_tool/main'
+include { UKB_TOOL_ONCOKB                           } from 'UKB_tool/main'
 
 workflow VARIANTINTERPRETATION {
 
