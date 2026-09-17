@@ -7,9 +7,9 @@ nextflow_files = ['main.nf','nextflow.config','user.config']
 
 
 if enable_proprietary
-  deps = [arriba_nextflow, clc_nextflow, sequence_alignment_nextflow, variantinterpretation]
+  deps = [fusions, clc_nextflow, sequence_alignment_nextflow, variantinterpretation]
 else
-  deps = [arriba_nextflow, sequence_alignment_nextflow, variantinterpretation]
+  deps = [fusions, sequence_alignment_nextflow, variantinterpretation]
 endif
 
 oncoscanner = custom_target('oncoscanner',

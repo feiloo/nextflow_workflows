@@ -3,7 +3,7 @@ install_subdir('../fusions',
 	exclude_files:['meson.build'], 
 	install_tag : 'nextflow')
 
-arriba_nextflow = custom_target('fusions',
+fusions = custom_target('fusions',
 	input : 'main.nf',
 	output : 'main.nf',
 	command : ['cp', '@INPUT@', '@OUTPUT@']
