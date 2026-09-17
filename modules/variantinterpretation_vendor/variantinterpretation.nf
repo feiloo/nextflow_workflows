@@ -1,9 +1,3 @@
-/*
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    IMPORT LOCAL MODULES/SUBWORKFLOWS
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*/
-
 include { CHECKBEDFILE		                        } from '../modules/local/bedfile/checkbedfile/main'
 include { TAGROI                                    } from '../subworkflows/local/vcf_roi_tagging/main'
 include { BCFTOOLS_INDEX                            } from '../modules/nf-core/bcftools/index/main'
@@ -97,28 +91,7 @@ workflow VARIANTINTERPRETATION {
     SAMTOOLS_FAIDX( fasta_ref, [[], []] )
     ch_versions = ch_versions.mix(SAMTOOLS_FAIDX.out.versions)
 
-    //
-    // VCF tests
-    //
-
-    //CHECKVCF (
-    //    vcf_tbi,
-    //    fasta_ref,
-    //    SAMTOOLS_DICT.out.dict,
-    //    SAMTOOLS_FAIDX.out.fai
-    //)
-    //ch_versions = ch_versions.mix(CHECKVCF.out.versions)
-    //ch_warnings = ch_warnings.mix(CHECKVCF.out.warnings)
-    //ch_multiqc_files = ch_multiqc_files.mix(CHECKVCF.out.multiqc_reports)
-
-    //
-    // Check bedfiles
-    //
-
-    if (params.bedfile) {
-        CHECKBEDFILE ( ch_bedfile )
-        ch_versions = ch_versions.mix(CHECKBEDFILE.out.versions)
-    }
+    CHECKBEDFILE ( ch_bedfile )
 
     //
     // ROI-tagging of VCF entries
@@ -199,92 +172,63 @@ workflow VARIANTINTERPRETATION {
         ch_vcf_tag = ch_vcf_tf
     }
 
-    //
-    // MODULE: NF-core VCF2MAF and Oncokb-Annotator (not compatiple mit provious vep module; has intrinsic vep!)
-    //
-    //if (params.vcf2maf) {
-    //    VCF2MAF( proc_vcf,
-    //             fasta_ref,
-    //             vep_cache,
-    //             mskcc)
-    //   ch_maf = VCF2MAF.out.maf
-    //   ch_vcf_tag = VCF2MAF.out.vcf_vep
-    //   ch_versions = ch_versions.mix(VCF2MAF.out.versions)
-    //   //ONCOKB_ANNOTATOR(ch_maf)
-    //} else {
-    //    ch_vcf_tag = proc_vcf
-    //}
 
     //
     // MODULE: TSV conversion with vembrane table
     //
 
     ukb_results = Channel.empty()
-    if ( params.tsv ) {
 
-        TSV_CONVERSION (ch_vcf_tag,
-                        ch_annotation_fields
-        )
-        ch_tsv = TSV_CONVERSION.out.tsv
-        ch_versions = ch_versions.mix(TSV_CONVERSION.out.versions)
+    TSV_CONVERSION (ch_vcf_tag,
+                    ch_annotation_fields
+    )
+    ch_tsv = TSV_CONVERSION.out.tsv
+    ch_versions = ch_versions.mix(TSV_CONVERSION.out.versions)
 
-        //
-        // MODULE: HTML report with datavzrd
-        //
-        // if ( params.report ) {
-        //     // need to combine TSV file with datavzrd_config and annotation_col.tsv for report generation
-        //     tsv_config = ch_tsv.combine(ch_datavzrd_config)
-        //     tsv_config_colinfo = tsv_config.combine(ch_annotation_colinfo)
-        //     // generate report
-        //     HTML_REPORT ( tsv_config_colinfo )
-        //     ch_versions = ch_versions.mix(HTML_REPORT.out.versions)
-        // }
+    //
+    // MODULE: TMB calculation
+    //
+    somatic_files = TSV_CONVERSION.out.tsv.filter { meta, file ->
+                         !meta.id.contains('_Tpavegermline')
+                    }
 
-        //
-        // MODULE: TMB calculation
-        //
-        //TSV_CONVERSION.out.tsv.view()
-        somatic_files = TSV_CONVERSION.out.tsv.filter { meta, file ->
-                             !meta.id.contains('_Tpavegermline')
-                        }
-
-        if ( params.bedfile && params.calculate_tmb ) {
-                if ( CHECKBEDFILE.out.bed_valid ) {
-                        TMB_CALCULATE ( somatic_files,
-                                        ch_bedfile
-                    )
-                    ch_versions = ch_versions.mix(TMB_CALCULATE.out.versions)
-            }
+    if ( params.bedfile && params.calculate_tmb ) {
+            if ( CHECKBEDFILE.out.bed_valid ) {
+                    TMB_CALCULATE ( somatic_files,
+                                    ch_bedfile
+                )
+                ch_versions = ch_versions.mix(TMB_CALCULATE.out.versions)
         }
+    }
 
-        // MODULE: UKB filter
+    // MODULE: UKB filter
 
-        def use_old_filter = false
-        use_oncokb_token = use_proprietary
+    def use_old_filter = false
+    use_oncokb_token = use_proprietary
 
-        if( use_old_filter == true ) {
-            UKB_FILTER(ch_tsv, refseq_list, variantDBi, ch_library_type)
-            ch_versions = ch_versions.mix(UKB_FILTER.out.versions)
-            ch_filtered_variants = UKB_FILTER.out.variants_filtered_maf
-            tmb = UKB_FILTER.out.tmb.map{it -> it[1]}
-            ONCOKB_ANNOTATOR_UKB(ch_filtered_variants)
-            annotated_variants = WXS_ANNOTATION_UKB(ONCOKB_ANNOTATOR_UKB.out.oncokb_out).annotated_variants
-            ukb_results = ukb_results.mix(annotated_variants.map{ it -> it[1] } ).mix(tmb)
-        } else {
+    if( use_old_filter == true ) {
+        UKB_FILTER(ch_tsv, refseq_list, variantDBi, ch_library_type)
+        ch_versions = ch_versions.mix(UKB_FILTER.out.versions)
+        ch_filtered_variants = UKB_FILTER.out.variants_filtered_maf
+        tmb = UKB_FILTER.out.tmb.map{it -> it[1]}
+        ONCOKB_ANNOTATOR_UKB(ch_filtered_variants)
+        annotated_variants = WXS_ANNOTATION_UKB(ONCOKB_ANNOTATOR_UKB.out.oncokb_out).annotated_variants
+        ukb_results = ukb_results.mix(annotated_variants.map{ it -> it[1] } ).mix(tmb)
+    } else {
 
-            println "using new ukb_tool"
-            //filtout = UKB_TOOL(ch_tsv, refseq_list, variantDBi, ch_library_type)
-            if( use_oncokb_token == true ){
-                println 'using onkokb token'
-                filtout = UKB_TOOL_ONCOKB(ch_tsv, ch_library_type)
-            }
-            else {
-                filtout = UKB_TOOL(ch_tsv, ch_library_type)
-                }
-            tmb = filtout.tmb.map{it -> it[1]}
-            annotated_variants = filtout.annotated_variants
-            ukb_results = ukb_results.mix(annotated_variants.map{ it -> it[1]} ).mix(tmb)
+        println "using new ukb_tool"
+        //filtout = UKB_TOOL(ch_tsv, refseq_list, variantDBi, ch_library_type)
+        if( use_oncokb_token == true ){
+            println 'using onkokb token'
+            filtout = UKB_TOOL_ONCOKB(ch_tsv, ch_library_type)
         }
+        else {
+            filtout = UKB_TOOL(ch_tsv, ch_library_type)
+            }
+        tmb = filtout.tmb.map{it -> it[1]}
+        annotated_variants = filtout.annotated_variants
+        ukb_results = ukb_results.mix(annotated_variants.map{ it -> it[1]} ).mix(tmb)
+    }
 
     }
 
