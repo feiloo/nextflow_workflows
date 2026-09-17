@@ -1,4 +1,4 @@
-include { arriba_nextflow } from "$NEXTFLOW_MODULES/arriba_nextflow"
+include { fusions } from "$NEXTFLOW_MODULES/fusions"
 
 if(params.workflow_variation == 'clc'){
 include { pancancer_dna_only; pancancer_dna_rna } from "$NEXTFLOW_MODULES/clc_nextflow"
@@ -174,8 +174,8 @@ workflow {
 	    System.exit(1)
 	}
   }
-  else if(args.workflow_variation == 'arriba'){
-  	arriba_nextflow(args)
+  else if(args.workflow_variation == 'fusions'){
+  	fusions(args)
   }
   else if(args.workflow_variation == 'clc'){
         samples = Channel.fromPath(args.samplesheet, checkIfExists: true, type: 'file').splitCsv(header: true)

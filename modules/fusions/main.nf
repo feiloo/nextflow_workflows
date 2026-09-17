@@ -82,7 +82,7 @@ process publish {
     
 }
 
-workflow arriba_nextflow {
+workflow fusions {
   take:
     args
 

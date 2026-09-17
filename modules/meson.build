@@ -6,7 +6,7 @@ enable_proprietary = get_option('enable_proprietary')
 
 
 
-subdir('arriba_nextflow')
+subdir('fusions')
 
 nextpipe_sources = [
 'nextpipe/resources/usr/bin/transcript_list_08_08_2024.py',
@@ -162,7 +162,7 @@ test('nextflow_workflow_variantinterpretation',
 	timeout: 6000
 	)
 
-test('nextflow_workflow_arriba',
+test('nextflow_workflow_fusions',
 	nextflow_bin,
 	is_parallel : false,
 	suite : ['nextflow', 'workflow'],
@@ -171,10 +171,10 @@ test('nextflow_workflow_arriba',
 	'run',
 	meson.current_build_dir()+'/oncoscanner/main.nf',
 	'-c', meson.current_build_dir()/ 'oncoscanner' / 'user.config',
-	'--workflow_variation', 'arriba',
-	'--samplesheet', test_datadir / 'test_arriba_samplesheet.csv',
+	'--workflow_variation', 'fusions',
+	'--samplesheet', test_datadir / 'test_fusions_samplesheet.csv',
 	],
-	depends: [copy_main_sources, arriba_nextflow, oncoscanner],
+	depends: [copy_main_sources, fusions, oncoscanner],
 	timeout: 600
 	)
 
