@@ -1,5 +1,5 @@
 # nextflow_bin = find_program('nextflow')
-nextflow_bin = find_program('nextflow')
+nextflow_bin = find_program('nextflow-25.04.7')
 nextflow_libdir = '/usr/local/lib/nextflow'
 test_datadir = get_option('test_datadir')
 enable_proprietary = get_option('enable_proprietary')
@@ -61,10 +61,10 @@ copy_main_sources = custom_target('copy_main_sources',
         depends : [biomarker]
 	)
 
+
 # collected by running "find" for .nf environment.yml meta.yml .sh .py and .config files
 # TODO: add all used nf source files for proper buildsystem detection
 variantinterpretation_files = [
-  '../assets/QIAseqExomehg380720.bed',
   'variantinterpretation_vendor/variantinterpretation.nf',
   ]
 
@@ -73,6 +73,18 @@ variantinterpretation = custom_target('variantinterpretation',
 	input : variantinterpretation_files,
 	output : 'variantinterpretation_vendor',
 	command : ['cp', '-rT', '@CURRENT_SOURCE_DIR@/variantinterpretation_vendor', '@OUTPUT@/'],
+	)
+
+# TODO: think about where assets would be better and store and copy from there
+assets_files = [
+  '../assets/QIAseqExomehg380720.bed',
+]
+
+# just builds/copies the variantinterpretation, since it doesnt have meson
+assets = custom_target('assets',
+	input : assets_files,
+	output : 'QIAseqExomehg380720.bed',
+	command : ['cp', '@INPUT@', '@OUTDIR@/variantinterpretation_vendor/@PLAINNAME@'],
 	)
 
 # need to include here, so that variantinterpretation is defined
@@ -151,7 +163,7 @@ test('nextflow_workflow_sequence_alignment_smoke',
         '--input_dir', meson.current_build_dir() / '..' / 'test_work', 
         '--hash_db', meson.current_build_dir() / '..' / 'test_work' / 'md5sum.txt',
 	],
-	depends: [copy_main_sources, variantinterpretation, sequence_alignment_nextflow, oncoscanner],
+	depends: [copy_main_sources, variantinterpretation, sequence_alignment_nextflow, oncoscanner, assets],
 	timeout: 360000
 	)
 
@@ -231,9 +243,9 @@ test('nextflow_workflow_sequence_align_interpret_smoke',
         '--samplesheet_flavor','modal',
         '--input_dir', meson.current_build_dir() / '..' / 'test_work', 
         '--hash_db', meson.current_build_dir() / '..' / 'test_work' / 'md5sum.txt',
-        '--bedfile', meson.current_build_dir() / 'variantinterpretation/QIAseqExomehg380720.bed',
+        '--bedfile', meson.current_build_dir() / 'variantinterpretation_vendor/QIAseqExomehg380720.bed',
 	],
-	depends: [copy_main_sources, variantinterpretation, sequence_alignment_nextflow, biomarker, oncoscanner],
+	depends: [copy_main_sources, variantinterpretation, sequence_alignment_nextflow, biomarker, oncoscanner, assets],
 	timeout: 360000
 	)
 
