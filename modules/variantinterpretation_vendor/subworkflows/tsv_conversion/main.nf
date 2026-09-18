@@ -2,8 +2,8 @@
 // Convert into TSV format
 //
 
-include { VEMBRANE_CREATE_FIELDS } from '../../../modules/local/vembrane/create-vembrane-fields/main'
-include { VEMBRANE_VEMBRANETABLE } from '../../../modules/local/vembrane/table/main'
+include { VEMBRANE_CREATE_FIELDS } from '../../vembrane/create-vembrane-fields/main'
+include { VEMBRANE_VEMBRANETABLE } from '../../vembrane/table/main'
 
 
 workflow TSV_CONVERSION {

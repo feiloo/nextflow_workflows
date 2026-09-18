@@ -5,7 +5,7 @@ include { pancancer_dna_only; pancancer_dna_rna } from "$NEXTFLOW_MODULES/clc_ne
 include { pancancer_analyse } from "$NEXTFLOW_MODULES/nextpipe"
 }
 
-include { VARIANTINTERPRETATION } from "$NEXTFLOW_MODULES/variantinterpretation/workflows/variantinterpretation.nf"
+include { VARIANTINTERPRETATION } from "$NEXTFLOW_MODULES/variantinterpretation_vendor/variantinterpretation.nf"
 include { sequence_alignment } from "$NEXTFLOW_MODULES/sequence_alignment"
 include { analyse_biomarkers } from "$NEXTFLOW_MODULES/biomarker"
 

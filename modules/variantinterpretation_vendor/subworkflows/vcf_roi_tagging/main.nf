@@ -1,13 +1,13 @@
 
-include { PREPAREBEDFILE                            } from '../../../modules/local/bedfile/preparebedfile/main'
-include { TABIX_BGZIP as FIRST_COMPRESS             } from '../../../modules/nf-core/tabix/bgzip/main'
-include { TABIX_BGZIP as SECOND_COMPRESS            } from '../../../modules/nf-core/tabix/bgzip/main'
-include { TABIX_TABIX                               } from '../../../modules/nf-core/tabix/tabix/main'
-include { BCFTOOLS_INDEX                            } from '../../../modules/nf-core/bcftools/index/main'
-include { BCFTOOLS_INDEX as TAGROI_INDEX            } from '../../../modules/nf-core/bcftools/index/main'
-include { BCFTOOLS_ANNOTATE as BCFTOOLS_ADDROI      } from '../../../modules/nf-core/bcftools/annotate/main'
-include { BCFTOOLS_ANNOTATE as BCFTOOLS_RMVROI      } from '../../../modules/nf-core/bcftools/annotate/main'
-include { VEMBRANE_TAG as FILTER_TAGROI             } from '../../../modules/local/vembrane/tag/main'
+include { PREPAREBEDFILE                            } from '../../bedfile/preparebedfile/main'
+include { TABIX_BGZIP as FIRST_COMPRESS             } from '../../nf-core/tabix/bgzip/main'
+include { TABIX_BGZIP as SECOND_COMPRESS            } from '../../nf-core/tabix/bgzip/main'
+include { TABIX_TABIX                               } from '../../nf-core/tabix/tabix/main'
+include { BCFTOOLS_INDEX                            } from '../../nf-core/bcftools/index/main'
+include { BCFTOOLS_INDEX as TAGROI_INDEX            } from '../../nf-core/bcftools/index/main'
+include { BCFTOOLS_ANNOTATE as BCFTOOLS_ADDROI      } from '../../nf-core/bcftools/annotate/main'
+include { BCFTOOLS_ANNOTATE as BCFTOOLS_RMVROI      } from '../../nf-core/bcftools/annotate/main'
+include { VEMBRANE_TAG as FILTER_TAGROI             } from '../../vembrane/tag/main'
 
 workflow TAGROI {
 

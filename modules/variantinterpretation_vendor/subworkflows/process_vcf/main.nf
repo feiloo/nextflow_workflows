@@ -2,9 +2,9 @@
 // Index, pre-filter and normalize VCF variant files
 //
 
-include { BCFTOOLS_INDEX as INDEX_FILT    } from '../../../modules/nf-core/bcftools/index/main'
-include { BCFTOOLS_VIEW  as VCFFILTER     } from '../../../modules/nf-core/bcftools/view/main'
-include { BCFTOOLS_NORM                   } from '../../../modules/nf-core/bcftools/norm/main'
+include { BCFTOOLS_INDEX as INDEX_FILT    } from '../../nf-core/bcftools/index/main'
+include { BCFTOOLS_VIEW  as VCFFILTER     } from '../../nf-core/bcftools/view/main'
+include { BCFTOOLS_NORM                   } from '../../nf-core/bcftools/norm/main'
 
 workflow VCFPROC {
     take:
