@@ -1,4 +1,4 @@
-include { CHECKBEDFILE		                        } from './bedfile/checkbedfile/main'
+include { CHECKBEDFILE                              } from './bedfile/checkbedfile/main'
 include { TAGROI                                    } from './subworkflows/vcf_roi_tagging/main'
 include { BCFTOOLS_INDEX                            } from './nf-core/bcftools/index/main'
 include { SAMTOOLS_DICT                             } from './nf-core/samtools/dict/main'
@@ -22,9 +22,6 @@ workflow VARIANTINTERPRETATION {
     ch_vep_species
     ch_vep_extra_files
     ch_annotation_fields
-    ch_transcriptlist
-    ch_datavzrd_config
-    ch_annotation_colinfo
     ch_bedfile
     ch_custom_filters
     ch_library_type
@@ -54,12 +51,6 @@ workflow VARIANTINTERPRETATION {
     if (!params.bedfile && params.tag_roi) error("ERROR: Need to specify bedfile for region-of-interest tagging.")
     if (!params.bedfile && params.calculate_tmb) error("ERROR: Need to specify bedfile for calculating TMB.")
     if (!params.read_depth && params.calculate_tmb) error("ERROR: Need to specify the read_depth FORMAT field for calculating TMB.")
-
-    // Channels for UKB filter
-    refseq_list                = params.refseq_list        ? Channel.value(params.refseq_list)                           : []
-    variantDBi                 = params.variantDBi         ? Channel.value(params.variantDBi)                            : []
-
-    // Index vcf and reference files
 
     // create tbi index for vcf
     BCFTOOLS_INDEX ( ch_samplesheet )
@@ -141,7 +132,6 @@ workflow VARIANTINTERPRETATION {
     use_oncokb_token = use_proprietary
 
     println "using new ukb_tool"
-    //filtout = UKB_TOOL(ch_tsv, refseq_list, variantDBi, ch_library_type)
     if( use_oncokb_token == true ){
         println 'using onkokb token'
         filtout = UKB_TOOL_ONCOKB(ch_tsv, ch_library_type)
