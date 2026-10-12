@@ -1,5 +1,5 @@
 
-include { PREPAREBEDFILE                            } from 'bedfile/preparebedfile/main'
+include { PREPAREBEDFILE                            } from 'preparebedfile'
 include { TABIX_BGZIP as FIRST_COMPRESS             } from 'nf-core/tabix/bgzip/main'
 include { TABIX_BGZIP as SECOND_COMPRESS            } from 'nf-core/tabix/bgzip/main'
 include { TABIX_TABIX                               } from 'nf-core/tabix/tabix/main'

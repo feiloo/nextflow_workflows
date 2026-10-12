@@ -7,9 +7,9 @@ include { VCFPROC                                   } from './process_vcf'
 include { ENSEMBLVEP_FILTERVEP as TRANSCRIPT_FILTER } from './nf-core/ensemblvep/filtervep/main'
 include { ENSEMBLVEP_VEP                            } from './nf-core/ensemblvep/vep/main'
 include { TSV_CONVERSION                            } from './tsv_conversion'
-include { TMB_CALCULATE		                        } from './tmbcalculation/main'
-include { UKB_TOOL                                  } from './UKB_tool/main'
-include { UKB_TOOL_ONCOKB                           } from './UKB_tool/main'
+include { TMB_CALCULATE		                    } from './tmbcalculation'
+include { UKB_TOOL                                  } from './UKB_tool'
+include { UKB_TOOL_ONCOKB                           } from './UKB_tool'
 
 workflow VARIANTINTERPRETATION {
 
